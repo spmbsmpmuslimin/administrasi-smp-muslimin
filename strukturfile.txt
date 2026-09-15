@@ -1,9 +1,9 @@
 STRUKTUR SISTEM
-Di-download dari UI: 15 Sep 2026, 20.22
+Di-download dari UI: 15 Sep 2026, 20.44
 
 ======================================================================
 STRUKTUR PROJECT (src/)
-Terakhir di-generate: 15 Sep 2026, 20.21
+Terakhir di-generate: 15 Sep 2026, 20.43
 ======================================================================
 |-- src
 |   |-- assets
@@ -238,33 +238,37 @@ Terakhir di-generate: 15 Sep 2026, 20.21
 |   |   |   |-- KelolaJamPelajaran.js
 |   |   |   `-- useJadwalMassalLogic.js
 |   |   |-- kelola-ujian
-|   |   |   |-- AnggaranBiayaTab.js
-|   |   |   |-- DaftarPengawasTab.js
+|   |   |   |-- dokumen-cetak
+|   |   |   |   |-- AnggaranBiayaTab.js
+|   |   |   |   |-- KartuUjianTab.js
+|   |   |   |   |-- LaporanRekapAkhirTab.js
+|   |   |   |   |-- PresensiBeritaAcaraTab.js
+|   |   |   |   |-- anggaranBiayaSupabase.js
+|   |   |   |   |-- kartuUjianPdf.js
+|   |   |   |   |-- kartuUjianSupabase.js
+|   |   |   |   |-- laporanRekapAkhirPdf.js
+|   |   |   |   |-- laporanRekapAkhirSupabase.js
+|   |   |   |   |-- presensiBeritaAcaraPdf.js
+|   |   |   |   `-- presensiBeritaAcaraSupabase.js
+|   |   |   |-- jadwal-pengawas
+|   |   |   |   |-- DaftarPengawasTab.js
+|   |   |   |   |-- JadwalPengawasTab.js
+|   |   |   |   `-- jadwalPengawasSupabase.js
+|   |   |   |-- pembagian-ruangan
+|   |   |   |   |-- PembagianRuanganTab.js
+|   |   |   |   |-- bagiRuangan.js
+|   |   |   |   |-- daftarPesertaExcelExport.js
+|   |   |   |   |-- daftarPesertaPdfExport.js
+|   |   |   |   |-- noPeserta.js
+|   |   |   |   `-- pembagianRuanganSupabase.js
+|   |   |   |-- petunjuk-penggunaan
+|   |   |   |   |-- PetunjukPenggunaanTab.js
+|   |   |   |   |-- petunjukPenggunaanData.js
+|   |   |   |   `-- petunjukPenggunaanPdf.js
 |   |   |   |-- ExportSemuaTab.js
-|   |   |   |-- JadwalPengawasTab.js
 |   |   |   |-- JenisUjianMenuTab.js
-|   |   |   |-- KartuUjianTab.js
 |   |   |   |-- KelolaUjianTab.js
-|   |   |   |-- LaporanRekapAkhirTab.js
-|   |   |   |-- PembagianRuanganTab.js
-|   |   |   |-- PetunjukPenggunaanTab.js
-|   |   |   |-- PresensiBeritaAcaraTab.js
-|   |   |   |-- anggaranBiayaSupabase.js
-|   |   |   |-- bagiRuangan.js
-|   |   |   |-- daftarPesertaExcelExport.js
-|   |   |   |-- daftarPesertaPdfExport.js
-|   |   |   |-- exportSemuaKelolaUjian.js
-|   |   |   |-- jadwalPengawasSupabase.js
-|   |   |   |-- kartuUjianPdf.js
-|   |   |   |-- kartuUjianSupabase.js
-|   |   |   |-- laporanRekapAkhirPdf.js
-|   |   |   |-- laporanRekapAkhirSupabase.js
-|   |   |   |-- noPeserta.js
-|   |   |   |-- pembagianRuanganSupabase.js
-|   |   |   |-- petunjukPenggunaanData.js
-|   |   |   |-- petunjukPenggunaanPdf.js
-|   |   |   |-- presensiBeritaAcaraPdf.js
-|   |   |   `-- presensiBeritaAcaraSupabase.js
+|   |   |   `-- exportSemuaKelolaUjian.js
 |   |   |-- portal-siswa
 |   |   |   |-- AkunSiswaTab.js
 |   |   |   `-- PortalSiswaTab.js
@@ -347,7 +351,7 @@ Terakhir di-generate: 15 Sep 2026, 20.21
 
 ======================================================================
 STRUKTUR DATABASE
-Terakhir di-generate: 15 Sep 2026, 20.21
+Terakhir di-generate: 15 Sep 2026, 20.43
 ======================================================================
 ## Daftar Tabel Database Supabase
 academic_events : id,title,category_id,start_date,end_date,description,academic_year,semester,created_by,created_at,updated_at

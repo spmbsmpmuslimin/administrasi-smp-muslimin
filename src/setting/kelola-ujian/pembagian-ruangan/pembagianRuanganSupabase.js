@@ -1,5 +1,5 @@
 import { bagiRuangan } from "./bagiRuangan";
-import { getAllAcademicYears } from "../../services/academicYearService";
+import { getAllAcademicYears } from "../../../services/academicYearService";
 import { bangunPetaNoPeserta } from "./noPeserta";
 
 /**

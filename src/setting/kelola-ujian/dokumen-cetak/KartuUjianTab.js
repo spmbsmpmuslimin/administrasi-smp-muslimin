@@ -6,13 +6,13 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import { ChevronLeft, Printer, DoorOpen, Users, Loader2, IdCard } from "lucide-react";
-import { supabase } from "../../supabaseClient";
+import { supabase } from "../../../supabaseClient";
 import {
   ambilDaftarTahunAjaran,
   getOrCreateUjian,
   KONFIGURASI_JENIS_UJIAN,
-} from "./pembagianRuanganSupabase";
-import { ambilRuanganUjian } from "./jadwalPengawasSupabase";
+} from "../pembagian-ruangan/pembagianRuanganSupabase";
+import { ambilRuanganUjian } from "../jadwal-pengawas/jadwalPengawasSupabase";
 import {
   ambilPesertaRuangan,
   ambilJadwalPengawasPerGuru,

@@ -15,8 +15,8 @@
 //
 // Lihat migration: laporan-rekap-akhir_migration.sql
 
-import { ambilPembagianTersimpan } from "./pembagianRuanganSupabase";
-import { ambilJadwalSesi, ambilPengawasUntukJadwal } from "./jadwalPengawasSupabase";
+import { ambilPembagianTersimpan } from "../pembagian-ruangan/pembagianRuanganSupabase";
+import { ambilJadwalSesi, ambilPengawasUntukJadwal } from "../jadwal-pengawas/jadwalPengawasSupabase";
 import { ambilAnggaran, hitungRingkasanAnggaran } from "./anggaranBiayaSupabase";
 
 /**

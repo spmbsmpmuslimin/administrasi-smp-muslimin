@@ -42,13 +42,13 @@ import {
   Construction,
   FileDown,
 } from "lucide-react";
-import PembagianRuanganTab from "./PembagianRuanganTab";
-import JadwalPengawasTab from "./JadwalPengawasTab";
-import KartuUjianTab from "./KartuUjianTab";
-import PresensiBeritaAcaraTab from "./PresensiBeritaAcaraTab";
-import AnggaranBiayaTab from "./AnggaranBiayaTab";
-import PetunjukPenggunaanTab from "./PetunjukPenggunaanTab";
-import LaporanRekapAkhirTab from "./LaporanRekapAkhirTab";
+import PembagianRuanganTab from "./pembagian-ruangan/PembagianRuanganTab";
+import JadwalPengawasTab from "./jadwal-pengawas/JadwalPengawasTab";
+import KartuUjianTab from "./dokumen-cetak/KartuUjianTab";
+import PresensiBeritaAcaraTab from "./dokumen-cetak/PresensiBeritaAcaraTab";
+import AnggaranBiayaTab from "./dokumen-cetak/AnggaranBiayaTab";
+import PetunjukPenggunaanTab from "./petunjuk-penggunaan/PetunjukPenggunaanTab";
+import LaporanRekapAkhirTab from "./dokumen-cetak/LaporanRekapAkhirTab";
 import ExportSemuaTab from "./ExportSemuaTab";
 
 const JENIS_UJIAN_LABEL = {

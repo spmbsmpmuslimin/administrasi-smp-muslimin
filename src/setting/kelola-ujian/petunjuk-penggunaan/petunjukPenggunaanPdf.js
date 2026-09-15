@@ -6,7 +6,7 @@
 // bernomor, bukan tabel, jadi ditulis manual pakai doc.splitTextToSize
 // dengan pagination sendiri (pindah halaman otomatis kalau kepanjangan).
 
-import { createPdfDocument, addLetterhead, savePdf, PDF_FONT_FAMILY } from "../../utils/pdfExportKit";
+import { createPdfDocument, addLetterhead, savePdf, PDF_FONT_FAMILY } from "../../../utils/pdfExportKit";
 import { PANDUAN } from "./petunjukPenggunaanData";
 
 const MARGIN = 15;

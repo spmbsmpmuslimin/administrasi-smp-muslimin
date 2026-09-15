@@ -22,25 +22,25 @@ import {
   cariUjian,
   ambilPembagianTersimpan,
   KONFIGURASI_JENIS_UJIAN,
-} from "./pembagianRuanganSupabase";
-import { ambilRuanganUjian, ambilJadwalSesi } from "./jadwalPengawasSupabase";
+} from "./pembagian-ruangan/pembagianRuanganSupabase";
+import { ambilRuanganUjian, ambilJadwalSesi } from "./jadwal-pengawas/jadwalPengawasSupabase";
 import {
   ambilPesertaRuangan,
   ambilJadwalPengawasPerGuru,
   ambilMetadataKepsek,
-} from "./kartuUjianSupabase";
+} from "./dokumen-cetak/kartuUjianSupabase";
 import {
   ambilRekapPeserta,
   ambilRekapPengawas,
   ambilRekapAnggaran,
   ambilKehadiran,
   ambilCatatanLaporan,
-} from "./laporanRekapAkhirSupabase";
-import { exportDaftarPesertaUjianPdf } from "./daftarPesertaPdfExport";
-import { generateKartuPesertaPdf, generateKartuPengawasPdf } from "./kartuUjianPdf";
-import { generateDaftarHadirPdf, generateBeritaAcaraPdf } from "./presensiBeritaAcaraPdf";
-import { generateLaporanRekapAkhirPdf } from "./laporanRekapAkhirPdf";
-import { generatePetunjukPenggunaanPdf } from "./petunjukPenggunaanPdf";
+} from "./dokumen-cetak/laporanRekapAkhirSupabase";
+import { exportDaftarPesertaUjianPdf } from "./pembagian-ruangan/daftarPesertaPdfExport";
+import { generateKartuPesertaPdf, generateKartuPengawasPdf } from "./dokumen-cetak/kartuUjianPdf";
+import { generateDaftarHadirPdf, generateBeritaAcaraPdf } from "./dokumen-cetak/presensiBeritaAcaraPdf";
+import { generateLaporanRekapAkhirPdf } from "./dokumen-cetak/laporanRekapAkhirPdf";
+import { generatePetunjukPenggunaanPdf } from "./petunjuk-penggunaan/petunjukPenggunaanPdf";
 
 // Daftar & urutan item yang muncul di checklist "Export Semua". Urutan di
 // sini SENGAJA dipakai juga sebagai urutan eksekusi (dari atas ke bawah),

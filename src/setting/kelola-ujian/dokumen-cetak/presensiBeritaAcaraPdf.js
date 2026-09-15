@@ -24,7 +24,7 @@ import {
   guardHasData,
   PDF_COLORS,
   PDF_FONT_FAMILY,
-} from "../../utils/pdfExportKit";
+} from "../../../utils/pdfExportKit";
 
 // Sama seperti file lain di sub-fitur ini -- sengaja diduplikasi, bukan
 // di-import, biar tiap file bebas berkembang sendiri-sendiri.

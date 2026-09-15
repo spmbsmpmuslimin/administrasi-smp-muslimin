@@ -28,7 +28,7 @@ import {
   tableTheme,
   savePdf,
   guardHasData,
-} from "../../utils/pdfExportKit";
+} from "../../../utils/pdfExportKit";
 import { bangunPetaNoPeserta } from "./noPeserta";
 
 // Sama persis dengan JUDUL_UJIAN di daftarPesertaExcelExport.js -- sengaja

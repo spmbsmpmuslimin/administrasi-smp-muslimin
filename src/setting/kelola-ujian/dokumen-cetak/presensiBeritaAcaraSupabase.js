@@ -12,7 +12,7 @@
 // Pengawas" -- di sini cuma reuse & sedikit reshape biar gampang dipakai
 // generator PDF-nya.
 
-import { ambilPengawasUntukJadwal } from "./jadwalPengawasSupabase";
+import { ambilPengawasUntukJadwal } from "../jadwal-pengawas/jadwalPengawasSupabase";
 
 /**
  * Ambil daftar pengawas untuk 1 sesi jadwal, dikelompokkan per ruangan --

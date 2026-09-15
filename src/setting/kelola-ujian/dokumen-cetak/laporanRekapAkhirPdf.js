@@ -30,7 +30,7 @@ import {
   PDF_FONT_FAMILY,
   SCHOOL_NAME,
   SCHOOL_CITY,
-} from "../../utils/pdfExportKit";
+} from "../../../utils/pdfExportKit";
 
 // Sama seperti file lain di sub-fitur ini -- sengaja diduplikasi, bukan
 // di-import (lihat catatan di presensiBeritaAcaraPdf.js).

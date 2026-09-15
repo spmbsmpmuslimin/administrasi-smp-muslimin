@@ -26,7 +26,7 @@ import {
   FileText,
   Loader2,
 } from "lucide-react";
-import { supabase } from "../../supabaseClient";
+import { supabase } from "../../../supabaseClient";
 import {
   ambilDaftarTahunAjaran,
   getOrCreateUjian,

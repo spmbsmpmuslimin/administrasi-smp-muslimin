@@ -21,7 +21,7 @@ import {
   Circle,
 } from "lucide-react";
 import { supabase } from "../../supabaseClient";
-import { ambilDaftarTahunAjaran, KONFIGURASI_JENIS_UJIAN } from "./pembagianRuanganSupabase";
+import { ambilDaftarTahunAjaran, KONFIGURASI_JENIS_UJIAN } from "./pembagian-ruangan/pembagianRuanganSupabase";
 import {
   OPSI_EXPORT_SEMUA,
   cariUjianUntukExport,

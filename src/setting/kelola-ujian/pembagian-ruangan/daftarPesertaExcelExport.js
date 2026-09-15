@@ -20,7 +20,7 @@ import {
   setupPrintOptions,
   downloadWorkbook,
   guardHasData,
-} from "../../utils/excelExportKit";
+} from "../../../utils/excelExportKit";
 import { bangunPetaNoPeserta } from "./noPeserta";
 
 // Judul resmi yang dicetak di letterhead. Sengaja dipisah dari

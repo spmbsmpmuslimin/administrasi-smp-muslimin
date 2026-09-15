@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-09-15T13:21:48.116Z",
-  "executionTimeMs": 283,
+  "generatedAt": "2026-09-15T13:43:37.005Z",
+  "executionTimeMs": 183,
   "tree": {
     "name": "src",
     "path": "src",
@@ -4215,7 +4215,7 @@
                 "src/setting/kelola-jadwal/AdminKodeGuru.js",
                 "src/setting/kelola-jadwal/KelolaJamPelajaran.js",
                 "src/setting/kelola-jadwal/useJadwalMassalLogic.js",
-                "src/setting/kelola-ujian/pembagianRuanganSupabase.js",
+                "src/setting/kelola-ujian/pembagian-ruangan/pembagianRuanganSupabase.js",
                 "src/setting/school-management/SchoolManagementTab.js",
                 "src/setting/school-management/SiswaLulusTab.js",
                 "src/setting/school-management/TeacherAssignmentTab.js",
@@ -4704,128 +4704,545 @@
             "type": "folder",
             "children": [
               {
-                "name": "anggaranBiayaSupabase.js",
-                "type": "file",
-                "file": {
-                  "path": "src/setting/kelola-ujian/anggaranBiayaSupabase.js",
-                  "type": "other",
-                  "lines": 94,
-                  "functions": [
-                    "hitungRingkasanAnggaran"
-                  ],
-                  "imports": [],
-                  "importedBy": [
-                    "src/setting/kelola-ujian/AnggaranBiayaTab.js",
-                    "src/setting/kelola-ujian/laporanRekapAkhirSupabase.js"
-                  ],
-                  "isOrphan": false
-                }
+                "name": "dokumen-cetak",
+                "path": "src/setting/kelola-ujian/dokumen-cetak",
+                "type": "folder",
+                "children": [
+                  {
+                    "name": "anggaranBiayaSupabase.js",
+                    "type": "file",
+                    "file": {
+                      "path": "src/setting/kelola-ujian/dokumen-cetak/anggaranBiayaSupabase.js",
+                      "type": "other",
+                      "lines": 94,
+                      "functions": [
+                        "hitungRingkasanAnggaran"
+                      ],
+                      "imports": [],
+                      "importedBy": [
+                        "src/setting/kelola-ujian/dokumen-cetak/AnggaranBiayaTab.js",
+                        "src/setting/kelola-ujian/dokumen-cetak/laporanRekapAkhirSupabase.js"
+                      ],
+                      "isOrphan": false
+                    }
+                  },
+                  {
+                    "name": "AnggaranBiayaTab.js",
+                    "type": "file",
+                    "file": {
+                      "path": "src/setting/kelola-ujian/dokumen-cetak/AnggaranBiayaTab.js",
+                      "type": "other",
+                      "lines": 471,
+                      "functions": [
+                        "labelTahunAjaran",
+                        "formatRupiah",
+                        "AnggaranBiayaTab"
+                      ],
+                      "imports": [
+                        "src/supabaseClient.js",
+                        "src/setting/kelola-ujian/pembagian-ruangan/pembagianRuanganSupabase.js",
+                        "src/setting/kelola-ujian/dokumen-cetak/anggaranBiayaSupabase.js"
+                      ],
+                      "importedBy": [
+                        "src/setting/kelola-ujian/JenisUjianMenuTab.js"
+                      ],
+                      "isOrphan": false
+                    }
+                  },
+                  {
+                    "name": "kartuUjianPdf.js",
+                    "type": "file",
+                    "file": {
+                      "path": "src/setting/kelola-ujian/dokumen-cetak/kartuUjianPdf.js",
+                      "type": "other",
+                      "lines": 366,
+                      "functions": [
+                        "tulisLabelValue",
+                        "gambarSatuKartu",
+                        "generateKartuPesertaPdf",
+                        "gambarSatuKartuPengawas",
+                        "formatHariTanggalSingkat",
+                        "generateKartuPengawasPdf"
+                      ],
+                      "imports": [
+                        "src/utils/pdfExportKit.js"
+                      ],
+                      "importedBy": [
+                        "src/setting/kelola-ujian/dokumen-cetak/KartuUjianTab.js",
+                        "src/setting/kelola-ujian/exportSemuaKelolaUjian.js"
+                      ],
+                      "isOrphan": false
+                    }
+                  },
+                  {
+                    "name": "kartuUjianSupabase.js",
+                    "type": "file",
+                    "file": {
+                      "path": "src/setting/kelola-ujian/dokumen-cetak/kartuUjianSupabase.js",
+                      "type": "other",
+                      "lines": 123,
+                      "functions": [],
+                      "imports": [
+                        "src/setting/kelola-ujian/jadwal-pengawas/jadwalPengawasSupabase.js"
+                      ],
+                      "importedBy": [
+                        "src/setting/kelola-ujian/dokumen-cetak/KartuUjianTab.js",
+                        "src/setting/kelola-ujian/dokumen-cetak/PresensiBeritaAcaraTab.js",
+                        "src/setting/kelola-ujian/exportSemuaKelolaUjian.js"
+                      ],
+                      "isOrphan": false
+                    }
+                  },
+                  {
+                    "name": "KartuUjianTab.js",
+                    "type": "file",
+                    "file": {
+                      "path": "src/setting/kelola-ujian/dokumen-cetak/KartuUjianTab.js",
+                      "type": "other",
+                      "lines": 362,
+                      "functions": [
+                        "labelTahunAjaran",
+                        "KartuUjianTab"
+                      ],
+                      "imports": [
+                        "src/supabaseClient.js",
+                        "src/setting/kelola-ujian/pembagian-ruangan/pembagianRuanganSupabase.js",
+                        "src/setting/kelola-ujian/jadwal-pengawas/jadwalPengawasSupabase.js",
+                        "src/setting/kelola-ujian/dokumen-cetak/kartuUjianSupabase.js",
+                        "src/setting/kelola-ujian/dokumen-cetak/kartuUjianPdf.js"
+                      ],
+                      "importedBy": [
+                        "src/setting/kelola-ujian/JenisUjianMenuTab.js"
+                      ],
+                      "isOrphan": false
+                    }
+                  },
+                  {
+                    "name": "laporanRekapAkhirPdf.js",
+                    "type": "file",
+                    "file": {
+                      "path": "src/setting/kelola-ujian/dokumen-cetak/laporanRekapAkhirPdf.js",
+                      "type": "other",
+                      "lines": 387,
+                      "functions": [
+                        "formatRupiah",
+                        "tulisParagraf",
+                        "babBaru",
+                        "generateLaporanRekapAkhirPdf"
+                      ],
+                      "imports": [
+                        "src/utils/pdfExportKit.js"
+                      ],
+                      "importedBy": [
+                        "src/setting/kelola-ujian/dokumen-cetak/LaporanRekapAkhirTab.js",
+                        "src/setting/kelola-ujian/exportSemuaKelolaUjian.js"
+                      ],
+                      "isOrphan": false
+                    }
+                  },
+                  {
+                    "name": "laporanRekapAkhirSupabase.js",
+                    "type": "file",
+                    "file": {
+                      "path": "src/setting/kelola-ujian/dokumen-cetak/laporanRekapAkhirSupabase.js",
+                      "type": "other",
+                      "lines": 171,
+                      "functions": [],
+                      "imports": [
+                        "src/setting/kelola-ujian/pembagian-ruangan/pembagianRuanganSupabase.js",
+                        "src/setting/kelola-ujian/jadwal-pengawas/jadwalPengawasSupabase.js",
+                        "src/setting/kelola-ujian/dokumen-cetak/anggaranBiayaSupabase.js"
+                      ],
+                      "importedBy": [
+                        "src/setting/kelola-ujian/dokumen-cetak/LaporanRekapAkhirTab.js",
+                        "src/setting/kelola-ujian/exportSemuaKelolaUjian.js"
+                      ],
+                      "isOrphan": false
+                    }
+                  },
+                  {
+                    "name": "LaporanRekapAkhirTab.js",
+                    "type": "file",
+                    "file": {
+                      "path": "src/setting/kelola-ujian/dokumen-cetak/LaporanRekapAkhirTab.js",
+                      "type": "other",
+                      "lines": 767,
+                      "functions": [
+                        "labelTahunAjaran",
+                        "formatRupiah",
+                        "SeksiCard",
+                        "LaporanRekapAkhirTab"
+                      ],
+                      "imports": [
+                        "src/supabaseClient.js",
+                        "src/setting/kelola-ujian/pembagian-ruangan/pembagianRuanganSupabase.js",
+                        "src/setting/kelola-ujian/dokumen-cetak/laporanRekapAkhirSupabase.js",
+                        "src/setting/kelola-ujian/dokumen-cetak/laporanRekapAkhirPdf.js"
+                      ],
+                      "importedBy": [
+                        "src/setting/kelola-ujian/JenisUjianMenuTab.js"
+                      ],
+                      "isOrphan": false
+                    }
+                  },
+                  {
+                    "name": "presensiBeritaAcaraPdf.js",
+                    "type": "file",
+                    "file": {
+                      "path": "src/setting/kelola-ujian/dokumen-cetak/presensiBeritaAcaraPdf.js",
+                      "type": "other",
+                      "lines": 353,
+                      "functions": [
+                        "generateDaftarHadirPdf",
+                        "generateBeritaAcaraPdf",
+                        "formatHariTanggal",
+                        "formatWaktuJadwal",
+                        "gambarTandaTanganPengawas",
+                        "estimasiTinggiBaris",
+                        "hitungUkuranTabelDaftarHadir",
+                        "tulisBarisInfo",
+                        "tulisBarisKosong",
+                        "labelRuang"
+                      ],
+                      "imports": [
+                        "src/utils/pdfExportKit.js"
+                      ],
+                      "importedBy": [
+                        "src/setting/kelola-ujian/dokumen-cetak/PresensiBeritaAcaraTab.js",
+                        "src/setting/kelola-ujian/exportSemuaKelolaUjian.js"
+                      ],
+                      "isOrphan": false
+                    }
+                  },
+                  {
+                    "name": "presensiBeritaAcaraSupabase.js",
+                    "type": "file",
+                    "file": {
+                      "path": "src/setting/kelola-ujian/dokumen-cetak/presensiBeritaAcaraSupabase.js",
+                      "type": "other",
+                      "lines": 40,
+                      "functions": [],
+                      "imports": [
+                        "src/setting/kelola-ujian/jadwal-pengawas/jadwalPengawasSupabase.js"
+                      ],
+                      "importedBy": [],
+                      "isOrphan": true
+                    }
+                  },
+                  {
+                    "name": "PresensiBeritaAcaraTab.js",
+                    "type": "file",
+                    "file": {
+                      "path": "src/setting/kelola-ujian/dokumen-cetak/PresensiBeritaAcaraTab.js",
+                      "type": "other",
+                      "lines": 362,
+                      "functions": [
+                        "labelTahunAjaran",
+                        "formatHariTanggalSingkat",
+                        "PresensiBeritaAcaraTab"
+                      ],
+                      "imports": [
+                        "src/supabaseClient.js",
+                        "src/setting/kelola-ujian/pembagian-ruangan/pembagianRuanganSupabase.js",
+                        "src/setting/kelola-ujian/jadwal-pengawas/jadwalPengawasSupabase.js",
+                        "src/setting/kelola-ujian/dokumen-cetak/kartuUjianSupabase.js",
+                        "src/setting/kelola-ujian/dokumen-cetak/presensiBeritaAcaraPdf.js"
+                      ],
+                      "importedBy": [
+                        "src/setting/kelola-ujian/JenisUjianMenuTab.js"
+                      ],
+                      "isOrphan": false
+                    }
+                  }
+                ]
               },
               {
-                "name": "AnggaranBiayaTab.js",
-                "type": "file",
-                "file": {
-                  "path": "src/setting/kelola-ujian/AnggaranBiayaTab.js",
-                  "type": "other",
-                  "lines": 471,
-                  "functions": [
-                    "labelTahunAjaran",
-                    "formatRupiah",
-                    "AnggaranBiayaTab"
-                  ],
-                  "imports": [
-                    "src/supabaseClient.js",
-                    "src/setting/kelola-ujian/pembagianRuanganSupabase.js",
-                    "src/setting/kelola-ujian/anggaranBiayaSupabase.js"
-                  ],
-                  "importedBy": [
-                    "src/setting/kelola-ujian/JenisUjianMenuTab.js"
-                  ],
-                  "isOrphan": false
-                }
+                "name": "jadwal-pengawas",
+                "path": "src/setting/kelola-ujian/jadwal-pengawas",
+                "type": "folder",
+                "children": [
+                  {
+                    "name": "DaftarPengawasTab.js",
+                    "type": "file",
+                    "file": {
+                      "path": "src/setting/kelola-ujian/jadwal-pengawas/DaftarPengawasTab.js",
+                      "type": "other",
+                      "lines": 425,
+                      "functions": [
+                        "DaftarPengawasTab"
+                      ],
+                      "imports": [
+                        "src/supabaseClient.js",
+                        "src/setting/kelola-ujian/jadwal-pengawas/jadwalPengawasSupabase.js"
+                      ],
+                      "importedBy": [
+                        "src/setting/kelola-ujian/jadwal-pengawas/JadwalPengawasTab.js"
+                      ],
+                      "isOrphan": false
+                    }
+                  },
+                  {
+                    "name": "jadwalPengawasSupabase.js",
+                    "type": "file",
+                    "file": {
+                      "path": "src/setting/kelola-ujian/jadwal-pengawas/jadwalPengawasSupabase.js",
+                      "type": "other",
+                      "lines": 368,
+                      "functions": [
+                        "sarankanKodeDariTeacherId",
+                        "kelompokkanJadwalPerHari"
+                      ],
+                      "imports": [],
+                      "importedBy": [
+                        "src/setting/kelola-ujian/dokumen-cetak/kartuUjianSupabase.js",
+                        "src/setting/kelola-ujian/dokumen-cetak/KartuUjianTab.js",
+                        "src/setting/kelola-ujian/dokumen-cetak/laporanRekapAkhirSupabase.js",
+                        "src/setting/kelola-ujian/dokumen-cetak/presensiBeritaAcaraSupabase.js",
+                        "src/setting/kelola-ujian/dokumen-cetak/PresensiBeritaAcaraTab.js",
+                        "src/setting/kelola-ujian/exportSemuaKelolaUjian.js",
+                        "src/setting/kelola-ujian/jadwal-pengawas/DaftarPengawasTab.js",
+                        "src/setting/kelola-ujian/jadwal-pengawas/JadwalPengawasTab.js"
+                      ],
+                      "isOrphan": false
+                    }
+                  },
+                  {
+                    "name": "JadwalPengawasTab.js",
+                    "type": "file",
+                    "file": {
+                      "path": "src/setting/kelola-ujian/jadwal-pengawas/JadwalPengawasTab.js",
+                      "type": "other",
+                      "lines": 1159,
+                      "functions": [
+                        "labelTahunAjaran",
+                        "formatHariTanggal",
+                        "acakUrutan",
+                        "JadwalPengawasTab"
+                      ],
+                      "imports": [
+                        "src/supabaseClient.js",
+                        "src/setting/kelola-ujian/pembagian-ruangan/pembagianRuanganSupabase.js",
+                        "src/setting/kelola-ujian/jadwal-pengawas/jadwalPengawasSupabase.js",
+                        "src/setting/kelola-ujian/jadwal-pengawas/DaftarPengawasTab.js"
+                      ],
+                      "importedBy": [
+                        "src/setting/kelola-ujian/JenisUjianMenuTab.js"
+                      ],
+                      "isOrphan": false
+                    }
+                  }
+                ]
               },
               {
-                "name": "bagiRuangan.js",
-                "type": "file",
-                "file": {
-                  "path": "src/setting/kelola-ujian/bagiRuangan.js",
-                  "type": "other",
-                  "lines": 197,
-                  "functions": [
-                    "bagiRuangan",
-                    "terapkanQuotaManual",
-                    "hitungTotalPerKelas"
-                  ],
-                  "imports": [],
-                  "importedBy": [
-                    "src/setting/kelola-ujian/pembagianRuanganSupabase.js",
-                    "src/setting/kelola-ujian/PembagianRuanganTab.js"
-                  ],
-                  "isOrphan": false
-                }
+                "name": "pembagian-ruangan",
+                "path": "src/setting/kelola-ujian/pembagian-ruangan",
+                "type": "folder",
+                "children": [
+                  {
+                    "name": "bagiRuangan.js",
+                    "type": "file",
+                    "file": {
+                      "path": "src/setting/kelola-ujian/pembagian-ruangan/bagiRuangan.js",
+                      "type": "other",
+                      "lines": 197,
+                      "functions": [
+                        "bagiRuangan",
+                        "terapkanQuotaManual",
+                        "hitungTotalPerKelas"
+                      ],
+                      "imports": [],
+                      "importedBy": [
+                        "src/setting/kelola-ujian/pembagian-ruangan/pembagianRuanganSupabase.js",
+                        "src/setting/kelola-ujian/pembagian-ruangan/PembagianRuanganTab.js"
+                      ],
+                      "isOrphan": false
+                    }
+                  },
+                  {
+                    "name": "daftarPesertaExcelExport.js",
+                    "type": "file",
+                    "file": {
+                      "path": "src/setting/kelola-ujian/pembagian-ruangan/daftarPesertaExcelExport.js",
+                      "type": "other",
+                      "lines": 157,
+                      "functions": [
+                        "labelRuang"
+                      ],
+                      "imports": [
+                        "src/utils/excelExportKit.js",
+                        "src/setting/kelola-ujian/pembagian-ruangan/noPeserta.js"
+                      ],
+                      "importedBy": [
+                        "src/setting/kelola-ujian/pembagian-ruangan/PembagianRuanganTab.js"
+                      ],
+                      "isOrphan": false
+                    }
+                  },
+                  {
+                    "name": "daftarPesertaPdfExport.js",
+                    "type": "file",
+                    "file": {
+                      "path": "src/setting/kelola-ujian/pembagian-ruangan/daftarPesertaPdfExport.js",
+                      "type": "other",
+                      "lines": 212,
+                      "functions": [
+                        "estimasiTinggiBaris",
+                        "hitungUkuranTabelMuatSatuHalaman",
+                        "labelRuang"
+                      ],
+                      "imports": [
+                        "src/utils/pdfExportKit.js",
+                        "src/setting/kelola-ujian/pembagian-ruangan/noPeserta.js"
+                      ],
+                      "importedBy": [
+                        "src/setting/kelola-ujian/exportSemuaKelolaUjian.js",
+                        "src/setting/kelola-ujian/pembagian-ruangan/PembagianRuanganTab.js"
+                      ],
+                      "isOrphan": false
+                    }
+                  },
+                  {
+                    "name": "noPeserta.js",
+                    "type": "file",
+                    "file": {
+                      "path": "src/setting/kelola-ujian/pembagian-ruangan/noPeserta.js",
+                      "type": "other",
+                      "lines": 83,
+                      "functions": [
+                        "kodeTahunAjaran",
+                        "bangunPetaNoPeserta"
+                      ],
+                      "imports": [],
+                      "importedBy": [
+                        "src/setting/kelola-ujian/pembagian-ruangan/daftarPesertaExcelExport.js",
+                        "src/setting/kelola-ujian/pembagian-ruangan/daftarPesertaPdfExport.js",
+                        "src/setting/kelola-ujian/pembagian-ruangan/pembagianRuanganSupabase.js",
+                        "src/setting/kelola-ujian/pembagian-ruangan/PembagianRuanganTab.js"
+                      ],
+                      "isOrphan": false
+                    }
+                  },
+                  {
+                    "name": "pembagianRuanganSupabase.js",
+                    "type": "file",
+                    "file": {
+                      "path": "src/setting/kelola-ujian/pembagian-ruangan/pembagianRuanganSupabase.js",
+                      "type": "other",
+                      "lines": 241,
+                      "functions": [],
+                      "imports": [
+                        "src/setting/kelola-ujian/pembagian-ruangan/bagiRuangan.js",
+                        "src/services/academicYearService.js",
+                        "src/setting/kelola-ujian/pembagian-ruangan/noPeserta.js"
+                      ],
+                      "importedBy": [
+                        "src/setting/kelola-ujian/dokumen-cetak/AnggaranBiayaTab.js",
+                        "src/setting/kelola-ujian/dokumen-cetak/KartuUjianTab.js",
+                        "src/setting/kelola-ujian/dokumen-cetak/laporanRekapAkhirSupabase.js",
+                        "src/setting/kelola-ujian/dokumen-cetak/LaporanRekapAkhirTab.js",
+                        "src/setting/kelola-ujian/dokumen-cetak/PresensiBeritaAcaraTab.js",
+                        "src/setting/kelola-ujian/exportSemuaKelolaUjian.js",
+                        "src/setting/kelola-ujian/ExportSemuaTab.js",
+                        "src/setting/kelola-ujian/jadwal-pengawas/JadwalPengawasTab.js",
+                        "src/setting/kelola-ujian/pembagian-ruangan/PembagianRuanganTab.js"
+                      ],
+                      "isOrphan": false
+                    }
+                  },
+                  {
+                    "name": "PembagianRuanganTab.js",
+                    "type": "file",
+                    "file": {
+                      "path": "src/setting/kelola-ujian/pembagian-ruangan/PembagianRuanganTab.js",
+                      "type": "other",
+                      "lines": 797,
+                      "functions": [
+                        "labelTahunAjaran",
+                        "PembagianRuanganTab"
+                      ],
+                      "imports": [
+                        "src/supabaseClient.js",
+                        "src/setting/kelola-ujian/pembagian-ruangan/pembagianRuanganSupabase.js",
+                        "src/setting/kelola-ujian/pembagian-ruangan/bagiRuangan.js",
+                        "src/setting/kelola-ujian/pembagian-ruangan/daftarPesertaExcelExport.js",
+                        "src/setting/kelola-ujian/pembagian-ruangan/daftarPesertaPdfExport.js",
+                        "src/setting/kelola-ujian/pembagian-ruangan/noPeserta.js"
+                      ],
+                      "importedBy": [
+                        "src/setting/kelola-ujian/JenisUjianMenuTab.js"
+                      ],
+                      "isOrphan": false
+                    }
+                  }
+                ]
               },
               {
-                "name": "DaftarPengawasTab.js",
-                "type": "file",
-                "file": {
-                  "path": "src/setting/kelola-ujian/DaftarPengawasTab.js",
-                  "type": "other",
-                  "lines": 425,
-                  "functions": [
-                    "DaftarPengawasTab"
-                  ],
-                  "imports": [
-                    "src/supabaseClient.js",
-                    "src/setting/kelola-ujian/jadwalPengawasSupabase.js"
-                  ],
-                  "importedBy": [
-                    "src/setting/kelola-ujian/JadwalPengawasTab.js"
-                  ],
-                  "isOrphan": false
-                }
-              },
-              {
-                "name": "daftarPesertaExcelExport.js",
-                "type": "file",
-                "file": {
-                  "path": "src/setting/kelola-ujian/daftarPesertaExcelExport.js",
-                  "type": "other",
-                  "lines": 157,
-                  "functions": [
-                    "labelRuang"
-                  ],
-                  "imports": [
-                    "src/utils/excelExportKit.js",
-                    "src/setting/kelola-ujian/noPeserta.js"
-                  ],
-                  "importedBy": [
-                    "src/setting/kelola-ujian/PembagianRuanganTab.js"
-                  ],
-                  "isOrphan": false
-                }
-              },
-              {
-                "name": "daftarPesertaPdfExport.js",
-                "type": "file",
-                "file": {
-                  "path": "src/setting/kelola-ujian/daftarPesertaPdfExport.js",
-                  "type": "other",
-                  "lines": 212,
-                  "functions": [
-                    "estimasiTinggiBaris",
-                    "hitungUkuranTabelMuatSatuHalaman",
-                    "labelRuang"
-                  ],
-                  "imports": [
-                    "src/utils/pdfExportKit.js",
-                    "src/setting/kelola-ujian/noPeserta.js"
-                  ],
-                  "importedBy": [
-                    "src/setting/kelola-ujian/exportSemuaKelolaUjian.js",
-                    "src/setting/kelola-ujian/PembagianRuanganTab.js"
-                  ],
-                  "isOrphan": false
-                }
+                "name": "petunjuk-penggunaan",
+                "path": "src/setting/kelola-ujian/petunjuk-penggunaan",
+                "type": "folder",
+                "children": [
+                  {
+                    "name": "petunjukPenggunaanData.js",
+                    "type": "file",
+                    "file": {
+                      "path": "src/setting/kelola-ujian/petunjuk-penggunaan/petunjukPenggunaanData.js",
+                      "type": "other",
+                      "lines": 171,
+                      "functions": [],
+                      "imports": [],
+                      "importedBy": [
+                        "src/setting/kelola-ujian/petunjuk-penggunaan/petunjukPenggunaanPdf.js",
+                        "src/setting/kelola-ujian/petunjuk-penggunaan/PetunjukPenggunaanTab.js"
+                      ],
+                      "isOrphan": false
+                    }
+                  },
+                  {
+                    "name": "petunjukPenggunaanPdf.js",
+                    "type": "file",
+                    "file": {
+                      "path": "src/setting/kelola-ujian/petunjuk-penggunaan/petunjukPenggunaanPdf.js",
+                      "type": "other",
+                      "lines": 131,
+                      "functions": [
+                        "generatePetunjukPenggunaanPdf",
+                        "tinggiHalaman",
+                        "lebarHalaman",
+                        "pastikanRuang",
+                        "tulisParagraf"
+                      ],
+                      "imports": [
+                        "src/utils/pdfExportKit.js",
+                        "src/setting/kelola-ujian/petunjuk-penggunaan/petunjukPenggunaanData.js"
+                      ],
+                      "importedBy": [
+                        "src/setting/kelola-ujian/exportSemuaKelolaUjian.js",
+                        "src/setting/kelola-ujian/petunjuk-penggunaan/PetunjukPenggunaanTab.js"
+                      ],
+                      "isOrphan": false
+                    }
+                  },
+                  {
+                    "name": "PetunjukPenggunaanTab.js",
+                    "type": "file",
+                    "file": {
+                      "path": "src/setting/kelola-ujian/petunjuk-penggunaan/PetunjukPenggunaanTab.js",
+                      "type": "other",
+                      "lines": 174,
+                      "functions": [
+                        "PetunjukPenggunaanTab"
+                      ],
+                      "imports": [
+                        "src/setting/kelola-ujian/petunjuk-penggunaan/petunjukPenggunaanData.js",
+                        "src/setting/kelola-ujian/petunjuk-penggunaan/petunjukPenggunaanPdf.js"
+                      ],
+                      "importedBy": [
+                        "src/setting/kelola-ujian/JenisUjianMenuTab.js"
+                      ],
+                      "isOrphan": false
+                    }
+                  }
+                ]
               },
               {
                 "name": "exportSemuaKelolaUjian.js",
@@ -4838,15 +5255,15 @@
                     "tunda"
                   ],
                   "imports": [
-                    "src/setting/kelola-ujian/pembagianRuanganSupabase.js",
-                    "src/setting/kelola-ujian/jadwalPengawasSupabase.js",
-                    "src/setting/kelola-ujian/kartuUjianSupabase.js",
-                    "src/setting/kelola-ujian/laporanRekapAkhirSupabase.js",
-                    "src/setting/kelola-ujian/daftarPesertaPdfExport.js",
-                    "src/setting/kelola-ujian/kartuUjianPdf.js",
-                    "src/setting/kelola-ujian/presensiBeritaAcaraPdf.js",
-                    "src/setting/kelola-ujian/laporanRekapAkhirPdf.js",
-                    "src/setting/kelola-ujian/petunjukPenggunaanPdf.js"
+                    "src/setting/kelola-ujian/pembagian-ruangan/pembagianRuanganSupabase.js",
+                    "src/setting/kelola-ujian/jadwal-pengawas/jadwalPengawasSupabase.js",
+                    "src/setting/kelola-ujian/dokumen-cetak/kartuUjianSupabase.js",
+                    "src/setting/kelola-ujian/dokumen-cetak/laporanRekapAkhirSupabase.js",
+                    "src/setting/kelola-ujian/pembagian-ruangan/daftarPesertaPdfExport.js",
+                    "src/setting/kelola-ujian/dokumen-cetak/kartuUjianPdf.js",
+                    "src/setting/kelola-ujian/dokumen-cetak/presensiBeritaAcaraPdf.js",
+                    "src/setting/kelola-ujian/dokumen-cetak/laporanRekapAkhirPdf.js",
+                    "src/setting/kelola-ujian/petunjuk-penggunaan/petunjukPenggunaanPdf.js"
                   ],
                   "importedBy": [
                     "src/setting/kelola-ujian/ExportSemuaTab.js"
@@ -4867,58 +5284,8 @@
                   ],
                   "imports": [
                     "src/supabaseClient.js",
-                    "src/setting/kelola-ujian/pembagianRuanganSupabase.js",
+                    "src/setting/kelola-ujian/pembagian-ruangan/pembagianRuanganSupabase.js",
                     "src/setting/kelola-ujian/exportSemuaKelolaUjian.js"
-                  ],
-                  "importedBy": [
-                    "src/setting/kelola-ujian/JenisUjianMenuTab.js"
-                  ],
-                  "isOrphan": false
-                }
-              },
-              {
-                "name": "jadwalPengawasSupabase.js",
-                "type": "file",
-                "file": {
-                  "path": "src/setting/kelola-ujian/jadwalPengawasSupabase.js",
-                  "type": "other",
-                  "lines": 368,
-                  "functions": [
-                    "sarankanKodeDariTeacherId",
-                    "kelompokkanJadwalPerHari"
-                  ],
-                  "imports": [],
-                  "importedBy": [
-                    "src/setting/kelola-ujian/DaftarPengawasTab.js",
-                    "src/setting/kelola-ujian/exportSemuaKelolaUjian.js",
-                    "src/setting/kelola-ujian/JadwalPengawasTab.js",
-                    "src/setting/kelola-ujian/kartuUjianSupabase.js",
-                    "src/setting/kelola-ujian/KartuUjianTab.js",
-                    "src/setting/kelola-ujian/laporanRekapAkhirSupabase.js",
-                    "src/setting/kelola-ujian/presensiBeritaAcaraSupabase.js",
-                    "src/setting/kelola-ujian/PresensiBeritaAcaraTab.js"
-                  ],
-                  "isOrphan": false
-                }
-              },
-              {
-                "name": "JadwalPengawasTab.js",
-                "type": "file",
-                "file": {
-                  "path": "src/setting/kelola-ujian/JadwalPengawasTab.js",
-                  "type": "other",
-                  "lines": 1159,
-                  "functions": [
-                    "labelTahunAjaran",
-                    "formatHariTanggal",
-                    "acakUrutan",
-                    "JadwalPengawasTab"
-                  ],
-                  "imports": [
-                    "src/supabaseClient.js",
-                    "src/setting/kelola-ujian/pembagianRuanganSupabase.js",
-                    "src/setting/kelola-ujian/jadwalPengawasSupabase.js",
-                    "src/setting/kelola-ujian/DaftarPengawasTab.js"
                   ],
                   "importedBy": [
                     "src/setting/kelola-ujian/JenisUjianMenuTab.js"
@@ -4937,85 +5304,17 @@
                     "JenisUjianMenuTab"
                   ],
                   "imports": [
-                    "src/setting/kelola-ujian/PembagianRuanganTab.js",
-                    "src/setting/kelola-ujian/JadwalPengawasTab.js",
-                    "src/setting/kelola-ujian/KartuUjianTab.js",
-                    "src/setting/kelola-ujian/PresensiBeritaAcaraTab.js",
-                    "src/setting/kelola-ujian/AnggaranBiayaTab.js",
-                    "src/setting/kelola-ujian/PetunjukPenggunaanTab.js",
-                    "src/setting/kelola-ujian/LaporanRekapAkhirTab.js",
+                    "src/setting/kelola-ujian/pembagian-ruangan/PembagianRuanganTab.js",
+                    "src/setting/kelola-ujian/jadwal-pengawas/JadwalPengawasTab.js",
+                    "src/setting/kelola-ujian/dokumen-cetak/KartuUjianTab.js",
+                    "src/setting/kelola-ujian/dokumen-cetak/PresensiBeritaAcaraTab.js",
+                    "src/setting/kelola-ujian/dokumen-cetak/AnggaranBiayaTab.js",
+                    "src/setting/kelola-ujian/petunjuk-penggunaan/PetunjukPenggunaanTab.js",
+                    "src/setting/kelola-ujian/dokumen-cetak/LaporanRekapAkhirTab.js",
                     "src/setting/kelola-ujian/ExportSemuaTab.js"
                   ],
                   "importedBy": [
                     "src/setting/kelola-ujian/KelolaUjianTab.js"
-                  ],
-                  "isOrphan": false
-                }
-              },
-              {
-                "name": "kartuUjianPdf.js",
-                "type": "file",
-                "file": {
-                  "path": "src/setting/kelola-ujian/kartuUjianPdf.js",
-                  "type": "other",
-                  "lines": 366,
-                  "functions": [
-                    "tulisLabelValue",
-                    "gambarSatuKartu",
-                    "generateKartuPesertaPdf",
-                    "gambarSatuKartuPengawas",
-                    "formatHariTanggalSingkat",
-                    "generateKartuPengawasPdf"
-                  ],
-                  "imports": [
-                    "src/utils/pdfExportKit.js"
-                  ],
-                  "importedBy": [
-                    "src/setting/kelola-ujian/exportSemuaKelolaUjian.js",
-                    "src/setting/kelola-ujian/KartuUjianTab.js"
-                  ],
-                  "isOrphan": false
-                }
-              },
-              {
-                "name": "kartuUjianSupabase.js",
-                "type": "file",
-                "file": {
-                  "path": "src/setting/kelola-ujian/kartuUjianSupabase.js",
-                  "type": "other",
-                  "lines": 123,
-                  "functions": [],
-                  "imports": [
-                    "src/setting/kelola-ujian/jadwalPengawasSupabase.js"
-                  ],
-                  "importedBy": [
-                    "src/setting/kelola-ujian/exportSemuaKelolaUjian.js",
-                    "src/setting/kelola-ujian/KartuUjianTab.js",
-                    "src/setting/kelola-ujian/PresensiBeritaAcaraTab.js"
-                  ],
-                  "isOrphan": false
-                }
-              },
-              {
-                "name": "KartuUjianTab.js",
-                "type": "file",
-                "file": {
-                  "path": "src/setting/kelola-ujian/KartuUjianTab.js",
-                  "type": "other",
-                  "lines": 362,
-                  "functions": [
-                    "labelTahunAjaran",
-                    "KartuUjianTab"
-                  ],
-                  "imports": [
-                    "src/supabaseClient.js",
-                    "src/setting/kelola-ujian/pembagianRuanganSupabase.js",
-                    "src/setting/kelola-ujian/jadwalPengawasSupabase.js",
-                    "src/setting/kelola-ujian/kartuUjianSupabase.js",
-                    "src/setting/kelola-ujian/kartuUjianPdf.js"
-                  ],
-                  "importedBy": [
-                    "src/setting/kelola-ujian/JenisUjianMenuTab.js"
                   ],
                   "isOrphan": false
                 }
@@ -5035,277 +5334,6 @@
                   ],
                   "importedBy": [
                     "src/setting/Setting.js"
-                  ],
-                  "isOrphan": false
-                }
-              },
-              {
-                "name": "laporanRekapAkhirPdf.js",
-                "type": "file",
-                "file": {
-                  "path": "src/setting/kelola-ujian/laporanRekapAkhirPdf.js",
-                  "type": "other",
-                  "lines": 387,
-                  "functions": [
-                    "formatRupiah",
-                    "tulisParagraf",
-                    "babBaru",
-                    "generateLaporanRekapAkhirPdf"
-                  ],
-                  "imports": [
-                    "src/utils/pdfExportKit.js"
-                  ],
-                  "importedBy": [
-                    "src/setting/kelola-ujian/exportSemuaKelolaUjian.js",
-                    "src/setting/kelola-ujian/LaporanRekapAkhirTab.js"
-                  ],
-                  "isOrphan": false
-                }
-              },
-              {
-                "name": "laporanRekapAkhirSupabase.js",
-                "type": "file",
-                "file": {
-                  "path": "src/setting/kelola-ujian/laporanRekapAkhirSupabase.js",
-                  "type": "other",
-                  "lines": 171,
-                  "functions": [],
-                  "imports": [
-                    "src/setting/kelola-ujian/pembagianRuanganSupabase.js",
-                    "src/setting/kelola-ujian/jadwalPengawasSupabase.js",
-                    "src/setting/kelola-ujian/anggaranBiayaSupabase.js"
-                  ],
-                  "importedBy": [
-                    "src/setting/kelola-ujian/exportSemuaKelolaUjian.js",
-                    "src/setting/kelola-ujian/LaporanRekapAkhirTab.js"
-                  ],
-                  "isOrphan": false
-                }
-              },
-              {
-                "name": "LaporanRekapAkhirTab.js",
-                "type": "file",
-                "file": {
-                  "path": "src/setting/kelola-ujian/LaporanRekapAkhirTab.js",
-                  "type": "other",
-                  "lines": 767,
-                  "functions": [
-                    "labelTahunAjaran",
-                    "formatRupiah",
-                    "SeksiCard",
-                    "LaporanRekapAkhirTab"
-                  ],
-                  "imports": [
-                    "src/supabaseClient.js",
-                    "src/setting/kelola-ujian/pembagianRuanganSupabase.js",
-                    "src/setting/kelola-ujian/laporanRekapAkhirSupabase.js",
-                    "src/setting/kelola-ujian/laporanRekapAkhirPdf.js"
-                  ],
-                  "importedBy": [
-                    "src/setting/kelola-ujian/JenisUjianMenuTab.js"
-                  ],
-                  "isOrphan": false
-                }
-              },
-              {
-                "name": "noPeserta.js",
-                "type": "file",
-                "file": {
-                  "path": "src/setting/kelola-ujian/noPeserta.js",
-                  "type": "other",
-                  "lines": 83,
-                  "functions": [
-                    "kodeTahunAjaran",
-                    "bangunPetaNoPeserta"
-                  ],
-                  "imports": [],
-                  "importedBy": [
-                    "src/setting/kelola-ujian/daftarPesertaExcelExport.js",
-                    "src/setting/kelola-ujian/daftarPesertaPdfExport.js",
-                    "src/setting/kelola-ujian/pembagianRuanganSupabase.js",
-                    "src/setting/kelola-ujian/PembagianRuanganTab.js"
-                  ],
-                  "isOrphan": false
-                }
-              },
-              {
-                "name": "pembagianRuanganSupabase.js",
-                "type": "file",
-                "file": {
-                  "path": "src/setting/kelola-ujian/pembagianRuanganSupabase.js",
-                  "type": "other",
-                  "lines": 241,
-                  "functions": [],
-                  "imports": [
-                    "src/setting/kelola-ujian/bagiRuangan.js",
-                    "src/services/academicYearService.js",
-                    "src/setting/kelola-ujian/noPeserta.js"
-                  ],
-                  "importedBy": [
-                    "src/setting/kelola-ujian/AnggaranBiayaTab.js",
-                    "src/setting/kelola-ujian/exportSemuaKelolaUjian.js",
-                    "src/setting/kelola-ujian/ExportSemuaTab.js",
-                    "src/setting/kelola-ujian/JadwalPengawasTab.js",
-                    "src/setting/kelola-ujian/KartuUjianTab.js",
-                    "src/setting/kelola-ujian/laporanRekapAkhirSupabase.js",
-                    "src/setting/kelola-ujian/LaporanRekapAkhirTab.js",
-                    "src/setting/kelola-ujian/PembagianRuanganTab.js",
-                    "src/setting/kelola-ujian/PresensiBeritaAcaraTab.js"
-                  ],
-                  "isOrphan": false
-                }
-              },
-              {
-                "name": "PembagianRuanganTab.js",
-                "type": "file",
-                "file": {
-                  "path": "src/setting/kelola-ujian/PembagianRuanganTab.js",
-                  "type": "other",
-                  "lines": 797,
-                  "functions": [
-                    "labelTahunAjaran",
-                    "PembagianRuanganTab"
-                  ],
-                  "imports": [
-                    "src/supabaseClient.js",
-                    "src/setting/kelola-ujian/pembagianRuanganSupabase.js",
-                    "src/setting/kelola-ujian/bagiRuangan.js",
-                    "src/setting/kelola-ujian/daftarPesertaExcelExport.js",
-                    "src/setting/kelola-ujian/daftarPesertaPdfExport.js",
-                    "src/setting/kelola-ujian/noPeserta.js"
-                  ],
-                  "importedBy": [
-                    "src/setting/kelola-ujian/JenisUjianMenuTab.js"
-                  ],
-                  "isOrphan": false
-                }
-              },
-              {
-                "name": "petunjukPenggunaanData.js",
-                "type": "file",
-                "file": {
-                  "path": "src/setting/kelola-ujian/petunjukPenggunaanData.js",
-                  "type": "other",
-                  "lines": 171,
-                  "functions": [],
-                  "imports": [],
-                  "importedBy": [
-                    "src/setting/kelola-ujian/petunjukPenggunaanPdf.js",
-                    "src/setting/kelola-ujian/PetunjukPenggunaanTab.js"
-                  ],
-                  "isOrphan": false
-                }
-              },
-              {
-                "name": "petunjukPenggunaanPdf.js",
-                "type": "file",
-                "file": {
-                  "path": "src/setting/kelola-ujian/petunjukPenggunaanPdf.js",
-                  "type": "other",
-                  "lines": 131,
-                  "functions": [
-                    "generatePetunjukPenggunaanPdf",
-                    "tinggiHalaman",
-                    "lebarHalaman",
-                    "pastikanRuang",
-                    "tulisParagraf"
-                  ],
-                  "imports": [
-                    "src/utils/pdfExportKit.js",
-                    "src/setting/kelola-ujian/petunjukPenggunaanData.js"
-                  ],
-                  "importedBy": [
-                    "src/setting/kelola-ujian/exportSemuaKelolaUjian.js",
-                    "src/setting/kelola-ujian/PetunjukPenggunaanTab.js"
-                  ],
-                  "isOrphan": false
-                }
-              },
-              {
-                "name": "PetunjukPenggunaanTab.js",
-                "type": "file",
-                "file": {
-                  "path": "src/setting/kelola-ujian/PetunjukPenggunaanTab.js",
-                  "type": "other",
-                  "lines": 174,
-                  "functions": [
-                    "PetunjukPenggunaanTab"
-                  ],
-                  "imports": [
-                    "src/setting/kelola-ujian/petunjukPenggunaanData.js",
-                    "src/setting/kelola-ujian/petunjukPenggunaanPdf.js"
-                  ],
-                  "importedBy": [
-                    "src/setting/kelola-ujian/JenisUjianMenuTab.js"
-                  ],
-                  "isOrphan": false
-                }
-              },
-              {
-                "name": "presensiBeritaAcaraPdf.js",
-                "type": "file",
-                "file": {
-                  "path": "src/setting/kelola-ujian/presensiBeritaAcaraPdf.js",
-                  "type": "other",
-                  "lines": 353,
-                  "functions": [
-                    "generateDaftarHadirPdf",
-                    "generateBeritaAcaraPdf",
-                    "formatHariTanggal",
-                    "formatWaktuJadwal",
-                    "gambarTandaTanganPengawas",
-                    "estimasiTinggiBaris",
-                    "hitungUkuranTabelDaftarHadir",
-                    "tulisBarisInfo",
-                    "tulisBarisKosong",
-                    "labelRuang"
-                  ],
-                  "imports": [
-                    "src/utils/pdfExportKit.js"
-                  ],
-                  "importedBy": [
-                    "src/setting/kelola-ujian/exportSemuaKelolaUjian.js",
-                    "src/setting/kelola-ujian/PresensiBeritaAcaraTab.js"
-                  ],
-                  "isOrphan": false
-                }
-              },
-              {
-                "name": "presensiBeritaAcaraSupabase.js",
-                "type": "file",
-                "file": {
-                  "path": "src/setting/kelola-ujian/presensiBeritaAcaraSupabase.js",
-                  "type": "other",
-                  "lines": 40,
-                  "functions": [],
-                  "imports": [
-                    "src/setting/kelola-ujian/jadwalPengawasSupabase.js"
-                  ],
-                  "importedBy": [],
-                  "isOrphan": true
-                }
-              },
-              {
-                "name": "PresensiBeritaAcaraTab.js",
-                "type": "file",
-                "file": {
-                  "path": "src/setting/kelola-ujian/PresensiBeritaAcaraTab.js",
-                  "type": "other",
-                  "lines": 362,
-                  "functions": [
-                    "labelTahunAjaran",
-                    "formatHariTanggalSingkat",
-                    "PresensiBeritaAcaraTab"
-                  ],
-                  "imports": [
-                    "src/supabaseClient.js",
-                    "src/setting/kelola-ujian/pembagianRuanganSupabase.js",
-                    "src/setting/kelola-ujian/jadwalPengawasSupabase.js",
-                    "src/setting/kelola-ujian/kartuUjianSupabase.js",
-                    "src/setting/kelola-ujian/presensiBeritaAcaraPdf.js"
-                  ],
-                  "importedBy": [
-                    "src/setting/kelola-ujian/JenisUjianMenuTab.js"
                   ],
                   "isOrphan": false
                 }
@@ -6705,7 +6733,7 @@
                 "src/pages/administrasi-tu/sppExcelExport.js",
                 "src/pages/DataExcel.js",
                 "src/pages/datasiswa-induk/DataSiswaIndukExcel.js",
-                "src/setting/kelola-ujian/daftarPesertaExcelExport.js",
+                "src/setting/kelola-ujian/pembagian-ruangan/daftarPesertaExcelExport.js",
                 "src/spmb/SpmbExcel.js",
                 "src/spmb/Statistics.js",
                 "src/utils/pdfExportKit.js"
@@ -6750,11 +6778,11 @@
                 "src/pages/administrasi-tu/sppPdfExport.js",
                 "src/pages/attendance/AttendancePDF.js",
                 "src/pages/datasiswa-induk/DataSiswaIndukPDF.js",
-                "src/setting/kelola-ujian/daftarPesertaPdfExport.js",
-                "src/setting/kelola-ujian/kartuUjianPdf.js",
-                "src/setting/kelola-ujian/laporanRekapAkhirPdf.js",
-                "src/setting/kelola-ujian/petunjukPenggunaanPdf.js",
-                "src/setting/kelola-ujian/presensiBeritaAcaraPdf.js"
+                "src/setting/kelola-ujian/dokumen-cetak/kartuUjianPdf.js",
+                "src/setting/kelola-ujian/dokumen-cetak/laporanRekapAkhirPdf.js",
+                "src/setting/kelola-ujian/dokumen-cetak/presensiBeritaAcaraPdf.js",
+                "src/setting/kelola-ujian/pembagian-ruangan/daftarPesertaPdfExport.js",
+                "src/setting/kelola-ujian/petunjuk-penggunaan/petunjukPenggunaanPdf.js"
               ],
               "isOrphan": false
             }
@@ -7054,14 +7082,14 @@
             "src/setting/feedback/FeedbackSiswaTab.js",
             "src/setting/kelola-jadwal/AdminKodeGuru.js",
             "src/setting/kelola-jadwal/useJadwalMassalLogic.js",
-            "src/setting/kelola-ujian/AnggaranBiayaTab.js",
-            "src/setting/kelola-ujian/DaftarPengawasTab.js",
+            "src/setting/kelola-ujian/dokumen-cetak/AnggaranBiayaTab.js",
+            "src/setting/kelola-ujian/dokumen-cetak/KartuUjianTab.js",
+            "src/setting/kelola-ujian/dokumen-cetak/LaporanRekapAkhirTab.js",
+            "src/setting/kelola-ujian/dokumen-cetak/PresensiBeritaAcaraTab.js",
             "src/setting/kelola-ujian/ExportSemuaTab.js",
-            "src/setting/kelola-ujian/JadwalPengawasTab.js",
-            "src/setting/kelola-ujian/KartuUjianTab.js",
-            "src/setting/kelola-ujian/LaporanRekapAkhirTab.js",
-            "src/setting/kelola-ujian/PembagianRuanganTab.js",
-            "src/setting/kelola-ujian/PresensiBeritaAcaraTab.js",
+            "src/setting/kelola-ujian/jadwal-pengawas/DaftarPengawasTab.js",
+            "src/setting/kelola-ujian/jadwal-pengawas/JadwalPengawasTab.js",
+            "src/setting/kelola-ujian/pembagian-ruangan/PembagianRuanganTab.js",
             "src/setting/portal-siswa/AkunSiswaTab.js",
             "src/setting/school-management/RiwayatMutasiTab.js",
             "src/setting/school-management/SchoolManagementTab.js",
@@ -10519,7 +10547,7 @@
         "src/setting/kelola-jadwal/AdminKodeGuru.js",
         "src/setting/kelola-jadwal/KelolaJamPelajaran.js",
         "src/setting/kelola-jadwal/useJadwalMassalLogic.js",
-        "src/setting/kelola-ujian/pembagianRuanganSupabase.js",
+        "src/setting/kelola-ujian/pembagian-ruangan/pembagianRuanganSupabase.js",
         "src/setting/school-management/SchoolManagementTab.js",
         "src/setting/school-management/SiswaLulusTab.js",
         "src/setting/school-management/TeacherAssignmentTab.js",
@@ -10935,8 +10963,8 @@
       ],
       "isOrphan": false
     },
-    "src/setting/kelola-ujian/anggaranBiayaSupabase.js": {
-      "path": "src/setting/kelola-ujian/anggaranBiayaSupabase.js",
+    "src/setting/kelola-ujian/dokumen-cetak/anggaranBiayaSupabase.js": {
+      "path": "src/setting/kelola-ujian/dokumen-cetak/anggaranBiayaSupabase.js",
       "type": "other",
       "lines": 94,
       "functions": [
@@ -10944,13 +10972,13 @@
       ],
       "imports": [],
       "importedBy": [
-        "src/setting/kelola-ujian/AnggaranBiayaTab.js",
-        "src/setting/kelola-ujian/laporanRekapAkhirSupabase.js"
+        "src/setting/kelola-ujian/dokumen-cetak/AnggaranBiayaTab.js",
+        "src/setting/kelola-ujian/dokumen-cetak/laporanRekapAkhirSupabase.js"
       ],
       "isOrphan": false
     },
-    "src/setting/kelola-ujian/AnggaranBiayaTab.js": {
-      "path": "src/setting/kelola-ujian/AnggaranBiayaTab.js",
+    "src/setting/kelola-ujian/dokumen-cetak/AnggaranBiayaTab.js": {
+      "path": "src/setting/kelola-ujian/dokumen-cetak/AnggaranBiayaTab.js",
       "type": "other",
       "lines": 471,
       "functions": [
@@ -10960,188 +10988,16 @@
       ],
       "imports": [
         "src/supabaseClient.js",
-        "src/setting/kelola-ujian/pembagianRuanganSupabase.js",
-        "src/setting/kelola-ujian/anggaranBiayaSupabase.js"
+        "src/setting/kelola-ujian/pembagian-ruangan/pembagianRuanganSupabase.js",
+        "src/setting/kelola-ujian/dokumen-cetak/anggaranBiayaSupabase.js"
       ],
       "importedBy": [
         "src/setting/kelola-ujian/JenisUjianMenuTab.js"
       ],
       "isOrphan": false
     },
-    "src/setting/kelola-ujian/bagiRuangan.js": {
-      "path": "src/setting/kelola-ujian/bagiRuangan.js",
-      "type": "other",
-      "lines": 197,
-      "functions": [
-        "bagiRuangan",
-        "terapkanQuotaManual",
-        "hitungTotalPerKelas"
-      ],
-      "imports": [],
-      "importedBy": [
-        "src/setting/kelola-ujian/pembagianRuanganSupabase.js",
-        "src/setting/kelola-ujian/PembagianRuanganTab.js"
-      ],
-      "isOrphan": false
-    },
-    "src/setting/kelola-ujian/DaftarPengawasTab.js": {
-      "path": "src/setting/kelola-ujian/DaftarPengawasTab.js",
-      "type": "other",
-      "lines": 425,
-      "functions": [
-        "DaftarPengawasTab"
-      ],
-      "imports": [
-        "src/supabaseClient.js",
-        "src/setting/kelola-ujian/jadwalPengawasSupabase.js"
-      ],
-      "importedBy": [
-        "src/setting/kelola-ujian/JadwalPengawasTab.js"
-      ],
-      "isOrphan": false
-    },
-    "src/setting/kelola-ujian/daftarPesertaExcelExport.js": {
-      "path": "src/setting/kelola-ujian/daftarPesertaExcelExport.js",
-      "type": "other",
-      "lines": 157,
-      "functions": [
-        "labelRuang"
-      ],
-      "imports": [
-        "src/utils/excelExportKit.js",
-        "src/setting/kelola-ujian/noPeserta.js"
-      ],
-      "importedBy": [
-        "src/setting/kelola-ujian/PembagianRuanganTab.js"
-      ],
-      "isOrphan": false
-    },
-    "src/setting/kelola-ujian/daftarPesertaPdfExport.js": {
-      "path": "src/setting/kelola-ujian/daftarPesertaPdfExport.js",
-      "type": "other",
-      "lines": 212,
-      "functions": [
-        "estimasiTinggiBaris",
-        "hitungUkuranTabelMuatSatuHalaman",
-        "labelRuang"
-      ],
-      "imports": [
-        "src/utils/pdfExportKit.js",
-        "src/setting/kelola-ujian/noPeserta.js"
-      ],
-      "importedBy": [
-        "src/setting/kelola-ujian/exportSemuaKelolaUjian.js",
-        "src/setting/kelola-ujian/PembagianRuanganTab.js"
-      ],
-      "isOrphan": false
-    },
-    "src/setting/kelola-ujian/exportSemuaKelolaUjian.js": {
-      "path": "src/setting/kelola-ujian/exportSemuaKelolaUjian.js",
-      "type": "other",
-      "lines": 287,
-      "functions": [
-        "tunda"
-      ],
-      "imports": [
-        "src/setting/kelola-ujian/pembagianRuanganSupabase.js",
-        "src/setting/kelola-ujian/jadwalPengawasSupabase.js",
-        "src/setting/kelola-ujian/kartuUjianSupabase.js",
-        "src/setting/kelola-ujian/laporanRekapAkhirSupabase.js",
-        "src/setting/kelola-ujian/daftarPesertaPdfExport.js",
-        "src/setting/kelola-ujian/kartuUjianPdf.js",
-        "src/setting/kelola-ujian/presensiBeritaAcaraPdf.js",
-        "src/setting/kelola-ujian/laporanRekapAkhirPdf.js",
-        "src/setting/kelola-ujian/petunjukPenggunaanPdf.js"
-      ],
-      "importedBy": [
-        "src/setting/kelola-ujian/ExportSemuaTab.js"
-      ],
-      "isOrphan": false
-    },
-    "src/setting/kelola-ujian/ExportSemuaTab.js": {
-      "path": "src/setting/kelola-ujian/ExportSemuaTab.js",
-      "type": "other",
-      "lines": 323,
-      "functions": [
-        "labelTahunAjaran",
-        "ExportSemuaTab"
-      ],
-      "imports": [
-        "src/supabaseClient.js",
-        "src/setting/kelola-ujian/pembagianRuanganSupabase.js",
-        "src/setting/kelola-ujian/exportSemuaKelolaUjian.js"
-      ],
-      "importedBy": [
-        "src/setting/kelola-ujian/JenisUjianMenuTab.js"
-      ],
-      "isOrphan": false
-    },
-    "src/setting/kelola-ujian/jadwalPengawasSupabase.js": {
-      "path": "src/setting/kelola-ujian/jadwalPengawasSupabase.js",
-      "type": "other",
-      "lines": 368,
-      "functions": [
-        "sarankanKodeDariTeacherId",
-        "kelompokkanJadwalPerHari"
-      ],
-      "imports": [],
-      "importedBy": [
-        "src/setting/kelola-ujian/DaftarPengawasTab.js",
-        "src/setting/kelola-ujian/exportSemuaKelolaUjian.js",
-        "src/setting/kelola-ujian/JadwalPengawasTab.js",
-        "src/setting/kelola-ujian/kartuUjianSupabase.js",
-        "src/setting/kelola-ujian/KartuUjianTab.js",
-        "src/setting/kelola-ujian/laporanRekapAkhirSupabase.js",
-        "src/setting/kelola-ujian/presensiBeritaAcaraSupabase.js",
-        "src/setting/kelola-ujian/PresensiBeritaAcaraTab.js"
-      ],
-      "isOrphan": false
-    },
-    "src/setting/kelola-ujian/JadwalPengawasTab.js": {
-      "path": "src/setting/kelola-ujian/JadwalPengawasTab.js",
-      "type": "other",
-      "lines": 1159,
-      "functions": [
-        "labelTahunAjaran",
-        "formatHariTanggal",
-        "acakUrutan",
-        "JadwalPengawasTab"
-      ],
-      "imports": [
-        "src/supabaseClient.js",
-        "src/setting/kelola-ujian/pembagianRuanganSupabase.js",
-        "src/setting/kelola-ujian/jadwalPengawasSupabase.js",
-        "src/setting/kelola-ujian/DaftarPengawasTab.js"
-      ],
-      "importedBy": [
-        "src/setting/kelola-ujian/JenisUjianMenuTab.js"
-      ],
-      "isOrphan": false
-    },
-    "src/setting/kelola-ujian/JenisUjianMenuTab.js": {
-      "path": "src/setting/kelola-ujian/JenisUjianMenuTab.js",
-      "type": "other",
-      "lines": 293,
-      "functions": [
-        "JenisUjianMenuTab"
-      ],
-      "imports": [
-        "src/setting/kelola-ujian/PembagianRuanganTab.js",
-        "src/setting/kelola-ujian/JadwalPengawasTab.js",
-        "src/setting/kelola-ujian/KartuUjianTab.js",
-        "src/setting/kelola-ujian/PresensiBeritaAcaraTab.js",
-        "src/setting/kelola-ujian/AnggaranBiayaTab.js",
-        "src/setting/kelola-ujian/PetunjukPenggunaanTab.js",
-        "src/setting/kelola-ujian/LaporanRekapAkhirTab.js",
-        "src/setting/kelola-ujian/ExportSemuaTab.js"
-      ],
-      "importedBy": [
-        "src/setting/kelola-ujian/KelolaUjianTab.js"
-      ],
-      "isOrphan": false
-    },
-    "src/setting/kelola-ujian/kartuUjianPdf.js": {
-      "path": "src/setting/kelola-ujian/kartuUjianPdf.js",
+    "src/setting/kelola-ujian/dokumen-cetak/kartuUjianPdf.js": {
+      "path": "src/setting/kelola-ujian/dokumen-cetak/kartuUjianPdf.js",
       "type": "other",
       "lines": 366,
       "functions": [
@@ -11156,28 +11012,28 @@
         "src/utils/pdfExportKit.js"
       ],
       "importedBy": [
-        "src/setting/kelola-ujian/exportSemuaKelolaUjian.js",
-        "src/setting/kelola-ujian/KartuUjianTab.js"
+        "src/setting/kelola-ujian/dokumen-cetak/KartuUjianTab.js",
+        "src/setting/kelola-ujian/exportSemuaKelolaUjian.js"
       ],
       "isOrphan": false
     },
-    "src/setting/kelola-ujian/kartuUjianSupabase.js": {
-      "path": "src/setting/kelola-ujian/kartuUjianSupabase.js",
+    "src/setting/kelola-ujian/dokumen-cetak/kartuUjianSupabase.js": {
+      "path": "src/setting/kelola-ujian/dokumen-cetak/kartuUjianSupabase.js",
       "type": "other",
       "lines": 123,
       "functions": [],
       "imports": [
-        "src/setting/kelola-ujian/jadwalPengawasSupabase.js"
+        "src/setting/kelola-ujian/jadwal-pengawas/jadwalPengawasSupabase.js"
       ],
       "importedBy": [
-        "src/setting/kelola-ujian/exportSemuaKelolaUjian.js",
-        "src/setting/kelola-ujian/KartuUjianTab.js",
-        "src/setting/kelola-ujian/PresensiBeritaAcaraTab.js"
+        "src/setting/kelola-ujian/dokumen-cetak/KartuUjianTab.js",
+        "src/setting/kelola-ujian/dokumen-cetak/PresensiBeritaAcaraTab.js",
+        "src/setting/kelola-ujian/exportSemuaKelolaUjian.js"
       ],
       "isOrphan": false
     },
-    "src/setting/kelola-ujian/KartuUjianTab.js": {
-      "path": "src/setting/kelola-ujian/KartuUjianTab.js",
+    "src/setting/kelola-ujian/dokumen-cetak/KartuUjianTab.js": {
+      "path": "src/setting/kelola-ujian/dokumen-cetak/KartuUjianTab.js",
       "type": "other",
       "lines": 362,
       "functions": [
@@ -11186,33 +11042,18 @@
       ],
       "imports": [
         "src/supabaseClient.js",
-        "src/setting/kelola-ujian/pembagianRuanganSupabase.js",
-        "src/setting/kelola-ujian/jadwalPengawasSupabase.js",
-        "src/setting/kelola-ujian/kartuUjianSupabase.js",
-        "src/setting/kelola-ujian/kartuUjianPdf.js"
+        "src/setting/kelola-ujian/pembagian-ruangan/pembagianRuanganSupabase.js",
+        "src/setting/kelola-ujian/jadwal-pengawas/jadwalPengawasSupabase.js",
+        "src/setting/kelola-ujian/dokumen-cetak/kartuUjianSupabase.js",
+        "src/setting/kelola-ujian/dokumen-cetak/kartuUjianPdf.js"
       ],
       "importedBy": [
         "src/setting/kelola-ujian/JenisUjianMenuTab.js"
       ],
       "isOrphan": false
     },
-    "src/setting/kelola-ujian/KelolaUjianTab.js": {
-      "path": "src/setting/kelola-ujian/KelolaUjianTab.js",
-      "type": "other",
-      "lines": 99,
-      "functions": [
-        "KelolaUjianTab"
-      ],
-      "imports": [
-        "src/setting/kelola-ujian/JenisUjianMenuTab.js"
-      ],
-      "importedBy": [
-        "src/setting/Setting.js"
-      ],
-      "isOrphan": false
-    },
-    "src/setting/kelola-ujian/laporanRekapAkhirPdf.js": {
-      "path": "src/setting/kelola-ujian/laporanRekapAkhirPdf.js",
+    "src/setting/kelola-ujian/dokumen-cetak/laporanRekapAkhirPdf.js": {
+      "path": "src/setting/kelola-ujian/dokumen-cetak/laporanRekapAkhirPdf.js",
       "type": "other",
       "lines": 387,
       "functions": [
@@ -11225,29 +11066,29 @@
         "src/utils/pdfExportKit.js"
       ],
       "importedBy": [
-        "src/setting/kelola-ujian/exportSemuaKelolaUjian.js",
-        "src/setting/kelola-ujian/LaporanRekapAkhirTab.js"
+        "src/setting/kelola-ujian/dokumen-cetak/LaporanRekapAkhirTab.js",
+        "src/setting/kelola-ujian/exportSemuaKelolaUjian.js"
       ],
       "isOrphan": false
     },
-    "src/setting/kelola-ujian/laporanRekapAkhirSupabase.js": {
-      "path": "src/setting/kelola-ujian/laporanRekapAkhirSupabase.js",
+    "src/setting/kelola-ujian/dokumen-cetak/laporanRekapAkhirSupabase.js": {
+      "path": "src/setting/kelola-ujian/dokumen-cetak/laporanRekapAkhirSupabase.js",
       "type": "other",
       "lines": 171,
       "functions": [],
       "imports": [
-        "src/setting/kelola-ujian/pembagianRuanganSupabase.js",
-        "src/setting/kelola-ujian/jadwalPengawasSupabase.js",
-        "src/setting/kelola-ujian/anggaranBiayaSupabase.js"
+        "src/setting/kelola-ujian/pembagian-ruangan/pembagianRuanganSupabase.js",
+        "src/setting/kelola-ujian/jadwal-pengawas/jadwalPengawasSupabase.js",
+        "src/setting/kelola-ujian/dokumen-cetak/anggaranBiayaSupabase.js"
       ],
       "importedBy": [
-        "src/setting/kelola-ujian/exportSemuaKelolaUjian.js",
-        "src/setting/kelola-ujian/LaporanRekapAkhirTab.js"
+        "src/setting/kelola-ujian/dokumen-cetak/LaporanRekapAkhirTab.js",
+        "src/setting/kelola-ujian/exportSemuaKelolaUjian.js"
       ],
       "isOrphan": false
     },
-    "src/setting/kelola-ujian/LaporanRekapAkhirTab.js": {
-      "path": "src/setting/kelola-ujian/LaporanRekapAkhirTab.js",
+    "src/setting/kelola-ujian/dokumen-cetak/LaporanRekapAkhirTab.js": {
+      "path": "src/setting/kelola-ujian/dokumen-cetak/LaporanRekapAkhirTab.js",
       "type": "other",
       "lines": 767,
       "functions": [
@@ -11258,127 +11099,17 @@
       ],
       "imports": [
         "src/supabaseClient.js",
-        "src/setting/kelola-ujian/pembagianRuanganSupabase.js",
-        "src/setting/kelola-ujian/laporanRekapAkhirSupabase.js",
-        "src/setting/kelola-ujian/laporanRekapAkhirPdf.js"
+        "src/setting/kelola-ujian/pembagian-ruangan/pembagianRuanganSupabase.js",
+        "src/setting/kelola-ujian/dokumen-cetak/laporanRekapAkhirSupabase.js",
+        "src/setting/kelola-ujian/dokumen-cetak/laporanRekapAkhirPdf.js"
       ],
       "importedBy": [
         "src/setting/kelola-ujian/JenisUjianMenuTab.js"
       ],
       "isOrphan": false
     },
-    "src/setting/kelola-ujian/noPeserta.js": {
-      "path": "src/setting/kelola-ujian/noPeserta.js",
-      "type": "other",
-      "lines": 83,
-      "functions": [
-        "kodeTahunAjaran",
-        "bangunPetaNoPeserta"
-      ],
-      "imports": [],
-      "importedBy": [
-        "src/setting/kelola-ujian/daftarPesertaExcelExport.js",
-        "src/setting/kelola-ujian/daftarPesertaPdfExport.js",
-        "src/setting/kelola-ujian/pembagianRuanganSupabase.js",
-        "src/setting/kelola-ujian/PembagianRuanganTab.js"
-      ],
-      "isOrphan": false
-    },
-    "src/setting/kelola-ujian/pembagianRuanganSupabase.js": {
-      "path": "src/setting/kelola-ujian/pembagianRuanganSupabase.js",
-      "type": "other",
-      "lines": 241,
-      "functions": [],
-      "imports": [
-        "src/setting/kelola-ujian/bagiRuangan.js",
-        "src/services/academicYearService.js",
-        "src/setting/kelola-ujian/noPeserta.js"
-      ],
-      "importedBy": [
-        "src/setting/kelola-ujian/AnggaranBiayaTab.js",
-        "src/setting/kelola-ujian/exportSemuaKelolaUjian.js",
-        "src/setting/kelola-ujian/ExportSemuaTab.js",
-        "src/setting/kelola-ujian/JadwalPengawasTab.js",
-        "src/setting/kelola-ujian/KartuUjianTab.js",
-        "src/setting/kelola-ujian/laporanRekapAkhirSupabase.js",
-        "src/setting/kelola-ujian/LaporanRekapAkhirTab.js",
-        "src/setting/kelola-ujian/PembagianRuanganTab.js",
-        "src/setting/kelola-ujian/PresensiBeritaAcaraTab.js"
-      ],
-      "isOrphan": false
-    },
-    "src/setting/kelola-ujian/PembagianRuanganTab.js": {
-      "path": "src/setting/kelola-ujian/PembagianRuanganTab.js",
-      "type": "other",
-      "lines": 797,
-      "functions": [
-        "labelTahunAjaran",
-        "PembagianRuanganTab"
-      ],
-      "imports": [
-        "src/supabaseClient.js",
-        "src/setting/kelola-ujian/pembagianRuanganSupabase.js",
-        "src/setting/kelola-ujian/bagiRuangan.js",
-        "src/setting/kelola-ujian/daftarPesertaExcelExport.js",
-        "src/setting/kelola-ujian/daftarPesertaPdfExport.js",
-        "src/setting/kelola-ujian/noPeserta.js"
-      ],
-      "importedBy": [
-        "src/setting/kelola-ujian/JenisUjianMenuTab.js"
-      ],
-      "isOrphan": false
-    },
-    "src/setting/kelola-ujian/petunjukPenggunaanData.js": {
-      "path": "src/setting/kelola-ujian/petunjukPenggunaanData.js",
-      "type": "other",
-      "lines": 171,
-      "functions": [],
-      "imports": [],
-      "importedBy": [
-        "src/setting/kelola-ujian/petunjukPenggunaanPdf.js",
-        "src/setting/kelola-ujian/PetunjukPenggunaanTab.js"
-      ],
-      "isOrphan": false
-    },
-    "src/setting/kelola-ujian/petunjukPenggunaanPdf.js": {
-      "path": "src/setting/kelola-ujian/petunjukPenggunaanPdf.js",
-      "type": "other",
-      "lines": 131,
-      "functions": [
-        "generatePetunjukPenggunaanPdf",
-        "tinggiHalaman",
-        "lebarHalaman",
-        "pastikanRuang",
-        "tulisParagraf"
-      ],
-      "imports": [
-        "src/utils/pdfExportKit.js",
-        "src/setting/kelola-ujian/petunjukPenggunaanData.js"
-      ],
-      "importedBy": [
-        "src/setting/kelola-ujian/exportSemuaKelolaUjian.js",
-        "src/setting/kelola-ujian/PetunjukPenggunaanTab.js"
-      ],
-      "isOrphan": false
-    },
-    "src/setting/kelola-ujian/PetunjukPenggunaanTab.js": {
-      "path": "src/setting/kelola-ujian/PetunjukPenggunaanTab.js",
-      "type": "other",
-      "lines": 174,
-      "functions": [
-        "PetunjukPenggunaanTab"
-      ],
-      "imports": [
-        "src/setting/kelola-ujian/petunjukPenggunaanData.js",
-        "src/setting/kelola-ujian/petunjukPenggunaanPdf.js"
-      ],
-      "importedBy": [
-        "src/setting/kelola-ujian/JenisUjianMenuTab.js"
-      ],
-      "isOrphan": false
-    },
-    "src/setting/kelola-ujian/presensiBeritaAcaraPdf.js": {
-      "path": "src/setting/kelola-ujian/presensiBeritaAcaraPdf.js",
+    "src/setting/kelola-ujian/dokumen-cetak/presensiBeritaAcaraPdf.js": {
+      "path": "src/setting/kelola-ujian/dokumen-cetak/presensiBeritaAcaraPdf.js",
       "type": "other",
       "lines": 353,
       "functions": [
@@ -11397,24 +11128,24 @@
         "src/utils/pdfExportKit.js"
       ],
       "importedBy": [
-        "src/setting/kelola-ujian/exportSemuaKelolaUjian.js",
-        "src/setting/kelola-ujian/PresensiBeritaAcaraTab.js"
+        "src/setting/kelola-ujian/dokumen-cetak/PresensiBeritaAcaraTab.js",
+        "src/setting/kelola-ujian/exportSemuaKelolaUjian.js"
       ],
       "isOrphan": false
     },
-    "src/setting/kelola-ujian/presensiBeritaAcaraSupabase.js": {
-      "path": "src/setting/kelola-ujian/presensiBeritaAcaraSupabase.js",
+    "src/setting/kelola-ujian/dokumen-cetak/presensiBeritaAcaraSupabase.js": {
+      "path": "src/setting/kelola-ujian/dokumen-cetak/presensiBeritaAcaraSupabase.js",
       "type": "other",
       "lines": 40,
       "functions": [],
       "imports": [
-        "src/setting/kelola-ujian/jadwalPengawasSupabase.js"
+        "src/setting/kelola-ujian/jadwal-pengawas/jadwalPengawasSupabase.js"
       ],
       "importedBy": [],
       "isOrphan": true
     },
-    "src/setting/kelola-ujian/PresensiBeritaAcaraTab.js": {
-      "path": "src/setting/kelola-ujian/PresensiBeritaAcaraTab.js",
+    "src/setting/kelola-ujian/dokumen-cetak/PresensiBeritaAcaraTab.js": {
+      "path": "src/setting/kelola-ujian/dokumen-cetak/PresensiBeritaAcaraTab.js",
       "type": "other",
       "lines": 362,
       "functions": [
@@ -11424,10 +11155,307 @@
       ],
       "imports": [
         "src/supabaseClient.js",
-        "src/setting/kelola-ujian/pembagianRuanganSupabase.js",
-        "src/setting/kelola-ujian/jadwalPengawasSupabase.js",
-        "src/setting/kelola-ujian/kartuUjianSupabase.js",
-        "src/setting/kelola-ujian/presensiBeritaAcaraPdf.js"
+        "src/setting/kelola-ujian/pembagian-ruangan/pembagianRuanganSupabase.js",
+        "src/setting/kelola-ujian/jadwal-pengawas/jadwalPengawasSupabase.js",
+        "src/setting/kelola-ujian/dokumen-cetak/kartuUjianSupabase.js",
+        "src/setting/kelola-ujian/dokumen-cetak/presensiBeritaAcaraPdf.js"
+      ],
+      "importedBy": [
+        "src/setting/kelola-ujian/JenisUjianMenuTab.js"
+      ],
+      "isOrphan": false
+    },
+    "src/setting/kelola-ujian/exportSemuaKelolaUjian.js": {
+      "path": "src/setting/kelola-ujian/exportSemuaKelolaUjian.js",
+      "type": "other",
+      "lines": 287,
+      "functions": [
+        "tunda"
+      ],
+      "imports": [
+        "src/setting/kelola-ujian/pembagian-ruangan/pembagianRuanganSupabase.js",
+        "src/setting/kelola-ujian/jadwal-pengawas/jadwalPengawasSupabase.js",
+        "src/setting/kelola-ujian/dokumen-cetak/kartuUjianSupabase.js",
+        "src/setting/kelola-ujian/dokumen-cetak/laporanRekapAkhirSupabase.js",
+        "src/setting/kelola-ujian/pembagian-ruangan/daftarPesertaPdfExport.js",
+        "src/setting/kelola-ujian/dokumen-cetak/kartuUjianPdf.js",
+        "src/setting/kelola-ujian/dokumen-cetak/presensiBeritaAcaraPdf.js",
+        "src/setting/kelola-ujian/dokumen-cetak/laporanRekapAkhirPdf.js",
+        "src/setting/kelola-ujian/petunjuk-penggunaan/petunjukPenggunaanPdf.js"
+      ],
+      "importedBy": [
+        "src/setting/kelola-ujian/ExportSemuaTab.js"
+      ],
+      "isOrphan": false
+    },
+    "src/setting/kelola-ujian/ExportSemuaTab.js": {
+      "path": "src/setting/kelola-ujian/ExportSemuaTab.js",
+      "type": "other",
+      "lines": 323,
+      "functions": [
+        "labelTahunAjaran",
+        "ExportSemuaTab"
+      ],
+      "imports": [
+        "src/supabaseClient.js",
+        "src/setting/kelola-ujian/pembagian-ruangan/pembagianRuanganSupabase.js",
+        "src/setting/kelola-ujian/exportSemuaKelolaUjian.js"
+      ],
+      "importedBy": [
+        "src/setting/kelola-ujian/JenisUjianMenuTab.js"
+      ],
+      "isOrphan": false
+    },
+    "src/setting/kelola-ujian/jadwal-pengawas/DaftarPengawasTab.js": {
+      "path": "src/setting/kelola-ujian/jadwal-pengawas/DaftarPengawasTab.js",
+      "type": "other",
+      "lines": 425,
+      "functions": [
+        "DaftarPengawasTab"
+      ],
+      "imports": [
+        "src/supabaseClient.js",
+        "src/setting/kelola-ujian/jadwal-pengawas/jadwalPengawasSupabase.js"
+      ],
+      "importedBy": [
+        "src/setting/kelola-ujian/jadwal-pengawas/JadwalPengawasTab.js"
+      ],
+      "isOrphan": false
+    },
+    "src/setting/kelola-ujian/jadwal-pengawas/jadwalPengawasSupabase.js": {
+      "path": "src/setting/kelola-ujian/jadwal-pengawas/jadwalPengawasSupabase.js",
+      "type": "other",
+      "lines": 368,
+      "functions": [
+        "sarankanKodeDariTeacherId",
+        "kelompokkanJadwalPerHari"
+      ],
+      "imports": [],
+      "importedBy": [
+        "src/setting/kelola-ujian/dokumen-cetak/kartuUjianSupabase.js",
+        "src/setting/kelola-ujian/dokumen-cetak/KartuUjianTab.js",
+        "src/setting/kelola-ujian/dokumen-cetak/laporanRekapAkhirSupabase.js",
+        "src/setting/kelola-ujian/dokumen-cetak/presensiBeritaAcaraSupabase.js",
+        "src/setting/kelola-ujian/dokumen-cetak/PresensiBeritaAcaraTab.js",
+        "src/setting/kelola-ujian/exportSemuaKelolaUjian.js",
+        "src/setting/kelola-ujian/jadwal-pengawas/DaftarPengawasTab.js",
+        "src/setting/kelola-ujian/jadwal-pengawas/JadwalPengawasTab.js"
+      ],
+      "isOrphan": false
+    },
+    "src/setting/kelola-ujian/jadwal-pengawas/JadwalPengawasTab.js": {
+      "path": "src/setting/kelola-ujian/jadwal-pengawas/JadwalPengawasTab.js",
+      "type": "other",
+      "lines": 1159,
+      "functions": [
+        "labelTahunAjaran",
+        "formatHariTanggal",
+        "acakUrutan",
+        "JadwalPengawasTab"
+      ],
+      "imports": [
+        "src/supabaseClient.js",
+        "src/setting/kelola-ujian/pembagian-ruangan/pembagianRuanganSupabase.js",
+        "src/setting/kelola-ujian/jadwal-pengawas/jadwalPengawasSupabase.js",
+        "src/setting/kelola-ujian/jadwal-pengawas/DaftarPengawasTab.js"
+      ],
+      "importedBy": [
+        "src/setting/kelola-ujian/JenisUjianMenuTab.js"
+      ],
+      "isOrphan": false
+    },
+    "src/setting/kelola-ujian/JenisUjianMenuTab.js": {
+      "path": "src/setting/kelola-ujian/JenisUjianMenuTab.js",
+      "type": "other",
+      "lines": 293,
+      "functions": [
+        "JenisUjianMenuTab"
+      ],
+      "imports": [
+        "src/setting/kelola-ujian/pembagian-ruangan/PembagianRuanganTab.js",
+        "src/setting/kelola-ujian/jadwal-pengawas/JadwalPengawasTab.js",
+        "src/setting/kelola-ujian/dokumen-cetak/KartuUjianTab.js",
+        "src/setting/kelola-ujian/dokumen-cetak/PresensiBeritaAcaraTab.js",
+        "src/setting/kelola-ujian/dokumen-cetak/AnggaranBiayaTab.js",
+        "src/setting/kelola-ujian/petunjuk-penggunaan/PetunjukPenggunaanTab.js",
+        "src/setting/kelola-ujian/dokumen-cetak/LaporanRekapAkhirTab.js",
+        "src/setting/kelola-ujian/ExportSemuaTab.js"
+      ],
+      "importedBy": [
+        "src/setting/kelola-ujian/KelolaUjianTab.js"
+      ],
+      "isOrphan": false
+    },
+    "src/setting/kelola-ujian/KelolaUjianTab.js": {
+      "path": "src/setting/kelola-ujian/KelolaUjianTab.js",
+      "type": "other",
+      "lines": 99,
+      "functions": [
+        "KelolaUjianTab"
+      ],
+      "imports": [
+        "src/setting/kelola-ujian/JenisUjianMenuTab.js"
+      ],
+      "importedBy": [
+        "src/setting/Setting.js"
+      ],
+      "isOrphan": false
+    },
+    "src/setting/kelola-ujian/pembagian-ruangan/bagiRuangan.js": {
+      "path": "src/setting/kelola-ujian/pembagian-ruangan/bagiRuangan.js",
+      "type": "other",
+      "lines": 197,
+      "functions": [
+        "bagiRuangan",
+        "terapkanQuotaManual",
+        "hitungTotalPerKelas"
+      ],
+      "imports": [],
+      "importedBy": [
+        "src/setting/kelola-ujian/pembagian-ruangan/pembagianRuanganSupabase.js",
+        "src/setting/kelola-ujian/pembagian-ruangan/PembagianRuanganTab.js"
+      ],
+      "isOrphan": false
+    },
+    "src/setting/kelola-ujian/pembagian-ruangan/daftarPesertaExcelExport.js": {
+      "path": "src/setting/kelola-ujian/pembagian-ruangan/daftarPesertaExcelExport.js",
+      "type": "other",
+      "lines": 157,
+      "functions": [
+        "labelRuang"
+      ],
+      "imports": [
+        "src/utils/excelExportKit.js",
+        "src/setting/kelola-ujian/pembagian-ruangan/noPeserta.js"
+      ],
+      "importedBy": [
+        "src/setting/kelola-ujian/pembagian-ruangan/PembagianRuanganTab.js"
+      ],
+      "isOrphan": false
+    },
+    "src/setting/kelola-ujian/pembagian-ruangan/daftarPesertaPdfExport.js": {
+      "path": "src/setting/kelola-ujian/pembagian-ruangan/daftarPesertaPdfExport.js",
+      "type": "other",
+      "lines": 212,
+      "functions": [
+        "estimasiTinggiBaris",
+        "hitungUkuranTabelMuatSatuHalaman",
+        "labelRuang"
+      ],
+      "imports": [
+        "src/utils/pdfExportKit.js",
+        "src/setting/kelola-ujian/pembagian-ruangan/noPeserta.js"
+      ],
+      "importedBy": [
+        "src/setting/kelola-ujian/exportSemuaKelolaUjian.js",
+        "src/setting/kelola-ujian/pembagian-ruangan/PembagianRuanganTab.js"
+      ],
+      "isOrphan": false
+    },
+    "src/setting/kelola-ujian/pembagian-ruangan/noPeserta.js": {
+      "path": "src/setting/kelola-ujian/pembagian-ruangan/noPeserta.js",
+      "type": "other",
+      "lines": 83,
+      "functions": [
+        "kodeTahunAjaran",
+        "bangunPetaNoPeserta"
+      ],
+      "imports": [],
+      "importedBy": [
+        "src/setting/kelola-ujian/pembagian-ruangan/daftarPesertaExcelExport.js",
+        "src/setting/kelola-ujian/pembagian-ruangan/daftarPesertaPdfExport.js",
+        "src/setting/kelola-ujian/pembagian-ruangan/pembagianRuanganSupabase.js",
+        "src/setting/kelola-ujian/pembagian-ruangan/PembagianRuanganTab.js"
+      ],
+      "isOrphan": false
+    },
+    "src/setting/kelola-ujian/pembagian-ruangan/pembagianRuanganSupabase.js": {
+      "path": "src/setting/kelola-ujian/pembagian-ruangan/pembagianRuanganSupabase.js",
+      "type": "other",
+      "lines": 241,
+      "functions": [],
+      "imports": [
+        "src/setting/kelola-ujian/pembagian-ruangan/bagiRuangan.js",
+        "src/services/academicYearService.js",
+        "src/setting/kelola-ujian/pembagian-ruangan/noPeserta.js"
+      ],
+      "importedBy": [
+        "src/setting/kelola-ujian/dokumen-cetak/AnggaranBiayaTab.js",
+        "src/setting/kelola-ujian/dokumen-cetak/KartuUjianTab.js",
+        "src/setting/kelola-ujian/dokumen-cetak/laporanRekapAkhirSupabase.js",
+        "src/setting/kelola-ujian/dokumen-cetak/LaporanRekapAkhirTab.js",
+        "src/setting/kelola-ujian/dokumen-cetak/PresensiBeritaAcaraTab.js",
+        "src/setting/kelola-ujian/exportSemuaKelolaUjian.js",
+        "src/setting/kelola-ujian/ExportSemuaTab.js",
+        "src/setting/kelola-ujian/jadwal-pengawas/JadwalPengawasTab.js",
+        "src/setting/kelola-ujian/pembagian-ruangan/PembagianRuanganTab.js"
+      ],
+      "isOrphan": false
+    },
+    "src/setting/kelola-ujian/pembagian-ruangan/PembagianRuanganTab.js": {
+      "path": "src/setting/kelola-ujian/pembagian-ruangan/PembagianRuanganTab.js",
+      "type": "other",
+      "lines": 797,
+      "functions": [
+        "labelTahunAjaran",
+        "PembagianRuanganTab"
+      ],
+      "imports": [
+        "src/supabaseClient.js",
+        "src/setting/kelola-ujian/pembagian-ruangan/pembagianRuanganSupabase.js",
+        "src/setting/kelola-ujian/pembagian-ruangan/bagiRuangan.js",
+        "src/setting/kelola-ujian/pembagian-ruangan/daftarPesertaExcelExport.js",
+        "src/setting/kelola-ujian/pembagian-ruangan/daftarPesertaPdfExport.js",
+        "src/setting/kelola-ujian/pembagian-ruangan/noPeserta.js"
+      ],
+      "importedBy": [
+        "src/setting/kelola-ujian/JenisUjianMenuTab.js"
+      ],
+      "isOrphan": false
+    },
+    "src/setting/kelola-ujian/petunjuk-penggunaan/petunjukPenggunaanData.js": {
+      "path": "src/setting/kelola-ujian/petunjuk-penggunaan/petunjukPenggunaanData.js",
+      "type": "other",
+      "lines": 171,
+      "functions": [],
+      "imports": [],
+      "importedBy": [
+        "src/setting/kelola-ujian/petunjuk-penggunaan/petunjukPenggunaanPdf.js",
+        "src/setting/kelola-ujian/petunjuk-penggunaan/PetunjukPenggunaanTab.js"
+      ],
+      "isOrphan": false
+    },
+    "src/setting/kelola-ujian/petunjuk-penggunaan/petunjukPenggunaanPdf.js": {
+      "path": "src/setting/kelola-ujian/petunjuk-penggunaan/petunjukPenggunaanPdf.js",
+      "type": "other",
+      "lines": 131,
+      "functions": [
+        "generatePetunjukPenggunaanPdf",
+        "tinggiHalaman",
+        "lebarHalaman",
+        "pastikanRuang",
+        "tulisParagraf"
+      ],
+      "imports": [
+        "src/utils/pdfExportKit.js",
+        "src/setting/kelola-ujian/petunjuk-penggunaan/petunjukPenggunaanData.js"
+      ],
+      "importedBy": [
+        "src/setting/kelola-ujian/exportSemuaKelolaUjian.js",
+        "src/setting/kelola-ujian/petunjuk-penggunaan/PetunjukPenggunaanTab.js"
+      ],
+      "isOrphan": false
+    },
+    "src/setting/kelola-ujian/petunjuk-penggunaan/PetunjukPenggunaanTab.js": {
+      "path": "src/setting/kelola-ujian/petunjuk-penggunaan/PetunjukPenggunaanTab.js",
+      "type": "other",
+      "lines": 174,
+      "functions": [
+        "PetunjukPenggunaanTab"
+      ],
+      "imports": [
+        "src/setting/kelola-ujian/petunjuk-penggunaan/petunjukPenggunaanData.js",
+        "src/setting/kelola-ujian/petunjuk-penggunaan/petunjukPenggunaanPdf.js"
       ],
       "importedBy": [
         "src/setting/kelola-ujian/JenisUjianMenuTab.js"
@@ -12141,14 +12169,14 @@
         "src/setting/feedback/FeedbackSiswaTab.js",
         "src/setting/kelola-jadwal/AdminKodeGuru.js",
         "src/setting/kelola-jadwal/useJadwalMassalLogic.js",
-        "src/setting/kelola-ujian/AnggaranBiayaTab.js",
-        "src/setting/kelola-ujian/DaftarPengawasTab.js",
+        "src/setting/kelola-ujian/dokumen-cetak/AnggaranBiayaTab.js",
+        "src/setting/kelola-ujian/dokumen-cetak/KartuUjianTab.js",
+        "src/setting/kelola-ujian/dokumen-cetak/LaporanRekapAkhirTab.js",
+        "src/setting/kelola-ujian/dokumen-cetak/PresensiBeritaAcaraTab.js",
         "src/setting/kelola-ujian/ExportSemuaTab.js",
-        "src/setting/kelola-ujian/JadwalPengawasTab.js",
-        "src/setting/kelola-ujian/KartuUjianTab.js",
-        "src/setting/kelola-ujian/LaporanRekapAkhirTab.js",
-        "src/setting/kelola-ujian/PembagianRuanganTab.js",
-        "src/setting/kelola-ujian/PresensiBeritaAcaraTab.js",
+        "src/setting/kelola-ujian/jadwal-pengawas/DaftarPengawasTab.js",
+        "src/setting/kelola-ujian/jadwal-pengawas/JadwalPengawasTab.js",
+        "src/setting/kelola-ujian/pembagian-ruangan/PembagianRuanganTab.js",
         "src/setting/portal-siswa/AkunSiswaTab.js",
         "src/setting/school-management/RiwayatMutasiTab.js",
         "src/setting/school-management/SchoolManagementTab.js",
@@ -12663,7 +12691,7 @@
         "src/pages/administrasi-tu/sppExcelExport.js",
         "src/pages/DataExcel.js",
         "src/pages/datasiswa-induk/DataSiswaIndukExcel.js",
-        "src/setting/kelola-ujian/daftarPesertaExcelExport.js",
+        "src/setting/kelola-ujian/pembagian-ruangan/daftarPesertaExcelExport.js",
         "src/spmb/SpmbExcel.js",
         "src/spmb/Statistics.js",
         "src/utils/pdfExportKit.js"
@@ -12700,11 +12728,11 @@
         "src/pages/administrasi-tu/sppPdfExport.js",
         "src/pages/attendance/AttendancePDF.js",
         "src/pages/datasiswa-induk/DataSiswaIndukPDF.js",
-        "src/setting/kelola-ujian/daftarPesertaPdfExport.js",
-        "src/setting/kelola-ujian/kartuUjianPdf.js",
-        "src/setting/kelola-ujian/laporanRekapAkhirPdf.js",
-        "src/setting/kelola-ujian/petunjukPenggunaanPdf.js",
-        "src/setting/kelola-ujian/presensiBeritaAcaraPdf.js"
+        "src/setting/kelola-ujian/dokumen-cetak/kartuUjianPdf.js",
+        "src/setting/kelola-ujian/dokumen-cetak/laporanRekapAkhirPdf.js",
+        "src/setting/kelola-ujian/dokumen-cetak/presensiBeritaAcaraPdf.js",
+        "src/setting/kelola-ujian/pembagian-ruangan/daftarPesertaPdfExport.js",
+        "src/setting/kelola-ujian/petunjuk-penggunaan/petunjukPenggunaanPdf.js"
       ],
       "isOrphan": false
     },
@@ -12780,6 +12808,6 @@
       "isOrphan": false
     }
   },
-  "asciiTree": "|-- src\n|   |-- assets\n|   |   |-- Background.webp\n|   |   |-- logo_sekolah-0.png\n|   |   `-- logo_sekolah.png\n|   |-- attendance-teacher\n|   |   |-- reports\n|   |   |   |-- DailySummary.js\n|   |   |   |-- ExportExcel.js\n|   |   |   |-- ITMReport.js\n|   |   |   |-- ITMReportExcel.js\n|   |   |   `-- MonthlyView.js\n|   |   |-- AdminAttendanceView.js\n|   |   |-- AttendanceTabs.js\n|   |   |-- CustomDatePicker.js\n|   |   |-- LocationValidator.js\n|   |   |-- ManualCheckIn.js\n|   |   |-- MyAttendanceStatus.js\n|   |   |-- MyMonthlyHistory.js\n|   |   |-- QRCodeGenerator.js\n|   |   |-- QRScanner.js\n|   |   |-- TeacherAttendance.js\n|   |   |-- TodaySchedule.js\n|   |   `-- index.html\n|   |-- components\n|   |   |-- ui\n|   |   |   |-- Card.js\n|   |   |   |-- ConfirmDialog.js\n|   |   |   |-- PageContainer.js\n|   |   |   |-- Typography.js\n|   |   |   `-- useConfirmDialog.js\n|   |   |-- AdminDashboard.js\n|   |   |-- AdminJurnalRekap.js\n|   |   |-- AnnouncementList.js\n|   |   |-- AnnouncementPopup.js\n|   |   |-- BottomNav.js\n|   |   |-- CatatanWalikelasBk.js\n|   |   |-- Dashboard.js\n|   |   |-- DeveloperDashboard.js\n|   |   |-- FeedbackGuru.js\n|   |   |-- GuruBKDashboard.js\n|   |   |-- HomeroomTeacherDashboard.js\n|   |   |-- Layout.js\n|   |   |-- Login.js\n|   |   |-- Logo.js\n|   |   |-- NotifikasiBk.js\n|   |   |-- PengumumanWaliKelas.js\n|   |   |-- SaranMasukanSiswa.js\n|   |   |-- Sidebar.js\n|   |   |-- StudentLogin.js\n|   |   |-- StudentLogin=bak.js\n|   |   |-- TeacherDashboard.js\n|   |   `-- WaliKelasWidgetTab.js\n|   |-- config\n|   |   |-- SidebarVisual.html\n|   |   |-- menuConfig.js\n|   |   |-- ruangBelajarAccess.js\n|   |   `-- sidebarConfig.js\n|   |-- e-raport\n|   |   |-- CekNilai.js\n|   |   |-- CekStatusNilai.js\n|   |   |-- CetakRaport.js\n|   |   |-- DashboardAdmin.js\n|   |   |-- DashboardHomeroomTeacher.js\n|   |   |-- DashboardTeacher.js\n|   |   |-- InputCatatan.js\n|   |   |-- InputEkstrakurikuler.js\n|   |   |-- InputKehadiran.js\n|   |   |-- InputKokurikuler.js\n|   |   |-- InputNilai.js\n|   |   |-- InputTP.js\n|   |   |-- PreviewNilai.js\n|   |   |-- PreviewRaport.js\n|   |   |-- RaportConfig.js\n|   |   `-- RaportPage.js\n|   |-- konseling\n|   |   |-- home-visit\n|   |   |   |-- HomeVisit.js\n|   |   |   |-- HomeVisitDetail.js\n|   |   |   |-- HomeVisitExportPDF.js\n|   |   |   |-- HomeVisitFilter.js\n|   |   |   |-- HomeVisitModal.js\n|   |   |   |-- HomeVisitStats.js\n|   |   |   `-- HomeVisitTable.js\n|   |   |-- ExportPDF.js\n|   |   |-- FilterBar.js\n|   |   |-- Konseling.js\n|   |   |-- KonselingMain.js\n|   |   |-- KonselingModal.js\n|   |   |-- KonselingTable.js\n|   |   `-- StatsCards.js\n|   |-- pages\n|   |   |-- administrasi-tu\n|   |   |   |-- AdministrasiTU.js\n|   |   |   |-- ComingSoonPanel.js\n|   |   |   |-- KeuanganTab.js\n|   |   |   |-- PersuratanTab.js\n|   |   |   |-- SppTab-Backup.js\n|   |   |   |-- SppTab-revisi.js\n|   |   |   |-- SppTab.js\n|   |   |   |-- TagihanLainTab.js\n|   |   |   |-- keuanganShared.js\n|   |   |   |-- sppExcelExport.js\n|   |   |   `-- sppPdfExport.js\n|   |   |-- attendance\n|   |   |   |-- AdminAttendance.js\n|   |   |   |-- Attendance.js\n|   |   |   |-- AttendanceExcel.js\n|   |   |   |-- AttendanceFilters.js\n|   |   |   |-- AttendanceMain.js\n|   |   |   |-- AttendanceManagement.js\n|   |   |   |-- AttendanceModals.js\n|   |   |   |-- AttendancePDF.js\n|   |   |   |-- AttendanceStats.js\n|   |   |   `-- AttendanceTable.js\n|   |   |-- datasiswa-induk\n|   |   |   |-- DataSiswaInduk.js\n|   |   |   |-- DataSiswaIndukConfig.js\n|   |   |   |-- DataSiswaIndukDetailPanel.js\n|   |   |   |-- DataSiswaIndukExcel.js\n|   |   |   |-- DataSiswaIndukListTab.js\n|   |   |   `-- DataSiswaIndukPDF.js\n|   |   |-- grades\n|   |   |   |-- GradeMain.js\n|   |   |   |-- Grades.js\n|   |   |   |-- GradesExcel.js\n|   |   |   |-- GradesKatrol.js\n|   |   |   |-- KatrolTable.js\n|   |   |   `-- Utils.js\n|   |   |-- kelola-raport\n|   |   |   |-- ImportRaportForm.js\n|   |   |   |-- InputNilaiSiswa.js\n|   |   |   |-- KelolaKKM.js\n|   |   |   |-- ManajemenRaportTable.js\n|   |   |   |-- NilaiRaportSiswa.js\n|   |   |   |-- RaportNilaiTab.js\n|   |   |   |-- RaportShared.js\n|   |   |   |-- RekapKelulusan.js\n|   |   |   |-- RekapMultiSemester.js\n|   |   |   `-- parseLegerExcel.js\n|   |   |-- wakasek-kurikulum\n|   |   |   `-- KurikulumAdministrasi.js\n|   |   |-- CatatanSiswa.js\n|   |   |-- CatatanSiswaExport.js\n|   |   |-- Classes.js\n|   |   |-- DataExcel.js\n|   |   |-- DenahDuduk.js\n|   |   |-- JurnalHarian.js\n|   |   |-- KelolaJadwalPelajaran.js\n|   |   |-- KelolaJadwalPiket.js\n|   |   |-- KeuanganKelas.js\n|   |   |-- Organigram.js\n|   |   |-- PortalBackButton.js\n|   |   |-- PortalSiswaGuru.js\n|   |   |-- Students.js\n|   |   |-- TeacherSchedule.js\n|   |   |-- TeacherScheduleExcel.js\n|   |   `-- Teachers.js\n|   |-- perpustakaan\n|   |   |-- Katalog.js\n|   |   |-- Peminjaman.js\n|   |   |-- Pengembalian.js\n|   |   `-- PerpusMain.js\n|   |-- portal-siswa\n|   |   |-- ruang-belajar-admin\n|   |   |   |-- RuangBelajarAdmin.js\n|   |   |   `-- RuangBelajarForm.js\n|   |   |-- ruang-belajar-siswa\n|   |   |   |-- BelajarMain.js\n|   |   |   |-- RuangBelajarCategories.js\n|   |   |   |-- RuangBelajarDetail.js\n|   |   |   `-- RuangBelajarHome.js\n|   |   |-- BirthdayCelebration.js\n|   |   |-- StudentBottomNav.js\n|   |   |-- StudentDashboard.js\n|   |   |-- StudentDataSiswa.js\n|   |   |-- StudentDenahDuduk.js\n|   |   |-- StudentHelpers.js\n|   |   |-- StudentInfo.js\n|   |   |-- StudentJadwal.js\n|   |   |-- StudentKeuangan.js\n|   |   |-- StudentLayout.js\n|   |   |-- StudentOrganigram.js\n|   |   |-- StudentPengumuman.js\n|   |   |-- StudentPerangkatTerhubung.js\n|   |   |-- StudentPiket.js\n|   |   |-- StudentPortal.js\n|   |   |-- StudentPresensi.js\n|   |   |-- StudentProfile.js\n|   |   |-- StudentRaport.js\n|   |   |-- StudentSaran.js\n|   |   |-- StudentSidebar.js\n|   |   `-- useStudentProfile.js\n|   |-- reports\n|   |   |-- modals\n|   |   |   |-- AdminReportModal.js\n|   |   |   `-- BKReportModal.js\n|   |   |-- AdminReports.js\n|   |   |-- BKReports.js\n|   |   |-- DailyAttendanceSection.js\n|   |   |-- HomeroomTeacherReports.js\n|   |   |-- ReportExcel.js\n|   |   |-- ReportHelpers.js\n|   |   |-- Reports.js\n|   |   `-- TeacherReports.js\n|   |-- services\n|   |   |-- JamPelajaranProvider.js\n|   |   |-- academicYearService.js\n|   |   |-- holidayService.js\n|   |   |-- jamPelajaran.js\n|   |   |-- jamPelajaranService.js\n|   |   `-- nationalHolidays.js\n|   |-- setting\n|   |   |-- academic\n|   |   |   |-- AcademicYearTab.js\n|   |   |   |-- CopyAssignmentsModal.js\n|   |   |   |-- PreflightCheck.js\n|   |   |   |-- SemesterManagement.js\n|   |   |   |-- Simulator.js\n|   |   |   |-- TransitionReadiness.js\n|   |   |   `-- YearTransition.js\n|   |   |-- feedback\n|   |   |   |-- FeedbackCombinedTab.js\n|   |   |   |-- FeedbackGuruTab.js\n|   |   |   `-- FeedbackSiswaTab.js\n|   |   |-- kelola-jadwal\n|   |   |   |-- AdminJadwalMassal.js\n|   |   |   |-- AdminKodeGuru.js\n|   |   |   |-- JadwalGuruTab.js\n|   |   |   |-- JadwalMassalModals.js\n|   |   |   |-- KelolaJamPelajaran.js\n|   |   |   `-- useJadwalMassalLogic.js\n|   |   |-- kelola-ujian\n|   |   |   |-- AnggaranBiayaTab.js\n|   |   |   |-- DaftarPengawasTab.js\n|   |   |   |-- ExportSemuaTab.js\n|   |   |   |-- JadwalPengawasTab.js\n|   |   |   |-- JenisUjianMenuTab.js\n|   |   |   |-- KartuUjianTab.js\n|   |   |   |-- KelolaUjianTab.js\n|   |   |   |-- LaporanRekapAkhirTab.js\n|   |   |   |-- PembagianRuanganTab.js\n|   |   |   |-- PetunjukPenggunaanTab.js\n|   |   |   |-- PresensiBeritaAcaraTab.js\n|   |   |   |-- anggaranBiayaSupabase.js\n|   |   |   |-- bagiRuangan.js\n|   |   |   |-- daftarPesertaExcelExport.js\n|   |   |   |-- daftarPesertaPdfExport.js\n|   |   |   |-- exportSemuaKelolaUjian.js\n|   |   |   |-- jadwalPengawasSupabase.js\n|   |   |   |-- kartuUjianPdf.js\n|   |   |   |-- kartuUjianSupabase.js\n|   |   |   |-- laporanRekapAkhirPdf.js\n|   |   |   |-- laporanRekapAkhirSupabase.js\n|   |   |   |-- noPeserta.js\n|   |   |   |-- pembagianRuanganSupabase.js\n|   |   |   |-- petunjukPenggunaanData.js\n|   |   |   |-- petunjukPenggunaanPdf.js\n|   |   |   |-- presensiBeritaAcaraPdf.js\n|   |   |   `-- presensiBeritaAcaraSupabase.js\n|   |   |-- portal-siswa\n|   |   |   |-- AkunSiswaTab.js\n|   |   |   `-- PortalSiswaTab.js\n|   |   |-- school-management\n|   |   |   |-- RiwayatMutasiTab.js\n|   |   |   |-- SchoolCombinedTab.js\n|   |   |   |-- SchoolManagementTab.js\n|   |   |   |-- SchoolSettingsTab.js\n|   |   |   |-- SiswaLulusTab.js\n|   |   |   |-- StudentManagement.js\n|   |   |   |-- StudentModals.js\n|   |   |   `-- TeacherAssignmentTab.js\n|   |   |-- teacher-profiles\n|   |   |   |-- AdminTeacherDataTab.js\n|   |   |   |-- EditProfileSection.js\n|   |   |   |-- PersonalInfoSection.js\n|   |   |   |-- ProfileHeader.js\n|   |   |   |-- ProfileTab.js\n|   |   |   |-- SecuritySection.js\n|   |   |   `-- TeachingAssignmentsSection.js\n|   |   |-- AdminPanel.js\n|   |   |-- AuditLogPanel.js\n|   |   |-- ChangePasswordSection.js\n|   |   |-- Setting.js\n|   |   |-- TeacherAssignmentExcel.js\n|   |   `-- UserManagementTab.js\n|   |-- spmb\n|   |   |-- ClassDistribution.js\n|   |   |-- ClassDivision.js\n|   |   |-- ClassOperations.js\n|   |   |-- DiagnostikPage.js\n|   |   |-- ImportClassDivisionModal.js\n|   |   |-- SPMB.js\n|   |   |-- SpmbExcel.js\n|   |   |-- Statistics.js\n|   |   |-- StudentForm.js\n|   |   |-- StudentList.js\n|   |   `-- index.html\n|   |-- system\n|   |   |-- checkers\n|   |   |   |-- AppHealthChecker.js\n|   |   |   |-- BusinessLogicChecker.js\n|   |   |   |-- DataValidator.js\n|   |   |   |-- DatabaseChecker.js\n|   |   |   `-- RaportChecker.js\n|   |   |-- ActiveUsersTab.js\n|   |   |-- BlockUserTab.js\n|   |   |-- CodeAudit.js\n|   |   |-- ConnectedDevicesAdminTab.js\n|   |   |-- CoverageChecker.js\n|   |   |-- DatabaseCleanupMonitor.js\n|   |   |-- HealthChecker.js\n|   |   |-- MaintenanceModeTab.js\n|   |   |-- MaintenancePage.js\n|   |   |-- MaintenanceTab.js\n|   |   |-- MonitorDashboard.js\n|   |   |-- MonitorSistem.js\n|   |   |-- PerformanceMonitor.js\n|   |   |-- RoleAccessAudit.js\n|   |   |-- StrukturSistem.js\n|   |   |-- StudentConnectedDevicesAdminTab.js\n|   |   |-- SystemTab.js\n|   |   |-- coverageMap.js\n|   |   `-- debugLog.js\n|   |-- utils\n|   |   |-- deviceInfo.js\n|   |   |-- excelExportKit.js\n|   |   |-- offlineHelper.js\n|   |   |-- pdfExportKit.js\n|   |   |-- studentDevices.js\n|   |   |-- studentProfileCompletion.js\n|   |   |-- studentSession.js\n|   |   `-- userDevices.js\n|   |-- App.js\n|   |-- constants.js\n|   |-- index.css\n|   |-- index.js\n|   |-- reportWebVitals.js\n|   `-- supabaseClient.js",
+  "asciiTree": "|-- src\n|   |-- assets\n|   |   |-- Background.webp\n|   |   |-- logo_sekolah-0.png\n|   |   `-- logo_sekolah.png\n|   |-- attendance-teacher\n|   |   |-- reports\n|   |   |   |-- DailySummary.js\n|   |   |   |-- ExportExcel.js\n|   |   |   |-- ITMReport.js\n|   |   |   |-- ITMReportExcel.js\n|   |   |   `-- MonthlyView.js\n|   |   |-- AdminAttendanceView.js\n|   |   |-- AttendanceTabs.js\n|   |   |-- CustomDatePicker.js\n|   |   |-- LocationValidator.js\n|   |   |-- ManualCheckIn.js\n|   |   |-- MyAttendanceStatus.js\n|   |   |-- MyMonthlyHistory.js\n|   |   |-- QRCodeGenerator.js\n|   |   |-- QRScanner.js\n|   |   |-- TeacherAttendance.js\n|   |   |-- TodaySchedule.js\n|   |   `-- index.html\n|   |-- components\n|   |   |-- ui\n|   |   |   |-- Card.js\n|   |   |   |-- ConfirmDialog.js\n|   |   |   |-- PageContainer.js\n|   |   |   |-- Typography.js\n|   |   |   `-- useConfirmDialog.js\n|   |   |-- AdminDashboard.js\n|   |   |-- AdminJurnalRekap.js\n|   |   |-- AnnouncementList.js\n|   |   |-- AnnouncementPopup.js\n|   |   |-- BottomNav.js\n|   |   |-- CatatanWalikelasBk.js\n|   |   |-- Dashboard.js\n|   |   |-- DeveloperDashboard.js\n|   |   |-- FeedbackGuru.js\n|   |   |-- GuruBKDashboard.js\n|   |   |-- HomeroomTeacherDashboard.js\n|   |   |-- Layout.js\n|   |   |-- Login.js\n|   |   |-- Logo.js\n|   |   |-- NotifikasiBk.js\n|   |   |-- PengumumanWaliKelas.js\n|   |   |-- SaranMasukanSiswa.js\n|   |   |-- Sidebar.js\n|   |   |-- StudentLogin.js\n|   |   |-- StudentLogin=bak.js\n|   |   |-- TeacherDashboard.js\n|   |   `-- WaliKelasWidgetTab.js\n|   |-- config\n|   |   |-- SidebarVisual.html\n|   |   |-- menuConfig.js\n|   |   |-- ruangBelajarAccess.js\n|   |   `-- sidebarConfig.js\n|   |-- e-raport\n|   |   |-- CekNilai.js\n|   |   |-- CekStatusNilai.js\n|   |   |-- CetakRaport.js\n|   |   |-- DashboardAdmin.js\n|   |   |-- DashboardHomeroomTeacher.js\n|   |   |-- DashboardTeacher.js\n|   |   |-- InputCatatan.js\n|   |   |-- InputEkstrakurikuler.js\n|   |   |-- InputKehadiran.js\n|   |   |-- InputKokurikuler.js\n|   |   |-- InputNilai.js\n|   |   |-- InputTP.js\n|   |   |-- PreviewNilai.js\n|   |   |-- PreviewRaport.js\n|   |   |-- RaportConfig.js\n|   |   `-- RaportPage.js\n|   |-- konseling\n|   |   |-- home-visit\n|   |   |   |-- HomeVisit.js\n|   |   |   |-- HomeVisitDetail.js\n|   |   |   |-- HomeVisitExportPDF.js\n|   |   |   |-- HomeVisitFilter.js\n|   |   |   |-- HomeVisitModal.js\n|   |   |   |-- HomeVisitStats.js\n|   |   |   `-- HomeVisitTable.js\n|   |   |-- ExportPDF.js\n|   |   |-- FilterBar.js\n|   |   |-- Konseling.js\n|   |   |-- KonselingMain.js\n|   |   |-- KonselingModal.js\n|   |   |-- KonselingTable.js\n|   |   `-- StatsCards.js\n|   |-- pages\n|   |   |-- administrasi-tu\n|   |   |   |-- AdministrasiTU.js\n|   |   |   |-- ComingSoonPanel.js\n|   |   |   |-- KeuanganTab.js\n|   |   |   |-- PersuratanTab.js\n|   |   |   |-- SppTab-Backup.js\n|   |   |   |-- SppTab-revisi.js\n|   |   |   |-- SppTab.js\n|   |   |   |-- TagihanLainTab.js\n|   |   |   |-- keuanganShared.js\n|   |   |   |-- sppExcelExport.js\n|   |   |   `-- sppPdfExport.js\n|   |   |-- attendance\n|   |   |   |-- AdminAttendance.js\n|   |   |   |-- Attendance.js\n|   |   |   |-- AttendanceExcel.js\n|   |   |   |-- AttendanceFilters.js\n|   |   |   |-- AttendanceMain.js\n|   |   |   |-- AttendanceManagement.js\n|   |   |   |-- AttendanceModals.js\n|   |   |   |-- AttendancePDF.js\n|   |   |   |-- AttendanceStats.js\n|   |   |   `-- AttendanceTable.js\n|   |   |-- datasiswa-induk\n|   |   |   |-- DataSiswaInduk.js\n|   |   |   |-- DataSiswaIndukConfig.js\n|   |   |   |-- DataSiswaIndukDetailPanel.js\n|   |   |   |-- DataSiswaIndukExcel.js\n|   |   |   |-- DataSiswaIndukListTab.js\n|   |   |   `-- DataSiswaIndukPDF.js\n|   |   |-- grades\n|   |   |   |-- GradeMain.js\n|   |   |   |-- Grades.js\n|   |   |   |-- GradesExcel.js\n|   |   |   |-- GradesKatrol.js\n|   |   |   |-- KatrolTable.js\n|   |   |   `-- Utils.js\n|   |   |-- kelola-raport\n|   |   |   |-- ImportRaportForm.js\n|   |   |   |-- InputNilaiSiswa.js\n|   |   |   |-- KelolaKKM.js\n|   |   |   |-- ManajemenRaportTable.js\n|   |   |   |-- NilaiRaportSiswa.js\n|   |   |   |-- RaportNilaiTab.js\n|   |   |   |-- RaportShared.js\n|   |   |   |-- RekapKelulusan.js\n|   |   |   |-- RekapMultiSemester.js\n|   |   |   `-- parseLegerExcel.js\n|   |   |-- wakasek-kurikulum\n|   |   |   `-- KurikulumAdministrasi.js\n|   |   |-- CatatanSiswa.js\n|   |   |-- CatatanSiswaExport.js\n|   |   |-- Classes.js\n|   |   |-- DataExcel.js\n|   |   |-- DenahDuduk.js\n|   |   |-- JurnalHarian.js\n|   |   |-- KelolaJadwalPelajaran.js\n|   |   |-- KelolaJadwalPiket.js\n|   |   |-- KeuanganKelas.js\n|   |   |-- Organigram.js\n|   |   |-- PortalBackButton.js\n|   |   |-- PortalSiswaGuru.js\n|   |   |-- Students.js\n|   |   |-- TeacherSchedule.js\n|   |   |-- TeacherScheduleExcel.js\n|   |   `-- Teachers.js\n|   |-- perpustakaan\n|   |   |-- Katalog.js\n|   |   |-- Peminjaman.js\n|   |   |-- Pengembalian.js\n|   |   `-- PerpusMain.js\n|   |-- portal-siswa\n|   |   |-- ruang-belajar-admin\n|   |   |   |-- RuangBelajarAdmin.js\n|   |   |   `-- RuangBelajarForm.js\n|   |   |-- ruang-belajar-siswa\n|   |   |   |-- BelajarMain.js\n|   |   |   |-- RuangBelajarCategories.js\n|   |   |   |-- RuangBelajarDetail.js\n|   |   |   `-- RuangBelajarHome.js\n|   |   |-- BirthdayCelebration.js\n|   |   |-- StudentBottomNav.js\n|   |   |-- StudentDashboard.js\n|   |   |-- StudentDataSiswa.js\n|   |   |-- StudentDenahDuduk.js\n|   |   |-- StudentHelpers.js\n|   |   |-- StudentInfo.js\n|   |   |-- StudentJadwal.js\n|   |   |-- StudentKeuangan.js\n|   |   |-- StudentLayout.js\n|   |   |-- StudentOrganigram.js\n|   |   |-- StudentPengumuman.js\n|   |   |-- StudentPerangkatTerhubung.js\n|   |   |-- StudentPiket.js\n|   |   |-- StudentPortal.js\n|   |   |-- StudentPresensi.js\n|   |   |-- StudentProfile.js\n|   |   |-- StudentRaport.js\n|   |   |-- StudentSaran.js\n|   |   |-- StudentSidebar.js\n|   |   `-- useStudentProfile.js\n|   |-- reports\n|   |   |-- modals\n|   |   |   |-- AdminReportModal.js\n|   |   |   `-- BKReportModal.js\n|   |   |-- AdminReports.js\n|   |   |-- BKReports.js\n|   |   |-- DailyAttendanceSection.js\n|   |   |-- HomeroomTeacherReports.js\n|   |   |-- ReportExcel.js\n|   |   |-- ReportHelpers.js\n|   |   |-- Reports.js\n|   |   `-- TeacherReports.js\n|   |-- services\n|   |   |-- JamPelajaranProvider.js\n|   |   |-- academicYearService.js\n|   |   |-- holidayService.js\n|   |   |-- jamPelajaran.js\n|   |   |-- jamPelajaranService.js\n|   |   `-- nationalHolidays.js\n|   |-- setting\n|   |   |-- academic\n|   |   |   |-- AcademicYearTab.js\n|   |   |   |-- CopyAssignmentsModal.js\n|   |   |   |-- PreflightCheck.js\n|   |   |   |-- SemesterManagement.js\n|   |   |   |-- Simulator.js\n|   |   |   |-- TransitionReadiness.js\n|   |   |   `-- YearTransition.js\n|   |   |-- feedback\n|   |   |   |-- FeedbackCombinedTab.js\n|   |   |   |-- FeedbackGuruTab.js\n|   |   |   `-- FeedbackSiswaTab.js\n|   |   |-- kelola-jadwal\n|   |   |   |-- AdminJadwalMassal.js\n|   |   |   |-- AdminKodeGuru.js\n|   |   |   |-- JadwalGuruTab.js\n|   |   |   |-- JadwalMassalModals.js\n|   |   |   |-- KelolaJamPelajaran.js\n|   |   |   `-- useJadwalMassalLogic.js\n|   |   |-- kelola-ujian\n|   |   |   |-- dokumen-cetak\n|   |   |   |   |-- AnggaranBiayaTab.js\n|   |   |   |   |-- KartuUjianTab.js\n|   |   |   |   |-- LaporanRekapAkhirTab.js\n|   |   |   |   |-- PresensiBeritaAcaraTab.js\n|   |   |   |   |-- anggaranBiayaSupabase.js\n|   |   |   |   |-- kartuUjianPdf.js\n|   |   |   |   |-- kartuUjianSupabase.js\n|   |   |   |   |-- laporanRekapAkhirPdf.js\n|   |   |   |   |-- laporanRekapAkhirSupabase.js\n|   |   |   |   |-- presensiBeritaAcaraPdf.js\n|   |   |   |   `-- presensiBeritaAcaraSupabase.js\n|   |   |   |-- jadwal-pengawas\n|   |   |   |   |-- DaftarPengawasTab.js\n|   |   |   |   |-- JadwalPengawasTab.js\n|   |   |   |   `-- jadwalPengawasSupabase.js\n|   |   |   |-- pembagian-ruangan\n|   |   |   |   |-- PembagianRuanganTab.js\n|   |   |   |   |-- bagiRuangan.js\n|   |   |   |   |-- daftarPesertaExcelExport.js\n|   |   |   |   |-- daftarPesertaPdfExport.js\n|   |   |   |   |-- noPeserta.js\n|   |   |   |   `-- pembagianRuanganSupabase.js\n|   |   |   |-- petunjuk-penggunaan\n|   |   |   |   |-- PetunjukPenggunaanTab.js\n|   |   |   |   |-- petunjukPenggunaanData.js\n|   |   |   |   `-- petunjukPenggunaanPdf.js\n|   |   |   |-- ExportSemuaTab.js\n|   |   |   |-- JenisUjianMenuTab.js\n|   |   |   |-- KelolaUjianTab.js\n|   |   |   `-- exportSemuaKelolaUjian.js\n|   |   |-- portal-siswa\n|   |   |   |-- AkunSiswaTab.js\n|   |   |   `-- PortalSiswaTab.js\n|   |   |-- school-management\n|   |   |   |-- RiwayatMutasiTab.js\n|   |   |   |-- SchoolCombinedTab.js\n|   |   |   |-- SchoolManagementTab.js\n|   |   |   |-- SchoolSettingsTab.js\n|   |   |   |-- SiswaLulusTab.js\n|   |   |   |-- StudentManagement.js\n|   |   |   |-- StudentModals.js\n|   |   |   `-- TeacherAssignmentTab.js\n|   |   |-- teacher-profiles\n|   |   |   |-- AdminTeacherDataTab.js\n|   |   |   |-- EditProfileSection.js\n|   |   |   |-- PersonalInfoSection.js\n|   |   |   |-- ProfileHeader.js\n|   |   |   |-- ProfileTab.js\n|   |   |   |-- SecuritySection.js\n|   |   |   `-- TeachingAssignmentsSection.js\n|   |   |-- AdminPanel.js\n|   |   |-- AuditLogPanel.js\n|   |   |-- ChangePasswordSection.js\n|   |   |-- Setting.js\n|   |   |-- TeacherAssignmentExcel.js\n|   |   `-- UserManagementTab.js\n|   |-- spmb\n|   |   |-- ClassDistribution.js\n|   |   |-- ClassDivision.js\n|   |   |-- ClassOperations.js\n|   |   |-- DiagnostikPage.js\n|   |   |-- ImportClassDivisionModal.js\n|   |   |-- SPMB.js\n|   |   |-- SpmbExcel.js\n|   |   |-- Statistics.js\n|   |   |-- StudentForm.js\n|   |   |-- StudentList.js\n|   |   `-- index.html\n|   |-- system\n|   |   |-- checkers\n|   |   |   |-- AppHealthChecker.js\n|   |   |   |-- BusinessLogicChecker.js\n|   |   |   |-- DataValidator.js\n|   |   |   |-- DatabaseChecker.js\n|   |   |   `-- RaportChecker.js\n|   |   |-- ActiveUsersTab.js\n|   |   |-- BlockUserTab.js\n|   |   |-- CodeAudit.js\n|   |   |-- ConnectedDevicesAdminTab.js\n|   |   |-- CoverageChecker.js\n|   |   |-- DatabaseCleanupMonitor.js\n|   |   |-- HealthChecker.js\n|   |   |-- MaintenanceModeTab.js\n|   |   |-- MaintenancePage.js\n|   |   |-- MaintenanceTab.js\n|   |   |-- MonitorDashboard.js\n|   |   |-- MonitorSistem.js\n|   |   |-- PerformanceMonitor.js\n|   |   |-- RoleAccessAudit.js\n|   |   |-- StrukturSistem.js\n|   |   |-- StudentConnectedDevicesAdminTab.js\n|   |   |-- SystemTab.js\n|   |   |-- coverageMap.js\n|   |   `-- debugLog.js\n|   |-- utils\n|   |   |-- deviceInfo.js\n|   |   |-- excelExportKit.js\n|   |   |-- offlineHelper.js\n|   |   |-- pdfExportKit.js\n|   |   |-- studentDevices.js\n|   |   |-- studentProfileCompletion.js\n|   |   |-- studentSession.js\n|   |   `-- userDevices.js\n|   |-- App.js\n|   |-- constants.js\n|   |-- index.css\n|   |-- index.js\n|   |-- reportWebVitals.js\n|   `-- supabaseClient.js",
   "totalAllFiles": 303
 }

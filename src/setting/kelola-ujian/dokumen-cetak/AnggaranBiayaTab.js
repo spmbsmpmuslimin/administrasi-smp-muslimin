@@ -8,8 +8,8 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import { ChevronLeft, Plus, Trash2, Pencil, Loader2, Wallet, X, Check } from "lucide-react";
-import { supabase } from "../../supabaseClient";
-import { ambilDaftarTahunAjaran, getOrCreateUjian } from "./pembagianRuanganSupabase";
+import { supabase } from "../../../supabaseClient";
+import { ambilDaftarTahunAjaran, getOrCreateUjian } from "../pembagian-ruangan/pembagianRuanganSupabase";
 import {
   ambilAnggaran,
   tambahAnggaran,

@@ -14,13 +14,13 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import { ChevronLeft, Printer, DoorOpen, Loader2, ClipboardList, FileText } from "lucide-react";
-import { supabase } from "../../supabaseClient";
+import { supabase } from "../../../supabaseClient";
 import {
   ambilDaftarTahunAjaran,
   getOrCreateUjian,
   KONFIGURASI_JENIS_UJIAN,
-} from "./pembagianRuanganSupabase";
-import { ambilRuanganUjian, ambilJadwalSesi } from "./jadwalPengawasSupabase";
+} from "../pembagian-ruangan/pembagianRuanganSupabase";
+import { ambilRuanganUjian, ambilJadwalSesi } from "../jadwal-pengawas/jadwalPengawasSupabase";
 import { ambilPesertaRuangan } from "./kartuUjianSupabase";
 import { generateDaftarHadirPdf, generateBeritaAcaraPdf } from "./presensiBeritaAcaraPdf";
 

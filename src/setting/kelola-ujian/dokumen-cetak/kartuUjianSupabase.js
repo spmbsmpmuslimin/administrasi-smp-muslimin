@@ -11,7 +11,7 @@ import {
   ambilJadwalSesi,
   ambilPengawasUntukJadwal,
   ambilDaftarGuru,
-} from "./jadwalPengawasSupabase";
+} from "../jadwal-pengawas/jadwalPengawasSupabase";
 
 /**
  * Ambil peserta 1 ruangan tertentu lengkap dengan data siswa (nama, NIS),

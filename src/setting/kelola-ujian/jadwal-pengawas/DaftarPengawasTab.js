@@ -32,7 +32,7 @@
 
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { ChevronLeft, Loader2, Save, Plus, Trash2, ListOrdered, RotateCcw } from "lucide-react";
-import { supabase } from "../../supabaseClient";
+import { supabase } from "../../../supabaseClient";
 import {
   ambilDaftarPengawasKode,
   ambilCalonPengawas,

@@ -22,12 +22,12 @@ import {
   ClipboardList,
   Table2,
 } from "lucide-react";
-import { supabase } from "../../supabaseClient";
+import { supabase } from "../../../supabaseClient";
 import {
   ambilDaftarTahunAjaran,
   getOrCreateUjian,
   KONFIGURASI_JENIS_UJIAN,
-} from "./pembagianRuanganSupabase";
+} from "../pembagian-ruangan/pembagianRuanganSupabase";
 import {
   ambilRuanganUjian,
   ambilDaftarGuru,

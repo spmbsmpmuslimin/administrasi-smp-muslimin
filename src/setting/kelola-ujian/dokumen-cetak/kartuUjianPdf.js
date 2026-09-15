@@ -10,7 +10,7 @@ import {
   PDF_COLORS,
   PDF_FONT_FAMILY,
   savePdf,
-} from "../../utils/pdfExportKit";
+} from "../../../utils/pdfExportKit";
 
 const JUDUL_UJIAN = {
   PSAS: "PENILAIAN SUMATIF AKHIR SEMESTER GANJIL",
