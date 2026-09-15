@@ -19,8 +19,11 @@ import {
   getAllSemestersInActiveYear,
   setActiveAcademicYear,
   createNewAcademicYear,
-  filterBySemester,
 } from "../../services/academicYearService";
+// ⚠️ filterBySemester DIHAPUS dari import (Sept 2026) - dulu cuma dipakai
+// buat STEP 4 (copy manual teacher_assignments) di executeSmartSemesterSwitch,
+// yang sekarang udah dihapus karena fungsinya diambil alih otomatis oleh
+// setActiveAcademicYear() di academicYearService.js.
 
 const SemesterManagement = ({
   schoolConfig,
@@ -94,7 +97,7 @@ const SemesterManagement = ({
         })\n\n` +
         `Proses otomatis:\n` +
         `✅ Check/create semester target\n` +
-        `✅ Copy teacher assignments\n` +
+        `✅ Pindahkan data siswa, kelas & guru ke semester baru\n` +
         `✅ Aktifkan semester baru\n\n` +
         `Lanjutkan?`
     );
@@ -160,52 +163,17 @@ const SemesterManagement = ({
         showToast("✅ Semester target sudah ada", "info");
       }
 
-      // STEP 4: Copy teacher assignments
-      showToast("📋 Copying teacher assignments...", "info");
-
-      // ✅ Get assignments dari semester CURRENT (yang aktif sekarang)
-      let assignmentsQuery = supabase.from("teacher_assignments").select("*");
-
-      // ✅ Filter by CURRENT active semester
-      assignmentsQuery = filterBySemester(assignmentsQuery, academicInfo.activeSemesterId, {
-        strict: true,
-      });
-
-      const { data: assignments, error: fetchError } = await assignmentsQuery;
-
-      if (fetchError) throw fetchError;
-
-      if (assignments && assignments.length > 0) {
-        showToast(`📊 Ditemukan ${assignments.length} assignments untuk di-copy`, "info");
-
-        // Delete existing assignments in target semester (if any)
-        await supabase
-          .from("teacher_assignments")
-          .delete()
-          .eq("academic_year_id", targetSemesterId);
-
-        // ✅ Copy dengan academic_year_id yang BENAR
-        const newAssignments = assignments.map((a) => ({
-          teacher_id: a.teacher_id,
-          subject: a.subject,
-          class_id: a.class_id,
-          academic_year: currentYear, // ← TAMBAHIN
-          semester: targetSemester, // ← TAMBAHIN
-          academic_year_id: targetSemesterId, // sudah benar
-        }));
-
-        const { error: insertError } = await supabase
-          .from("teacher_assignments")
-          .insert(newAssignments);
-
-        if (insertError) throw insertError;
-
-        showToast(`✅ ${assignments.length} assignments berhasil di-copy!`, "success");
-      } else {
-        showToast("ℹ️ Tidak ada assignments untuk di-copy", "info");
-      }
-
-      // STEP 5: Switch active semester using NEW service
+      // STEP 4: Switch active semester
+      // ⚠️ DIHAPUS (Sept 2026): dulu di sini ada logic manual buat
+      // hapus+insert-ulang (copy) teacher_assignments ke semester target.
+      // Itu workaround dari bug lama: students/classes/teacher_assignments
+      // nggak ikut disinkron pas toggle semester, jadi assignment "ilang"
+      // kalau nggak di-copy manual. Sekarang setActiveAcademicYear() di
+      // academicYearService.js udah nanganin sync itu otomatis (UPDATE
+      // academic_year_id di ketiga tabel sekaligus - classes, students,
+      // teacher_assignments), jadi copy manual di sini JANGAN dipasang lagi
+      // - kalau dipasang bareng, assignment guru bakal kegandain 2x
+      // (satu dari copy manual, satu lagi dari auto-sync).
       showToast("🔄 Mengaktifkan semester baru...", "info");
 
       const result = await setActiveAcademicYear(targetSemesterId);
@@ -214,11 +182,17 @@ const SemesterManagement = ({
         throw new Error(result.message);
       }
 
-      // STEP 6: Success!
+      // STEP 5: Success!
+      // Jumlah assignment yang "dipindahkan" sekarang diambil dari
+      // syncResults yang dibalikin setActiveAcademicYear(), bukan dari
+      // hasil copy manual lagi (karena copy manualnya udah dihapus).
+      const teacherSync = result.syncResults?.find((s) => s.table === "teacher_assignments");
+      const assignmentsCount = teacherSync?.success ? teacherSync.rowsUpdated : 0;
+
       showToast(
         `✅ Berhasil pindah ke Semester ${targetSemester}!\n\n` +
           `📅 ${currentYear} - Semester ${targetSemester === 1 ? "Ganjil" : "Genap"}\n` +
-          `📋 ${assignments?.length || 0} assignments di-copy`,
+          `📋 ${assignmentsCount} assignments dipindahkan`,
         "success"
       );
 

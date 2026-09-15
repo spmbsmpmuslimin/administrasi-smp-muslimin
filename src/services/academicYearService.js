@@ -350,11 +350,72 @@ export const setActiveAcademicYear = async (semesterId) => {
     console.log(`   From: ${currentActive?.year} - Semester ${currentActive?.activeSemester}`);
     console.log(`   To:   ${data.year} - Semester ${data.semester}`);
 
+    // ========================================
+    // 🔄 SYNC: academic_year_id siswa/kelas/guru
+    // ========================================
+    // Kenapa ini perlu: students, classes, teacher_assignments masing-masing
+    // nyimpen academic_year_id sendiri yang nunjuk ke SATU baris academic_years
+    // spesifik (bukan cuma "tahun 2026/2027" tapi "tahun 2026/2027 semester 1").
+    // Kalau admin toggle ke semester 2 tapi kolom ini nggak ikut disinkron,
+    // query yang nyaring "siswa/guru aktif" pakai academic_year_id bakal balik
+    // KOSONG walau datanya beneran ada dan aktif - ini akar bug PSAT (lihat
+    // riwayat debugging Pembagian Ruangan, Sept 2026).
+    //
+    // Sync ini SENGAJA cuma jalan kalau tahun ajarannya SAMA (toggle semester
+    // dalam satu tahun, misal 2026/2027 sem 1 -> sem 2). Kalau tahunnya beda,
+    // itu artinya pergantian TAHUN AJARAN (ada kenaikan kelas, kelulusan, dll)
+    // yang jalur kodenya terpisah total di YearTransition.js
+    // (executeYearTransition) - JANGAN disentuh dari sini, biar nggak ada dua
+    // tempat yang sama-sama mikir dirinya "yang nentuin" academic_year_id.
+    //
+    // ⚠️ CATATAN BUAT teacher_assignments: sync ini UPDATE-in-place (bukan
+    // duplikat baris), karena penugasan guru di sekolah ini tetap sama
+    // sepanjang tahun ajaran (dikonfirmasi manual, bukan per-semester).
+    // Kalau SemesterManagement.js (STEP 4 di handleSemesterSwitch) MASIH
+    // punya logic copy/insert manual buat teacher_assignments, itu HARUS
+    // dihapus/disederhanain - kalau nggak, assignment bakal kegandain
+    // (satu dari copy manual, satu lagi dari sync otomatis di bawah ini).
+    const syncResults = [];
+    const isSameYearToggle =
+      currentActive?.year === data.year &&
+      currentActive?.activeSemesterId &&
+      currentActive.activeSemesterId !== semesterId;
+
+    if (isSameYearToggle) {
+      const tablesToSync = [
+        { table: "classes", label: "Kelas" },
+        { table: "students", label: "Data Siswa" },
+        { table: "teacher_assignments", label: "Penugasan Guru" },
+      ];
+
+      for (const { table, label } of tablesToSync) {
+        const { data: updatedRows, error: syncError } = await supabase
+          .from(table)
+          .update({ academic_year_id: semesterId, academic_year: data.year })
+          .eq("academic_year_id", currentActive.activeSemesterId)
+          .select("id");
+
+        if (syncError) {
+          // Nggak throw di sini - satu tabel gagal sync jangan sampai
+          // ngebatalin status is_active yang udah kepasang di atas.
+          // Admin masih bisa liat & retry manual lewat runPreflightCheck().
+          console.error(`🚨 Gagal sync academic_year_id di ${table}:`, syncError);
+          syncResults.push({ table, label, success: false, error: syncError.message });
+        } else {
+          console.log(
+            `✅ Sync ${label}: ${updatedRows?.length || 0} baris diupdate ke semester baru`
+          );
+          syncResults.push({ table, label, success: true, rowsUpdated: updatedRows?.length || 0 });
+        }
+      }
+    }
+
     return {
       success: true,
       message: `Semester ${data.semester} tahun ${data.year} berhasil diaktifkan`,
       data,
       previousActive: currentActive,
+      syncResults, // [] kalau bukan same-year toggle (misal pas ganti tahun ajaran)
     };
   } catch (error) {
     console.error("Error setting active semester:", error);
