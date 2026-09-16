@@ -1,10 +1,19 @@
-// setting/kelola-ujian/JadwalPengawasTab.js
-// Sub-fitur "Jadwal & Pembagian Ruangan" dari Manajemen Ujian, sekarang punya 3 tab:
-// 1. "Jadwal Sesi" -- kelola daftar sesi ujian (tanggal, jam, mapel).
-// 2. "Daftar Pengawas" -- kode singkat per guru (embed dari
-//    DaftarPengawasTab.js, dulu kartu sub-fitur sendiri).
-// 3. "Jadwal Ngawas" -- assign guru pengawas per ruangan untuk tiap sesi
-//    (dulu namanya cuma "Pengawas").
+// setting/kelola-ujian/jadwal-pengawas/JadwalPengawasTab.js
+// Komponen isi untuk urusan JADWAL SESI + PENGAWAS. Punya 4 tab internal:
+// 1. "Jadwal Sesi"     -- kelola daftar sesi ujian (tanggal, jam, mapel).
+// 2. "Daftar Pengawas" -- kode singkat per guru (embed dari DaftarPengawasTab.js).
+// 3. "Jadwal Ngawas"   -- assign guru pengawas per ruangan untuk tiap hari.
+// 4. "Rekap"           -- preview semua hari & sesi sekaligus.
+//
+// PENTING: sejak kartu sub-fitur disusun ulang biar isinya nyambung sama
+// judulnya, komponen ini NGGAK lagi dipakai utuh di satu layar. Yang manggil:
+//   - JadwalRuanganTab.js   (kartu "Jadwal & Pembagian Ruangan") -> tabPaksa="jadwal"
+//   - PesertaPengawasTab.js (kartu "Peserta & Pengawas")         -> tabPaksa="daftar"|"pengawas"|"rekap"
+// Prop `tabPaksa` bikin tab bar internal disembunyiin & tab aktif ditentuin
+// parent. Kalau `onBack` nggak dikirim, tombol balik & header jenis ujian juga
+// disembunyiin, karena kartu pemanggilnya udah punya sendiri. Tanpa dua prop
+// itu (dipanggil langsung), komponen ini tetap jalan utuh seperti dulu.
+//
 // Ruangan yang tersedia diambil dari hasil Pembagian Ruangan (tabel
 // peserta_ujian) -- kalau belum diproses, tampilkan peringatan untuk
 // proses ruangan dulu.
@@ -89,7 +98,7 @@ function acakUrutan(arr) {
   return hasil;
 }
 
-const JadwalPengawasTab = ({ jenisUjian, showToast, onBack }) => {
+const JadwalPengawasTab = ({ jenisUjian, showToast, onBack, tabPaksa = null }) => {
   const [daftarTahunAjaran, setDaftarTahunAjaran] = useState([]);
   const [tahunAjaranId, setTahunAjaranId] = useState("");
   const [loadingTahunAjaran, setLoadingTahunAjaran] = useState(true);
@@ -102,7 +111,14 @@ const JadwalPengawasTab = ({ jenisUjian, showToast, onBack }) => {
   const [daftarJadwal, setDaftarJadwal] = useState([]);
   const [loadingData, setLoadingData] = useState(false);
 
-  const [tabAktif, setTabAktif] = useState("jadwal"); // "jadwal" | "daftar" | "pengawas"
+  // Tab internal komponen ini: "jadwal" | "daftar" | "pengawas" | "rekap".
+  // Kalau parent ngirim prop `tabPaksa`, tab bar internal disembunyiin dan
+  // tab aktif ditentuin sepenuhnya sama parent -- dipakai waktu komponen ini
+  // di-embed di kartu (JadwalRuanganTab / PesertaPengawasTab) yang punya tab
+  // bar sendiri, biar nggak ada 2 baris tab numpuk.
+  const [tabInternal, setTabInternal] = useState("jadwal");
+  const tabAktif = tabPaksa || tabInternal;
+  const setTabAktif = setTabInternal;
 
   const [showModalJadwal, setShowModalJadwal] = useState(false);
   const [editingJadwal, setEditingJadwal] = useState(null);
@@ -539,20 +555,27 @@ const JadwalPengawasTab = ({ jenisUjian, showToast, onBack }) => {
 
   // ... (JSX sama seperti sebelumnya, tidak ada perubahan tampilan)
   return (
-    <div className="p-4 sm:p-6">
-      <button
-        onClick={onBack}
-        className="flex items-center gap-1.5 text-sm text-gray-600 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 mb-4"
-      >
-        <ChevronLeft size={16} /> Kembali ke Sub-fitur
-      </button>
+    <div className={onBack ? "p-4 sm:p-6" : ""}>
+      {/* Tombol balik & header jenis ujian cuma dipasang kalau komponen ini
+      dibuka sebagai layar sendiri (onBack ada). Waktu di-embed di dalam kartu,
+      kartu-nya yang udah punya tombol balik & header -- biar nggak dobel. */}
+      {onBack && (
+        <>
+          <button
+            onClick={onBack}
+            className="flex items-center gap-1.5 text-sm text-gray-600 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 mb-4"
+          >
+            <ChevronLeft size={16} /> Kembali ke Sub-fitur
+          </button>
 
-      <div className="mb-4">
-        <p className="text-xs text-gray-500 dark:text-gray-400">Jenis Ujian</p>
-        <p className="text-sm font-semibold text-gray-800 dark:text-gray-100">
-          {JENIS_UJIAN_LABEL[jenisUjian] || jenisUjian}
-        </p>
-      </div>
+          <div className="mb-4">
+            <p className="text-xs text-gray-500 dark:text-gray-400">Jenis Ujian</p>
+            <p className="text-sm font-semibold text-gray-800 dark:text-gray-100">
+              {JENIS_UJIAN_LABEL[jenisUjian] || jenisUjian}
+            </p>
+          </div>
+        </>
+      )}
 
       <div className="mb-5 max-w-xs">
         <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
@@ -593,7 +616,8 @@ const JadwalPengawasTab = ({ jenisUjian, showToast, onBack }) => {
             </div>
           )}
 
-          <div className="flex gap-1 mb-4 border-b border-gray-200 dark:border-gray-700">
+          {!tabPaksa && (
+          <div className="flex flex-wrap gap-1 mb-4 border-b border-gray-200 dark:border-gray-700">
             <button
               onClick={() => setTabAktif("jadwal")}
               className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
@@ -635,6 +659,7 @@ const JadwalPengawasTab = ({ jenisUjian, showToast, onBack }) => {
               <Table2 size={15} /> Rekap
             </button>
           </div>
+          )}
 
           {tabAktif === "jadwal" && (
             <div>

@@ -1,15 +1,33 @@
-// setting/kelola-ujian/PembagianRuanganTab.js
-// Sub-fitur "Pembagian Ruangan" dari Manajemen Ujian.
-// Alur: pilih jenis ujian + tahun ajaran -> "Proses Pembagian" (preview
-// dulu, belum nyimpen ke DB) -> kalau udah oke, "Simpan ke Database".
-// Proses ulang aman dipanggil berkali-kali (lihat simpanPembagianRuangan
-// di pembagianRuanganSupabase.js -- data lama dihapus dulu tiap simpan).
+// setting/kelola-ujian/pembagian-ruangan/PembagianRuanganTab.js
+// Komponen isi untuk urusan RUANGAN + PESERTA. Alur aslinya: pilih tahun
+// ajaran -> "Proses Pembagian" (preview dulu, belum nyimpen) -> quota manual
+// -> "Simpan ke Database". Proses ulang aman dipanggil berkali-kali (lihat
+// simpanPembagianRuangan di pembagianRuanganSupabase.js -- data lama dihapus
+// dulu tiap simpan).
+//
+// PENTING: sejak kartu sub-fitur disusun ulang biar isinya nyambung sama
+// judulnya, komponen ini dipakai DUA KALI dengan porsi berbeda lewat prop `mode`:
+//   - JadwalRuanganTab.js   (kartu "Jadwal & Pembagian Ruangan")
+//       mode="ruangan" -> Komposisi Ruangan + tabel quota + Preview Per
+//       Ruangan + tombol Simpan. Preview sengaja ditaruh di sini, satu
+//       komponen sama tabel quota-nya, jadi hasil editan langsung kelihatan
+//       walaupun belum disimpan (persis kayak sebelum kartu dipisah).
+//   - PesertaPengawasTab.js (kartu "Peserta & Pengawas")
+//       mode="peserta" -> Export Daftar Peserta saja, READ-ONLY dari data
+//       yang sudah TERSIMPAN di DB (nggak ada tombol proses maupun simpan).
+// Konsekuensi yang perlu diingat: di mode "peserta", yang diexport adalah
+// data TERSIMPAN, bukan quota yang lagi diedit di kartu sebelah -- beda
+// kartu = beda state. Jadi simpan dulu, baru export.
+//
+// Prop `viewPaksa`/`tabPaksa` bikin tab bar internal disembunyiin & tab aktif
+// ditentuin parent. Kalau `onBack` nggak dikirim, tombol balik & header jenis
+// ujian juga disembunyiin. Tanpa prop-prop itu, komponen ini tetap jalan utuh
+// seperti sebelum dipisah (mode="full").
 //
 // Kelas peserta per jenis ujian (PSAS = 7-9, PSAT = 7-8, PSAJ = 9 saja)
 // SUDAH otomatis difilter di prosesPembagianRuangan() lewat
 // KONFIGURASI_JENIS_UJIAN[jenisUjian].grades -- jadi sengaja TIDAK ada
-// dropdown "pilih kelas" manual di UI ini, admin cukup pilih jenis ujian
-// di layar sebelumnya.
+// dropdown "pilih kelas" manual di UI ini.
 
 import React, { useState, useEffect, useMemo } from "react";
 import {
@@ -189,7 +207,24 @@ const TabelMatrixJenjang = ({ data }) => {
 // jenisUjian sekarang datang dari level atas (JenisUjianMenuTab / pemilihan
 // PSAS-PSAT-PSAJ) -- sudah fixed di sini, jadi tidak ada lagi dropdown buat
 // gonta-ganti jenis ujian di dalam sub-fitur ini.
-const PembagianRuanganTab = ({ jenisUjian, showToast, onBack }) => {
+const PembagianRuanganTab = ({
+  jenisUjian,
+  showToast,
+  onBack,
+  // "full"    = semua tab (dipakai kalau komponen ini dibuka sebagai layar sendiri)
+  // "ruangan" = cuma bagian PENYUSUNAN ruangan: Komposisi + Pembagian (quota)
+  //             + tombol Simpan. Dipakai di kartu "Jadwal & Pembagian Ruangan".
+  // "peserta" = cuma bagian PESERTA: Preview Per Ruangan + Export Daftar
+  //             Peserta, read-only dari data yang SUDAH tersimpan di DB.
+  //             Dipakai di kartu "Peserta & Pengawas".
+  mode = "full",
+  // Kalau parent ngirim viewPaksa/tabPaksa, tab bar internal disembunyiin dan
+  // tab aktif ditentuin parent -- biar nggak ada 2-3 baris tab numpuk waktu
+  // komponen ini di-embed di kartu yang udah punya tab bar sendiri.
+  viewPaksa = null,
+  tabPaksa = null,
+}) => {
+  const modePeserta = mode === "peserta";
   const [daftarTahunAjaran, setDaftarTahunAjaran] = useState([]);
   const [tahunAjaranId, setTahunAjaranId] = useState("");
   const [kapasitas, setKapasitas] = useState(
@@ -204,7 +239,9 @@ const PembagianRuanganTab = ({ jenisUjian, showToast, onBack }) => {
 
   // Tab level PALING ATAS: "komposisi" (bandingin V1 vs V2, preview doang)
   // atau "pembagian" (alur proses -> quota manual -> simpan, default).
-  const [viewAktif, setViewAktif] = useState("pembagian");
+  const [viewInternal, setViewInternal] = useState("pembagian");
+  const viewAktif = viewPaksa || viewInternal;
+  const setViewAktif = setViewInternal;
   // Hasil bangunMatrixKomposisi() buat KEDUA versi sekaligus: { v1: [...], v2: [...] },
   // masing-masing array per jenjang. null = belum pernah dihitung.
   const [komposisiData, setKomposisiData] = useState(null);
@@ -237,7 +274,9 @@ const PembagianRuanganTab = ({ jenisUjian, showToast, onBack }) => {
   // Tab yang lagi aktif di bagian bawah: "edit" (tabel isi quota) atau
   // "preview" (lihat 1 ruangan sekaligus, format bersih -- fondasi buat
   // nanti dipakai cetak per ruangan).
-  const [tabAktif, setTabAktif] = useState("edit");
+  const [tabInternal, setTabInternal] = useState(modePeserta ? "export" : "edit");
+  const tabAktif = tabPaksa || tabInternal;
+  const setTabAktif = setTabInternal;
   // Ruangan yang lagi dipilih di dropdown tab Preview
   const [ruanganPreviewAktif, setRuanganPreviewAktif] = useState(null);
   // Tab "Export Daftar": ruangan mana yang mau diexport. "semua" = semua
@@ -583,21 +622,41 @@ const PembagianRuanganTab = ({ jenisUjian, showToast, onBack }) => {
 
   const totalSiswaQuota = Object.values(totalPerKelasSaatIni).reduce((sum, v) => sum + v, 0);
 
-  return (
-    <div className="p-4 sm:p-6">
-      <button
-        onClick={onBack}
-        className="flex items-center gap-1.5 text-sm text-gray-600 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 mb-4"
-      >
-        <ChevronLeft size={16} /> Kembali ke Sub-fitur
-      </button>
+  // Sub-tab mana aja yang boleh tampil, tergantung `mode`:
+  // - "ruangan" butuh tabel quota ("edit") + "preview" -- preview sengaja
+  //   ditaruh sebaris sama quota-nya, karena dua-duanya komponen yang sama:
+  //   apa yang diedit di tab quota langsung kelihatan di preview, TERMASUK
+  //   perubahan yang belum disimpan.
+  // - "peserta" cuma butuh "export" (baca data yang sudah tersimpan di DB)
+  // - "full" tetap ketiga-tiganya, kayak sebelum kartu dipisah.
+  const tabTampil = TAB_LIST.filter((tab) => {
+    if (mode === "ruangan") return tab.id !== "export";
+    if (modePeserta) return tab.id === "export";
+    return true;
+  });
 
-      <div className="mb-4">
-        <p className="text-xs text-gray-500 dark:text-gray-400">Jenis Ujian</p>
-        <p className="text-sm font-semibold text-gray-800 dark:text-gray-100">
-          {JENIS_UJIAN_LABEL[jenisUjian] || jenisUjian}
-        </p>
-      </div>
+  return (
+    <div className={onBack ? "p-4 sm:p-6" : ""}>
+      {/* Tombol balik & header jenis ujian cuma dipasang kalau komponen ini
+      dibuka sebagai layar sendiri (onBack ada). Waktu di-embed di dalam kartu,
+      kartu-nya yang udah punya tombol balik & header -- biar nggak dobel. */}
+      {onBack && (
+        <>
+          <button
+            onClick={onBack}
+            className="flex items-center gap-1.5 text-sm text-gray-600 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 mb-4"
+          >
+            <ChevronLeft size={16} /> Kembali ke Sub-fitur
+          </button>
+
+          <div className="mb-4">
+            <p className="text-xs text-gray-500 dark:text-gray-400">Jenis Ujian</p>
+            <p className="text-sm font-semibold text-gray-800 dark:text-gray-100">
+              {JENIS_UJIAN_LABEL[jenisUjian] || jenisUjian}
+            </p>
+          </div>
+        </>
+      )}
 
       {/* Form pilihan */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-5">
@@ -625,6 +684,10 @@ const PembagianRuanganTab = ({ jenisUjian, showToast, onBack }) => {
           </select>
         </div>
 
+        {/* Kapasitas cuma relevan waktu MENYUSUN ruangan. Di mode "peserta"
+        (kartu Peserta & Pengawas) datanya read-only dari DB, jadi field ini
+        disembunyiin biar nggak bikin ngira bisa diubah dari sini. */}
+        {!modePeserta && (
         <div>
           <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
             Kapasitas per Ruangan
@@ -643,6 +706,7 @@ const PembagianRuanganTab = ({ jenisUjian, showToast, onBack }) => {
             className="w-full px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100"
           />
         </div>
+        )}
       </div>
 
       {/* Tab level PALING ATAS: bandingin V1 vs V2 dulu di "Komposisi
@@ -650,6 +714,7 @@ const PembagianRuanganTab = ({ jenisUjian, showToast, onBack }) => {
           langsung ke alur "Pembagian Ruangan" (proses -> quota manual ->
           simpan). Beda sama TAB_LIST di bawah, yang itu sub-tab DI DALAM
           "Pembagian Ruangan". */}
+      {!viewPaksa && (
       <div className="flex flex-wrap gap-1 mb-5 border-b border-gray-200 dark:border-gray-700">
         {VIEW_TAB_LIST.map((tab) => {
           const Icon = tab.icon;
@@ -668,6 +733,7 @@ const PembagianRuanganTab = ({ jenisUjian, showToast, onBack }) => {
           );
         })}
       </div>
+      )}
 
       {viewAktif === "komposisi" && (
         <div className="mb-6">
@@ -754,6 +820,11 @@ const PembagianRuanganTab = ({ jenisUjian, showToast, onBack }) => {
 
       {viewAktif === "pembagian" && (
         <>
+          {/* Semua kontrol PENYUSUNAN (versi algoritma + tombol proses) cuma
+          muncul di mode "ruangan"/"full". Di kartu "Peserta & Pengawas"
+          (mode "peserta") data cuma dibaca dari DB, nggak diproses ulang. */}
+          {!modePeserta && (
+          <>
           {/* Versi algoritma -- terkunci begitu ujian ini punya record tersimpan
               (lihat versiSkemaTerkunci), karena versi_skema cuma boleh dipilih
               sekali pas record ujian pertama kali dibikin. */}
@@ -820,6 +891,24 @@ const PembagianRuanganTab = ({ jenisUjian, showToast, onBack }) => {
             <RefreshCw size={16} className={memproses ? "animate-spin" : ""} />
             {memproses ? "Memproses..." : "Proses Pembagian (Preview)"}
           </button>
+          </>
+          )}
+
+          {/* Mode "peserta": nggak ada tombol proses, jadi kasih tau statusnya
+          langsung -- lagi narik data, atau emang belum pernah disimpan. */}
+          {modePeserta && memuatTersimpan && (
+            <p className="text-xs text-gray-500 dark:text-gray-400 mb-2 flex items-center gap-1.5">
+              <Loader2 size={14} className="animate-spin" /> Memuat data peserta...
+            </p>
+          )}
+          {modePeserta && !memuatTersimpan && !quotaPerRuangan && tahunAjaranId && (
+            <div className="p-3 mb-5 text-xs bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl text-amber-700 dark:text-amber-300">
+              Belum ada pembagian ruangan yang tersimpan untuk tahun ajaran ini. Susun & simpan dulu
+              di sub-fitur <strong>Jadwal &amp; Pembagian Ruangan</strong> &rarr; tab{" "}
+              <strong>Pembagian Ruangan</strong>, baru daftar peserta bisa dipreview & diexport dari
+              sini.
+            </div>
+          )}
 
           {/* Tabel quota manual -- hasil auto-generate ditampilkan di sini,
           admin boleh ubah angkanya per kelas per ruangan sebelum disimpan. */}
@@ -836,8 +925,9 @@ const PembagianRuanganTab = ({ jenisUjian, showToast, onBack }) => {
 
               {/* Tab switcher: Pembagian Ruangan <-> Preview Per Ruangan <-> Export.
               flex-wrap supaya 3 tab ini nggak kepotong/nyempil di layar HP sempit. */}
+              {!tabPaksa && tabTampil.length > 1 && (
               <div className="flex flex-wrap gap-1 mb-4 border-b border-gray-200 dark:border-gray-700">
-                {TAB_LIST.map((tab) => {
+                {tabTampil.map((tab) => {
                   const Icon = tab.icon;
                   return (
                     <button
@@ -854,6 +944,7 @@ const PembagianRuanganTab = ({ jenisUjian, showToast, onBack }) => {
                   );
                 })}
               </div>
+              )}
 
               {tabAktif === "edit" && (
                 <>
@@ -1088,8 +1179,10 @@ const PembagianRuanganTab = ({ jenisUjian, showToast, onBack }) => {
                 <div className="mb-5">
                   <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">
                     Export daftar peserta ke Excel — buat ditempel di pintu ruangan & pegangan
-                    pengawas. Isinya mengikuti pembagian yang sedang tampil di layar, termasuk
-                    perubahan quota yang belum disimpan.
+                    pengawas.{" "}
+                    {modePeserta
+                      ? "Isinya mengikuti pembagian ruangan yang TERSIMPAN di database. Kalau baru ngubah quota di sub-fitur Jadwal & Pembagian Ruangan, simpan dulu di sana, lalu buka ulang tab ini."
+                      : "Isinya mengikuti pembagian yang sedang tampil di layar, termasuk perubahan quota yang belum disimpan."}
                   </p>
 
                   <div className="flex flex-col sm:flex-row sm:items-end gap-3 mb-4">
@@ -1155,21 +1248,26 @@ const PembagianRuanganTab = ({ jenisUjian, showToast, onBack }) => {
                 </div>
               )}
 
-              {!quotaValid && (
+              {!modePeserta && !quotaValid && (
                 <p className="text-xs text-red-600 dark:text-red-400 mb-3">
                   Total per kelas belum pas dengan jumlah siswa aktif -- cek baris "Target" di atas
                   (kolom yang merah berarti belum sesuai).
                 </p>
               )}
 
-              <button
-                onClick={handleSimpan}
-                disabled={menyimpan || !quotaValid}
-                className="flex items-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 text-white text-sm font-medium rounded-xl transition-all active:scale-95"
-              >
-                <Save size={16} />
-                {menyimpan ? "Menyimpan..." : "Simpan ke Database"}
-              </button>
+              {/* Tombol simpan sengaja cuma ada di mode penyusunan. Di kartu
+              "Peserta & Pengawas" yang tampil adalah data yang SUDAH tersimpan,
+              jadi nggak ada yang perlu disimpan lagi dari sana. */}
+              {!modePeserta && (
+                <button
+                  onClick={handleSimpan}
+                  disabled={menyimpan || !quotaValid}
+                  className="flex items-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 text-white text-sm font-medium rounded-xl transition-all active:scale-95"
+                >
+                  <Save size={16} />
+                  {menyimpan ? "Menyimpan..." : "Simpan ke Database"}
+                </button>
+              )}
             </div>
           )}
         </>

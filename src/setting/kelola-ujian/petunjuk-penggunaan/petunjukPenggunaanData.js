@@ -25,14 +25,24 @@ const PANDUAN = [
           "Tambahkan sesi ujian satu per satu: tanggal, jam, dan mata pelajaran yang diujikan.",
       },
       {
-        judul: "Tab Daftar Pengawas",
+        judul: "Tab Komposisi Ruangan",
         deskripsi:
-          "Daftarkan guru yang bertugas sebagai pengawas beserta kode singkatnya (dipakai di jadwal ngawas & kartu pengawas).",
+          "Bandingkan dulu hasil 2 versi algoritma (V1 Rotasi Penuh vs V2 Rantai Muter) sebelum diproses beneran. Ini murni hitungan preview, belum menyimpan apa pun ke database.",
       },
       {
-        judul: "Tab Jadwal Ngawas",
+        judul: "Tab Pembagian Ruangan",
         deskripsi:
-          "Tetapkan guru pengawas untuk tiap ruangan pada setiap sesi. Daftar ruangan diambil otomatis dari hasil Peserta & Pengawas -- kalau belum muncul, pastikan sub-fitur itu sudah diproses & disimpan dulu.",
+          'Pilih versi algoritma & kapasitas per ruangan, klik "Proses Pembagian" untuk membuat preview otomatis, sesuaikan quota manual per kelas per ruangan (pastikan baris "Target" tidak merah), lalu klik "Simpan ke Database".',
+      },
+      {
+        judul: "Tab Preview Per Ruangan",
+        deskripsi:
+          "Lihat tampilan daftar peserta per ruangan sebelum dicetak. Isinya mengikuti quota yang sedang tampil di layar, termasuk perubahan yang belum disimpan -- enak buat ngecek hasil editan quota.",
+      },
+      {
+        judul: "Wajib Disimpan Dulu",
+        deskripsi:
+          "Selama pembagian ruangan belum disimpan, daftar ruangan belum tersedia untuk sub-fitur lain -- Peserta & Pengawas, Kartu Ujian, dan Presensi & Berita Acara baru bisa jalan setelah data ini tersimpan.",
       },
     ],
   },
@@ -47,29 +57,24 @@ const PANDUAN = [
           'Dari halaman utama Manajemen Ujian, pilih jenis ujian (PSAS/PSAT/PSAJ), lalu buka kartu "Peserta & Pengawas" dan pilih Tahun Ajaran yang sesuai.',
       },
       {
-        judul: "Proses Pembagian",
+        judul: "Tab Export Daftar Peserta",
         deskripsi:
-          'Kapasitas per ruangan sudah terisi otomatis sesuai jenis ujian (bisa diubah manual). Klik "Proses Pembagian" untuk membuat preview otomatis berdasarkan jumlah siswa aktif per kelas.',
+          "Unduh daftar peserta per ruangan atau semua ruangan sekaligus dalam format Excel atau PDF -- untuk ditempel di pintu ruangan & pegangan pengawas. Isinya mengikuti pembagian yang SUDAH tersimpan, jadi kalau baru ngubah quota, simpan dulu di kartu Jadwal & Pembagian Ruangan.",
       },
       {
-        judul: "Sesuaikan Quota per Ruangan",
+        judul: "Tab Daftar Pengawas",
         deskripsi:
-          'Cek & edit quota manual di tab "Edit" kalau perlu. Pastikan baris "Target" tiap kelas tidak berwarna merah -- artinya total siswa per kelas sudah pas.',
+          "Daftarkan guru yang bertugas sebagai pengawas beserta kode singkatnya (dipakai di jadwal ngawas & kartu pengawas).",
       },
       {
-        judul: "Cek Preview",
+        judul: "Tab Jadwal Ngawas",
         deskripsi:
-          'Gunakan tab "Preview" untuk melihat tampilan daftar peserta per ruangan sebelum disimpan atau dicetak.',
+          "Tetapkan guru pengawas untuk tiap ruangan pada setiap hari pelaksanaan. Daftar ruangan & sesi diambil otomatis dari kartu Jadwal & Pembagian Ruangan.",
       },
       {
-        judul: "Simpan ke Database",
+        judul: "Tab Rekap",
         deskripsi:
-          'Klik "Simpan ke Database" agar hasil pembagian tersimpan. Sub-fitur lain (Jadwal & Pembagian Ruangan, Kartu Ujian, Presensi) baru bisa jalan setelah data ini tersimpan.',
-      },
-      {
-        judul: "Export Daftar Peserta",
-        deskripsi:
-          'Di tab "Export", unduh daftar peserta per ruangan atau semua ruangan sekaligus dalam format Excel atau PDF -- untuk ditempel di pintu ruangan.',
+          "Lihat rekap semua sesi & ruangan dalam satu tabel per hari -- bahan cek cepat sebelum dicetak.",
       },
     ],
   },
@@ -95,7 +100,7 @@ const PANDUAN = [
       {
         judul: "Cetak Kartu Pengawas",
         deskripsi:
-          "Pilih guru pengawas, lalu cetak kartu penugasan berdasarkan jadwal ngawas yang sudah diatur di sub-fitur Jadwal & Pembagian Ruangan.",
+          "Pilih guru pengawas, lalu cetak kartu penugasan berdasarkan jadwal ngawas yang sudah diatur di sub-fitur Peserta & Pengawas.",
       },
     ],
     catatan:

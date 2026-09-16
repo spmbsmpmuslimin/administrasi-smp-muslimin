@@ -6,10 +6,15 @@
 // KONFIGURASI_JENIS_UJIAN di pembagianRuanganSupabase.js).
 //
 // Skema kartu (lihat dokumentasi "dokumentasi-kelola-ujian.md"):
-// 1. Jadwal & Pembagian Ruangan (aktif) -- sekarang punya 3 tab di dalamnya:
-//    Jadwal Sesi, Daftar Pengawas, dan Jadwal Ngawas. "Daftar Pengawas"
-//    dulu Kartu sendiri, sekarang di-embed di sini (lihat JadwalPengawasTab.js).
-// 2. Peserta & Pengawas (Aktif)
+// 1. Jadwal & Pembagian Ruangan (aktif) -- 4 tab: Jadwal Sesi, Komposisi
+//    Ruangan, Pembagian Ruangan (quota + simpan), dan Preview Per Ruangan.
+//    Wadahnya JadwalRuanganTab.js, isinya di-embed dari JadwalPengawasTab.js &
+//    PembagianRuanganTab.js.
+// 2. Peserta & Pengawas (aktif) -- 4 tab: Export Daftar Peserta, Daftar
+//    Pengawas, Jadwal Ngawas, Rekap. Wadahnya
+//    PesertaPengawasTab.js. Isi tiap kartu sengaja disusun ulang biar
+//    nyambung sama judul kartunya (dulu semua urusan peserta nempel di
+//    kartu 1, semua urusan pengawas nempel di kartu 2).
 // 3. Kartu Ujian (aktif)
 // 4. Presensi & Berita Acara (aktif) -- bagian "Laporan" (rekap akhir)
 //    BELUM dibangun, cuma Daftar Hadir + Berita Acara (keduanya PDF form
@@ -46,8 +51,8 @@ import {
   Construction,
   FileDown,
 } from "lucide-react";
-import PembagianRuanganTab from "./pembagian-ruangan/PembagianRuanganTab";
-import JadwalPengawasTab from "./jadwal-pengawas/JadwalPengawasTab";
+import JadwalRuanganTab from "./JadwalRuanganTab";
+import PesertaPengawasTab from "./PesertaPengawasTab";
 import KartuUjianTab from "./dokumen-cetak/KartuUjianTab";
 import PresensiBeritaAcaraTab from "./dokumen-cetak/PresensiBeritaAcaraTab";
 import AnggaranBiayaTab from "./dokumen-cetak/AnggaranBiayaTab";
@@ -67,7 +72,7 @@ const SUB_FITUR = [
     id: "jadwal-pengawas",
     title: "Jadwal & Pembagian Ruangan",
     description:
-      "Atur jadwal sesi ujian per mapel, kode & daftar pengawas, dan pembagian ruangan jaga (penugasan guru pengawas per ruangan) tiap sesi",
+      "Atur jadwal sesi ujian per mapel, bandingkan komposisi ruangan, susun & simpan pembagian siswa ke tiap ruangan, lalu cek previewnya",
     icon: CalendarClock,
     status: "done",
     clickable: true,
@@ -76,7 +81,7 @@ const SUB_FITUR = [
     id: "pembagian-ruangan",
     title: "Peserta & Pengawas",
     description:
-      "Kelola daftar peserta & bagi siswa ke ruangan ujian otomatis berdasarkan kelas & huruf, siap jadi acuan pengawas ruangan",
+      "Export daftar peserta per ruangan, kelola daftar pengawas, jadwal ngawas per hari, dan rekapnya",
     icon: DoorOpen,
     status: "done",
     clickable: true,
@@ -148,7 +153,7 @@ const JenisUjianMenuTab = ({ jenisUjian, showToast, onBack }) => {
 
   if (activeSubFitur === "pembagian-ruangan") {
     return (
-      <PembagianRuanganTab
+      <PesertaPengawasTab
         jenisUjian={jenisUjian}
         showToast={showToast}
         onBack={() => setActiveSubFitur(null)}
@@ -158,7 +163,7 @@ const JenisUjianMenuTab = ({ jenisUjian, showToast, onBack }) => {
 
   if (activeSubFitur === "jadwal-pengawas") {
     return (
-      <JadwalPengawasTab
+      <JadwalRuanganTab
         jenisUjian={jenisUjian}
         showToast={showToast}
         onBack={() => setActiveSubFitur(null)}

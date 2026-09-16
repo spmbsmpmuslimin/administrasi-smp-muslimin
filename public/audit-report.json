@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-09-15T13:43:36.820Z",
-  "executionTimeMs": 2555,
-  "filesScanned": 296,
+  "generatedAt": "2026-09-16T12:57:57.836Z",
+  "executionTimeMs": 5974,
+  "filesScanned": 299,
   "summary": {
     "status": "warning",
     "criticalCount": 0,
@@ -39,7 +39,7 @@
       "issues": [
         {
           "severity": "info",
-          "title": "5810 class warna (di 201 file) kemungkinan belum dark-mode-aware",
+          "title": "5882 class warna (di 202 file) kemungkinan belum dark-mode-aware",
           "description": "Ini backlog, bukan berarti semua salah — bisa aja file itu emang belum kena giliran migrasi theme-*, atau sengaja gak butuh dark mode (misal komponen buat print/PDF). Diurutin dari file paling banyak class polos-nya, biar keliatan mana yang paling worth dibenerin duluan. Heuristik regex, review manual tetep perlu.",
           "details": [
             "src/setting/school-management/TeacherAssignmentTab.js — 167 class belum ada dark: variant",
@@ -49,6 +49,7 @@
             "src/pages/CatatanSiswa.js — 118 class belum ada dark: variant",
             "src/system/StrukturSistem.js — 111 class belum ada dark: variant",
             "src/pages/grades/Grades.js — 108 class belum ada dark: variant",
+            "src/setting/kelola-ujian/pembagian-ruangan/PembagianRuanganTab.js — 96 class belum ada dark: variant",
             "src/pages/grades/GradesKatrol.js — 88 class belum ada dark: variant",
             "src/spmb/StudentList.js — 87 class belum ada dark: variant",
             "src/setting/UserManagementTab.js — 86 class belum ada dark: variant",
@@ -70,7 +71,6 @@
             "src/system/MonitorDashboard.js — 63 class belum ada dark: variant",
             "src/setting/school-management/SiswaLulusTab.js — 62 class belum ada dark: variant",
             "src/pages/attendance/AttendanceFilters.js — 59 class belum ada dark: variant",
-            "src/setting/kelola-ujian/pembagian-ruangan/PembagianRuanganTab.js — 58 class belum ada dark: variant",
             "src/system/ActiveUsersTab.js — 57 class belum ada dark: variant",
             "src/reports/AdminReports.js — 54 class belum ada dark: variant",
             "src/setting/school-management/StudentModals.js — 54 class belum ada dark: variant",
@@ -117,7 +117,7 @@
             "src/reports/ReportHelpers.js:302 → select(\"*, classes(grade)\")",
             "src/setting/academic/YearTransition.js:392 → select(\"id, full_name, nis, nisn, class_id, student_profile_details ( jenis_kelamin, tempat_lahir,\")",
             "src/setting/kelola-ujian/dokumen-cetak/kartuUjianSupabase.js:25 → select(\"no_peserta, asal_kelas, students(full_name, nis)\")",
-            "src/setting/kelola-ujian/pembagian-ruangan/pembagianRuanganSupabase.js:205 → select(\"nomor_ruangan, no_peserta, asal_kelas, siswa_id, students(id, full_name, nis)\")",
+            "src/setting/kelola-ujian/pembagian-ruangan/pembagianRuanganSupabase.js:252 → select(\"nomor_ruangan, no_peserta, asal_kelas, siswa_id, students(id, full_name, nis)\")",
             "src/setting/school-management/SiswaLulusTab.js:549 → select(\"id, tahun_lulus, kelas_terakhir, academic_year_id, academic_years(id, year, semester, star\")",
             "src/setting/school-management/SiswaLulusTab.js:596 → select(\"*, academic_years(id, year, semester, start_date)\")",
             "src/setting/school-management/SiswaLulusTab.js:659 → select(\"*, academic_years(id, year, semester, start_date)\")"
