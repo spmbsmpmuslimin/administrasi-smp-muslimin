@@ -72,12 +72,12 @@ const VERSI_SKEMA_LIST = [
   },
   {
     value: "rotasi",
-    label: "V2 - Rotasi Penuh",
+    label: "V2 - Campur Merata (1 Jenjang)",
     deskripsi: "Tiap ruang kecampur rata dari semua kelas asal di jenjang itu.",
   },
   {
     value: "rantai",
-    label: "V3 - Rantai Muter",
+    label: "V3 - Gabung 2 Kelas Berdekatan",
     deskripsi: "Tiap ruang cuma gabungan 2 kelas yang bersebelahan.",
   },
 ];

@@ -109,6 +109,28 @@ function labelTahunAjaran(row) {
   return row.year || row.tahun_ajaran || row.name || row.label || row.nama || `ID: ${row.id}`;
 }
 
+// Warna aksen per versi skema, dipakai buat nge-highlight kelas yang MASUK
+// ke suatu ruangan (jumlah > 0) di TabelMatrixJenjang -- beda warna per versi
+// biar pas gonta-ganti sub-tab (Silang Jenjang / Rotasi Penuh / Rantai
+// Muter) langsung kekasih keliatan beda tanpa perlu baca ulang label-nya.
+// Kelas yang GAK masuk (jumlah 0) sengaja diredupkan (abu-abu, gak bold)
+// biar kontrasnya jelas sama yang masuk.
+const AKSEN_WARNA_VERSI = {
+  silang: {
+    isi: "bg-violet-100 text-violet-800 dark:bg-violet-900/40 dark:text-violet-300",
+    kosong: "text-gray-300 dark:text-gray-600",
+  },
+  rotasi: {
+    isi: "bg-sky-100 text-sky-800 dark:bg-sky-900/40 dark:text-sky-300",
+    kosong: "text-gray-300 dark:text-gray-600",
+  },
+  rantai: {
+    isi: "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300",
+    kosong: "text-gray-300 dark:text-gray-600",
+  },
+};
+const AKSEN_WARNA_DEFAULT = AKSEN_WARNA_VERSI.rotasi;
+
 // Render 1 tabel matrix (Ruang x Kelas) buat 1 jenjang, gaya sama kayak
 // file Excel referensi awal: baris = ruang, kolom = kelas asal, + baris
 // "Cek Total" (dijumlah dari hasil pembagian) & "Data Asli" (jumlah siswa
@@ -116,8 +138,14 @@ function labelTahunAjaran(row) {
 // pas di 1 kolom, kolomnya di-highlight merah (harusnya nggak pernah
 // kejadian selama algoritmanya bener, tapi tetep dicek biar keliatan
 // kalau ada yang aneh).
-const TabelMatrixJenjang = ({ data }) => {
+//
+// `versiAktif` nentuin warna aksen buat kelas yang MASUK ke tiap ruangan
+// (lihat AKSEN_WARNA_VERSI di atas) -- kelas yang jumlahnya 0 di suatu
+// ruangan diredupkan, biar langsung kebaca kelas mana aja yang beneran
+// nyampur di ruangan itu tanpa harus mindai angka satu-satu.
+const TabelMatrixJenjang = ({ data, versiAktif }) => {
   const { jenjang, urutanKelas, ruang, cekTotal, dataAsli } = data;
+  const aksen = AKSEN_WARNA_VERSI[versiAktif] || AKSEN_WARNA_DEFAULT;
   return (
     <div className="mb-6">
       <p className="text-sm font-bold text-gray-900 dark:text-white mb-2">Jenjang {jenjang}</p>
@@ -152,14 +180,22 @@ const TabelMatrixJenjang = ({ data }) => {
                 <td className="py-2 px-3 font-semibold text-gray-900 dark:text-white whitespace-nowrap">
                   Ruang {r.nomor_ruangan}
                 </td>
-                {urutanKelas.map((kelas) => (
-                  <td
-                    key={kelas}
-                    className="text-center py-2 px-3 font-medium text-gray-900 dark:text-white"
-                  >
-                    {r.perKelas[kelas] || 0}
-                  </td>
-                ))}
+                {urutanKelas.map((kelas) => {
+                  const jumlah = r.perKelas[kelas] || 0;
+                  return (
+                    <td key={kelas} className="text-center py-2 px-3">
+                      {jumlah > 0 ? (
+                        <span
+                          className={`inline-block min-w-[2rem] px-2 py-0.5 rounded-md font-bold ${aksen.isi}`}
+                        >
+                          {jumlah}
+                        </span>
+                      ) : (
+                        <span className={`font-normal ${aksen.kosong}`}>0</span>
+                      )}
+                    </td>
+                  );
+                })}
                 <td className="text-center py-2 px-3 font-bold text-gray-900 dark:text-white">
                   {r.total}
                 </td>
@@ -240,10 +276,14 @@ const PembagianRuanganTab = ({
   // eksplisit yang disebut di komentar getOrCreateUjian() (lihat
   // resetUntukProsesUlang di pembagianRuanganSupabase.js). Checkbox wajib
   // dicentang dulu baru tombol konfirmasi di modal aktif, biar admin bener-
-  // bener baca peringatannya sebelum data lama kehapus.
+  // bener baca peringatannya sebelum data lama kehapus. versiBaruDipilih
+  // dipilih LANGSUNG di modal (bukan lewat radio utama) karena
+  // resetUntukProsesUlang sekarang update versi_skema di tempat, sekali
+  // jalan -- gak ada lagi jeda "kebuka dulu baru radio-nya bisa dipencet".
   const [prosesUlangModalOpen, setProsesUlangModalOpen] = useState(false);
   const [konfirmasiProsesUlang, setKonfirmasiProsesUlang] = useState(false);
   const [memProsesUlang, setMemProsesUlang] = useState(false);
+  const [versiBaruDipilih, setVersiBaruDipilih] = useState(VERSI_DEFAULT);
 
   // Tab level PALING ATAS: "komposisi" (bandingin V1 vs V2, preview doang)
   // atau "pembagian" (alur proses -> quota manual -> simpan, default).
@@ -487,8 +527,14 @@ const PembagianRuanganTab = ({
   };
 
   // Buka modal peringatan -- belum ngapa-ngapain ke DB, cuma nampilin modal.
+  // Default pilihan versi baru = versi PERTAMA di VERSI_SKEMA_LIST yang
+  // BUKAN versi yang lagi kepake, biar admin nggak keklik "ganti versi" tapi
+  // ternyata milih versi yang sama persis kayak sebelumnya.
   const handleBukaProsesUlangModal = () => {
     setKonfirmasiProsesUlang(false);
+    const versiSaatIni = normalisasiVersiSkema(versiSkema);
+    const opsiLain = VERSI_SKEMA_LIST.find((o) => o.value !== versiSaatIni);
+    setVersiBaruDipilih(opsiLain?.value || VERSI_DEFAULT);
     setProsesUlangModalOpen(true);
   };
 
@@ -497,16 +543,18 @@ const PembagianRuanganTab = ({
     setKonfirmasiProsesUlang(false);
   };
 
-  // Eksekusi beneran: hapus record ujian + peserta_ujian lama (lewat
-  // resetUntukProsesUlang), terus reset state lokal biar tab ini balik ke
-  // kondisi "belum pernah diproses" -- radio versi kebuka lagi, admin
-  // tinggal pilih versi & pencet "Proses Pembagian" seperti biasa.
+  // Eksekusi beneran: hapus peserta_ujian lama + update versi_skema di
+  // tempat ke versiBaruDipilih (lewat resetUntukProsesUlang -- baris ujian
+  // itu sendiri TIDAK dihapus, lihat catatan di fungsi itu), terus reset
+  // state lokal hasil pembagian yang lagi ditampilin (karena udah nggak
+  // valid lagi buat versi baru) biar admin tinggal pencet "Proses
+  // Pembagian" buat generate ulang pakai versi yang baru dipilih.
   const handleKonfirmasiProsesUlang = async () => {
     if (!konfirmasiProsesUlang || !tahunAjaranId) return;
     setMemProsesUlang(true);
     try {
-      await resetUntukProsesUlang(supabase, jenisUjian, tahunAjaranId);
-      setVersiSkemaTerkunci(false);
+      await resetUntukProsesUlang(supabase, jenisUjian, tahunAjaranId, versiBaruDipilih);
+      setVersiSkema(normalisasiVersiSkema(versiBaruDipilih));
       setHasilAsli(null);
       setQuotaPerRuangan(null);
       setTargetPerKelas({});
@@ -515,12 +563,12 @@ const PembagianRuanganTab = ({
       setProsesUlangModalOpen(false);
       setKonfirmasiProsesUlang(false);
       showToast?.(
-        "Data ruangan lama sudah dihapus -- pilih versi lalu proses ulang buat kombinasi ini",
+        `Versi diganti ke ${labelVersiSkema(versiBaruDipilih)} -- data ruangan lama sudah dihapus, klik "Proses Pembagian" untuk generate ulang.`,
         "success"
       );
     } catch (err) {
       console.error(err);
-      showToast?.("Gagal membuka kunci versi: " + err.message, "error");
+      showToast?.("Gagal proses ulang: " + err.message, "error");
     } finally {
       setMemProsesUlang(false);
     }
@@ -837,7 +885,11 @@ const PembagianRuanganTab = ({
               </p>
 
               {komposisiData[komposisiVersiAktif].map((matrixJenjang) => (
-                <TabelMatrixJenjang key={matrixJenjang.jenjang} data={matrixJenjang} />
+                <TabelMatrixJenjang
+                  key={matrixJenjang.jenjang}
+                  data={matrixJenjang}
+                  versiAktif={komposisiVersiAktif}
+                />
               ))}
 
               <div className="flex flex-wrap items-center gap-3">
@@ -1368,6 +1420,45 @@ const PembagianRuanganTab = ({
               </div>
             </div>
 
+            <div className="mb-4">
+              <p className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Pilih versi baru:
+              </p>
+              <div className="space-y-2">
+                {VERSI_SKEMA_LIST.map((opsi) => (
+                  <label
+                    key={opsi.value}
+                    className={`flex items-start gap-2.5 p-2.5 rounded-lg border cursor-pointer text-sm ${
+                      versiBaruDipilih === opsi.value
+                        ? "border-indigo-400 bg-indigo-50 dark:bg-indigo-900/20 dark:border-indigo-600"
+                        : "border-gray-200 dark:border-gray-700"
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="versiBaruProsesUlang"
+                      checked={versiBaruDipilih === opsi.value}
+                      onChange={() => setVersiBaruDipilih(opsi.value)}
+                      className="mt-0.5"
+                    />
+                    <span>
+                      <span className="font-medium text-gray-800 dark:text-gray-100">
+                        {opsi.label}
+                      </span>
+                      {normalisasiVersiSkema(versiSkema) === opsi.value && (
+                        <span className="ml-1.5 text-xs text-gray-500 dark:text-gray-400">
+                          (versi sekarang)
+                        </span>
+                      )}
+                      <span className="block text-xs text-gray-500 dark:text-gray-400">
+                        {opsi.deskripsi}
+                      </span>
+                    </span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
             <label className="flex items-start gap-2.5 p-3 mb-4 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/40 cursor-pointer">
               <input
                 type="checkbox"
@@ -1392,7 +1483,7 @@ const PembagianRuanganTab = ({
                 ) : (
                   <Unlock size={16} />
                 )}
-                {memProsesUlang ? "Menghapus..." : "Hapus & Buka Kunci"}
+                {memProsesUlang ? "Memproses..." : "Ganti Versi & Hapus Data Lama"}
               </button>
               <button
                 onClick={handleBatalProsesUlangModal}

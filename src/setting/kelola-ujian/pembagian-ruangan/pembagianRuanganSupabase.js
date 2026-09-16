@@ -297,21 +297,24 @@ async function ambilPembagianTersimpan(supabase, ujianId) {
  * disebut di komentar getOrCreateUjian() di atas (dulu belum ada tombolnya,
  * makanya satu-satunya jalan buat ganti versi cuma manual lewat SQL).
  * Dipanggil dari tombol "Proses Ulang dengan Versi Lain" di UI, SETELAH
- * admin konfirmasi lewat modal peringatan -- jangan dipanggil langsung
- * dari efek samping klik radio/tombol biasa.
+ * admin konfirmasi + pilih versi baru lewat modal peringatan -- jangan
+ * dipanggil langsung dari efek samping klik radio/tombol biasa.
  *
- * Menghapus SEMUA peserta_ujian + record ujian buat kombinasi ini, biar
- * getOrCreateUjian() berikutnya bikin record baru dengan versi_skema yang
- * baru dipilih admin. Nomor ruangan & no. peserta LAMA ikut hilang --
- * kalau Jadwal Pengawas / Kartu Ujian udah sempat di-assign/dicetak pakai
- * nomor ruangan lama, itu WAJIB dicek ulang manual sama admin (di luar
- * fungsi ini, gak ada cara ngecek itu otomatis dari sini).
+ * SENGAJA cuma hapus peserta_ujian + UPDATE versi_skema di tempat --
+ * BUKAN hapus baris `ujian`-nya. ujian_jadwal, anggaran_ujian,
+ * laporan_rekap_ujian, dan rekap_kehadiran_ujian semua ON DELETE CASCADE
+ * ke ujian.id, jadi kalau baris ujian ikut kehapus, jadwal/anggaran/laporan
+ * yang udah diisi admin buat ujian itu ikut lenyap -- padahal niatnya cuma
+ * reset pembagian ruangan doang, bukan reset seluruh ujian.
  *
+ * @param {string} versiSkemaBaru - kode versi baru (lihat VERSI_SKEMA_LIST
+ *   di bagiRuanganPerJenjang.js), DINORMALISASI dulu sebelum ditulis biar
+ *   konsisten sama getOrCreateUjian().
  * @returns {Promise<{ada: boolean}>} ada=false kalau memang belum ada
- *   apa-apa buat kombinasi ini (no-op, gak ada yang dihapus -- bisa
- *   kejadian kalau 2 admin klik render yang beda-beda di waktu bersamaan)
+ *   apa-apa buat kombinasi ini (no-op, gak ada yang diubah -- bisa
+ *   kejadian kalau 2 admin klik bareng di waktu yang hampir sama)
  */
-async function resetUntukProsesUlang(supabase, jenis, academicYearId) {
+async function resetUntukProsesUlang(supabase, jenis, academicYearId, versiSkemaBaru) {
   const { data: ujian, error: errSelect } = await supabase
     .from("ujian")
     .select("id")
@@ -322,16 +325,17 @@ async function resetUntukProsesUlang(supabase, jenis, academicYearId) {
   if (errSelect) throw errSelect;
   if (!ujian) return { ada: false };
 
-  // Hapus peserta_ujian dulu sebelum ujian-nya sendiri -- jangan andalkan
-  // ON DELETE CASCADE dari FK (belum tentu ada di skema), jadi eksplisit aja.
   const { error: errDeletePeserta } = await supabase
     .from("peserta_ujian")
     .delete()
     .eq("ujian_id", ujian.id);
   if (errDeletePeserta) throw errDeletePeserta;
 
-  const { error: errDeleteUjian } = await supabase.from("ujian").delete().eq("id", ujian.id);
-  if (errDeleteUjian) throw errDeleteUjian;
+  const { error: errUpdateVersi } = await supabase
+    .from("ujian")
+    .update({ versi_skema: normalisasiVersiSkema(versiSkemaBaru) })
+    .eq("id", ujian.id);
+  if (errUpdateVersi) throw errUpdateVersi;
 
   return { ada: true };
 }
