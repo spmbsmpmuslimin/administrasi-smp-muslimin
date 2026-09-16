@@ -44,6 +44,8 @@ import {
   FileText,
   Loader2,
   LayoutGrid,
+  AlertTriangle,
+  Unlock,
 } from "lucide-react";
 import { supabase } from "../../../supabaseClient";
 import {
@@ -54,6 +56,7 @@ import {
   prosesPembagianRuangan,
   simpanPembagianRuangan,
   ambilPembagianTersimpan,
+  resetUntukProsesUlang,
   KONFIGURASI_JENIS_UJIAN,
 } from "./pembagianRuanganSupabase";
 import { bagiRuanganPerJenjang, bangunMatrixKomposisi } from "./bagiRuanganPerJenjang";
@@ -236,6 +239,14 @@ const PembagianRuanganTab = ({
   // record itu gak bisa diganti lagi lewat sub-fitur ini, jadi radio-nya
   // dikunci & cuma nampilin versi yang beneran kepake.
   const [versiSkemaTerkunci, setVersiSkemaTerkunci] = useState(false);
+  // Modal konfirmasi buat tombol "Proses Ulang dengan Versi Lain" -- aksi
+  // eksplisit yang disebut di komentar getOrCreateUjian() (lihat
+  // resetUntukProsesUlang di pembagianRuanganSupabase.js). Checkbox wajib
+  // dicentang dulu baru tombol konfirmasi di modal aktif, biar admin bener-
+  // bener baca peringatannya sebelum data lama kehapus.
+  const [prosesUlangModalOpen, setProsesUlangModalOpen] = useState(false);
+  const [konfirmasiProsesUlang, setKonfirmasiProsesUlang] = useState(false);
+  const [memProsesUlang, setMemProsesUlang] = useState(false);
 
   // Tab level PALING ATAS: "komposisi" (bandingin V1 vs V2, preview doang)
   // atau "pembagian" (alur proses -> quota manual -> simpan, default).
@@ -470,6 +481,46 @@ const PembagianRuanganTab = ({
       showToast?.("Gagal memproses pembagian ruangan: " + err.message, "error");
     } finally {
       setMemproses(false);
+    }
+  };
+
+  // Buka modal peringatan -- belum ngapa-ngapain ke DB, cuma nampilin modal.
+  const handleBukaProsesUlangModal = () => {
+    setKonfirmasiProsesUlang(false);
+    setProsesUlangModalOpen(true);
+  };
+
+  const handleBatalProsesUlangModal = () => {
+    setProsesUlangModalOpen(false);
+    setKonfirmasiProsesUlang(false);
+  };
+
+  // Eksekusi beneran: hapus record ujian + peserta_ujian lama (lewat
+  // resetUntukProsesUlang), terus reset state lokal biar tab ini balik ke
+  // kondisi "belum pernah diproses" -- radio versi kebuka lagi, admin
+  // tinggal pilih versi & pencet "Proses Pembagian" seperti biasa.
+  const handleKonfirmasiProsesUlang = async () => {
+    if (!konfirmasiProsesUlang || !tahunAjaranId) return;
+    setMemProsesUlang(true);
+    try {
+      await resetUntukProsesUlang(supabase, jenisUjian, tahunAjaranId);
+      setVersiSkemaTerkunci(false);
+      setHasilAsli(null);
+      setQuotaPerRuangan(null);
+      setTargetPerKelas({});
+      setDaftarKelas([]);
+      setRuanganPreviewAktif(null);
+      setProsesUlangModalOpen(false);
+      setKonfirmasiProsesUlang(false);
+      showToast?.(
+        "Data ruangan lama sudah dihapus -- pilih versi lalu proses ulang buat kombinasi ini",
+        "success"
+      );
+    } catch (err) {
+      console.error(err);
+      showToast?.("Gagal membuka kunci versi: " + err.message, "error");
+    } finally {
+      setMemProsesUlang(false);
     }
   };
 
@@ -868,12 +919,21 @@ const PembagianRuanganTab = ({
               ))}
             </div>
             {versiSkemaTerkunci && (
-              <p className="text-xs text-amber-600 dark:text-amber-400 mt-2">
-                Versi terkunci — ujian ini sudah pernah diproses/disimpan dengan versi{" "}
-                <span className="font-semibold">{versiSkema.toUpperCase()}</span>. Ganti versi cuma
-                bisa dilakukan buat ujian yang belum pernah disimpan pada kombinasi jenis ujian +
-                tahun ajaran ini.
-              </p>
+              <div className="mt-2">
+                <p className="text-xs text-amber-600 dark:text-amber-400">
+                  Versi terkunci — ujian ini sudah pernah diproses/disimpan dengan versi{" "}
+                  <span className="font-semibold">{versiSkema.toUpperCase()}</span>. Ganti versi
+                  cuma bisa dilakukan lewat "Proses Ulang dengan Versi Lain" di bawah, karena itu
+                  bakal menghapus data ruangan yang udah tersimpan.
+                </p>
+                <button
+                  onClick={handleBukaProsesUlangModal}
+                  className="flex items-center gap-1.5 mt-2 text-xs font-medium text-amber-700 dark:text-amber-400 hover:underline"
+                >
+                  <Unlock size={13} />
+                  Proses Ulang dengan Versi Lain
+                </button>
+              </div>
             )}
           </div>
 
@@ -1271,6 +1331,76 @@ const PembagianRuanganTab = ({
             </div>
           )}
         </>
+      )}
+
+      {/* Modal konfirmasi "Proses Ulang dengan Versi Lain" -- aksi eksplisit
+      yang bikin resetUntukProsesUlang() beneran jalan (hapus data ruangan
+      lama). Checkbox wajib dicentang dulu baru tombol konfirmasi aktif. */}
+      {prosesUlangModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-md w-full p-5 sm:p-6">
+            <div className="flex items-start gap-3 mb-4">
+              <AlertTriangle
+                className="text-red-600 dark:text-red-500 flex-shrink-0 mt-0.5"
+                size={22}
+              />
+              <div>
+                <h4 className="font-bold text-gray-800 dark:text-gray-100">
+                  Proses Ulang dengan Versi Lain?
+                </h4>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                  Ini bakal <span className="font-semibold">menghapus permanen</span> data ruangan
+                  & no. peserta yang sudah tersimpan untuk{" "}
+                  <span className="font-semibold">
+                    {JENIS_UJIAN_LABEL[jenisUjian]?.split(" - ")[0] || jenisUjian} —{" "}
+                    {labelTahunAjaranAktif || "-"}
+                  </span>
+                  . Nomor ruangan lama bisa berubah/hilang begitu diproses ulang pakai versi lain.
+                </p>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
+                  Kalau Jadwal Pengawas atau Kartu Ujian sudah pernah di-assign/dicetak pakai nomor
+                  ruangan yang sekarang, itu <span className="font-semibold">wajib dicek ulang</span>{" "}
+                  manual setelah proses ulang ini selesai.
+                </p>
+              </div>
+            </div>
+
+            <label className="flex items-start gap-2.5 p-3 mb-4 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/40 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={konfirmasiProsesUlang}
+                onChange={(e) => setKonfirmasiProsesUlang(e.target.checked)}
+                className="mt-0.5"
+              />
+              <span className="text-sm text-gray-700 dark:text-gray-300">
+                Saya paham data ruangan lama akan terhapus dan siap mengecek ulang Jadwal Pengawas
+                & Kartu Ujian setelahnya.
+              </span>
+            </label>
+
+            <div className="flex flex-col sm:flex-row gap-3">
+              <button
+                onClick={handleKonfirmasiProsesUlang}
+                disabled={!konfirmasiProsesUlang || memProsesUlang}
+                className="flex-1 flex items-center justify-center gap-2 px-5 py-3 bg-red-600 hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-600 text-white rounded-lg disabled:opacity-40 disabled:cursor-not-allowed font-bold transition min-h-[44px]"
+              >
+                {memProsesUlang ? (
+                  <Loader2 size={16} className="animate-spin" />
+                ) : (
+                  <Unlock size={16} />
+                )}
+                {memProsesUlang ? "Menghapus..." : "Hapus & Buka Kunci"}
+              </button>
+              <button
+                onClick={handleBatalProsesUlangModal}
+                disabled={memProsesUlang}
+                className="px-5 py-3 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-lg font-medium transition min-h-[44px] disabled:opacity-60"
+              >
+                Batal
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

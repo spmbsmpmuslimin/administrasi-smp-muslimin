@@ -280,6 +280,51 @@ async function ambilPembagianTersimpan(supabase, ujianId) {
     .sort((a, b) => a.nomor_ruangan - b.nomor_ruangan);
 }
 
+/**
+ * Buka kunci versi_skema buat kombinasi jenis+tahun ajaran yang udah
+ * pernah diproses/disimpan -- ini implementasi dari "aksi eksplisit" yang
+ * disebut di komentar getOrCreateUjian() di atas (dulu belum ada tombolnya,
+ * makanya satu-satunya jalan buat ganti versi cuma manual lewat SQL).
+ * Dipanggil dari tombol "Proses Ulang dengan Versi Lain" di UI, SETELAH
+ * admin konfirmasi lewat modal peringatan -- jangan dipanggil langsung
+ * dari efek samping klik radio/tombol biasa.
+ *
+ * Menghapus SEMUA peserta_ujian + record ujian buat kombinasi ini, biar
+ * getOrCreateUjian() berikutnya bikin record baru dengan versi_skema yang
+ * baru dipilih admin. Nomor ruangan & no. peserta LAMA ikut hilang --
+ * kalau Jadwal Pengawas / Kartu Ujian udah sempat di-assign/dicetak pakai
+ * nomor ruangan lama, itu WAJIB dicek ulang manual sama admin (di luar
+ * fungsi ini, gak ada cara ngecek itu otomatis dari sini).
+ *
+ * @returns {Promise<{ada: boolean}>} ada=false kalau memang belum ada
+ *   apa-apa buat kombinasi ini (no-op, gak ada yang dihapus -- bisa
+ *   kejadian kalau 2 admin klik render yang beda-beda di waktu bersamaan)
+ */
+async function resetUntukProsesUlang(supabase, jenis, academicYearId) {
+  const { data: ujian, error: errSelect } = await supabase
+    .from("ujian")
+    .select("id")
+    .eq("jenis", jenis)
+    .eq("academic_year_id", academicYearId)
+    .maybeSingle();
+
+  if (errSelect) throw errSelect;
+  if (!ujian) return { ada: false };
+
+  // Hapus peserta_ujian dulu sebelum ujian-nya sendiri -- jangan andalkan
+  // ON DELETE CASCADE dari FK (belum tentu ada di skema), jadi eksplisit aja.
+  const { error: errDeletePeserta } = await supabase
+    .from("peserta_ujian")
+    .delete()
+    .eq("ujian_id", ujian.id);
+  if (errDeletePeserta) throw errDeletePeserta;
+
+  const { error: errDeleteUjian } = await supabase.from("ujian").delete().eq("id", ujian.id);
+  if (errDeleteUjian) throw errDeleteUjian;
+
+  return { ada: true };
+}
+
 export {
   ambilSiswaPerKelas,
   ambilDaftarTahunAjaran,
@@ -288,5 +333,6 @@ export {
   prosesPembagianRuangan,
   simpanPembagianRuangan,
   ambilPembagianTersimpan,
+  resetUntukProsesUlang,
   KONFIGURASI_JENIS_UJIAN,
 };
