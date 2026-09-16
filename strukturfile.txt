@@ -1,9 +1,9 @@
 STRUKTUR SISTEM
-Di-download dari UI: 15 Sep 2026, 20.44
+Di-download dari UI: 16 Sep 2026, 21.27
 
 ======================================================================
 STRUKTUR PROJECT (src/)
-Terakhir di-generate: 15 Sep 2026, 20.43
+Terakhir di-generate: 16 Sep 2026, 21.25
 ======================================================================
 |-- src
 |   |-- assets
@@ -243,13 +243,15 @@ Terakhir di-generate: 15 Sep 2026, 20.43
 |   |   |   |   |-- KartuUjianTab.js
 |   |   |   |   |-- LaporanRekapAkhirTab.js
 |   |   |   |   |-- PresensiBeritaAcaraTab.js
+|   |   |   |   |-- ProgramKerjaTab.js
 |   |   |   |   |-- anggaranBiayaSupabase.js
 |   |   |   |   |-- kartuUjianPdf.js
 |   |   |   |   |-- kartuUjianSupabase.js
 |   |   |   |   |-- laporanRekapAkhirPdf.js
 |   |   |   |   |-- laporanRekapAkhirSupabase.js
 |   |   |   |   |-- presensiBeritaAcaraPdf.js
-|   |   |   |   `-- presensiBeritaAcaraSupabase.js
+|   |   |   |   |-- presensiBeritaAcaraSupabase.js
+|   |   |   |   `-- programKerjaPdf.js
 |   |   |   |-- jadwal-pengawas
 |   |   |   |   |-- DaftarPengawasTab.js
 |   |   |   |   |-- JadwalPengawasTab.js
@@ -257,6 +259,7 @@ Terakhir di-generate: 15 Sep 2026, 20.43
 |   |   |   |-- pembagian-ruangan
 |   |   |   |   |-- PembagianRuanganTab.js
 |   |   |   |   |-- bagiRuangan.js
+|   |   |   |   |-- bagiRuanganPerJenjang.js
 |   |   |   |   |-- daftarPesertaExcelExport.js
 |   |   |   |   |-- daftarPesertaPdfExport.js
 |   |   |   |   |-- noPeserta.js
@@ -266,8 +269,10 @@ Terakhir di-generate: 15 Sep 2026, 20.43
 |   |   |   |   |-- petunjukPenggunaanData.js
 |   |   |   |   `-- petunjukPenggunaanPdf.js
 |   |   |   |-- ExportSemuaTab.js
+|   |   |   |-- JadwalRuanganTab.js
 |   |   |   |-- JenisUjianMenuTab.js
 |   |   |   |-- KelolaUjianTab.js
+|   |   |   |-- PesertaPengawasTab.js
 |   |   |   `-- exportSemuaKelolaUjian.js
 |   |   |-- portal-siswa
 |   |   |   |-- AkunSiswaTab.js
@@ -351,7 +356,7 @@ Terakhir di-generate: 15 Sep 2026, 20.43
 
 ======================================================================
 STRUKTUR DATABASE
-Terakhir di-generate: 15 Sep 2026, 20.43
+Terakhir di-generate: 16 Sep 2026, 21.25
 ======================================================================
 ## Daftar Tabel Database Supabase
 academic_events : id,title,category_id,start_date,end_date,description,academic_year,semester,created_by,created_at,updated_at
@@ -426,7 +431,7 @@ teacher_profiles : id,teacher_id,nuptk,jenis_kelamin,tempat_lahir,tanggal_lahir,
 teacher_schedules : id,teacher_id,day,start_time,end_time,class_id,room_number,created_at,updated_at,academic_year_id,subject,source
 tindaklanjut_homevisits : id,home_visit_id,jenis,status,catatan,created_at,updated_at
 tujuan_pembelajaran : id,mata_pelajaran,tingkat,fase,deskripsi_tp,urutan,academic_year_id,semester,created_at,updated_at,is_active
-ujian : id,jenis,academic_year_id,status,kapasitas_ruangan,created_at,updated_at
+ujian : id,jenis,academic_year_id,status,kapasitas_ruangan,created_at,updated_at,versi_skema
 ujian_jadwal : id,ujian_id,tanggal,sesi_ke,waktu_mulai,waktu_selesai,mata_pelajaran,created_at
 ujian_pengawas : id,jadwal_id,nomor_ruangan,guru_id,created_at
 user_devices : id,user_id,device_id,brand,model,platform,browser,last_login_at,created_at
