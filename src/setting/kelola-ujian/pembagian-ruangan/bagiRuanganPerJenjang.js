@@ -12,6 +12,16 @@
 // jumlah ruang -- makanya fungsi-fungsi di sini SENGAJA tidak menerima
 // parameter kapasitas sama sekali.
 //
+// CATATAN VERSI (per Sep 2026): sejak ada skema "Silang Jenjang"
+// (bagiRuanganSilangJenjang.js) yang jadi V1, 2 versi di file ini TURUN
+// NOMOR di UI -- yang di bawah ini ditulis sebagai "V1/V2" karena itu
+// penamaan aslinya, tapi sekarang tampil sebagai:
+//     V1 Rotasi Penuh  -> sekarang "V2 - Rotasi Penuh"   (kode: "rotasi")
+//     V2 Rantai Muter  -> sekarang "V3 - Rantai Muter"   (kode: "rantai")
+// Kode internal ("rotasi"/"rantai") sengaja BUKAN angka, biar penomoran
+// di UI bisa digeser lagi kapan pun tanpa bikin data `versi_skema` yang
+// udah tersimpan di DB jadi salah arti.
+//
 // 2 versi skema pembagian di dalam 1 jenjang:
 //
 // V1 -- ROTASI PENUH: tiap ruang kebagian potongan dari SEMUA kelas asal
@@ -40,6 +50,67 @@
 // sama: (1) total per kelas selalu pas [Cek Total = Data Asli],
 // (2) V1 = campur semua kelas tiap ruang, (3) V2 = cuma 2 kelas
 // bersebelahan tiap ruang.
+
+import { bagiRuanganSilangJenjang } from "./bagiRuanganSilangJenjang";
+
+/**
+ * SUMBER KEBENARAN TUNGGAL daftar versi skema -- dipakai bareng sama UI
+ * (PembagianRuanganTab.js) dan layer Supabase, biar nambah/geser versi
+ * cukup diedit di satu tempat.
+ *
+ * `value` = kode yang DISIMPAN di kolom `ujian.versi_skema`. Sengaja
+ * BUKAN "v1"/"v2"/"v3": nomor di UI bisa bergeser kapan pun (kayak yang
+ * baru aja terjadi waktu Silang Jenjang masuk jadi V1), sedangkan nilai
+ * yang udah nyangkut di DB gak boleh berubah artinya.
+ */
+const VERSI_SKEMA_LIST = [
+  {
+    value: "silang",
+    label: "V1 - Silang Jenjang",
+    deskripsi:
+      "Tiap ruang campuran 1 potongan dari tiap jenjang, pasangan kelasnya bergeser tiap putaran. Jumlah ruang = jumlah kelas x jumlah jenjang.",
+  },
+  {
+    value: "rotasi",
+    label: "V2 - Rotasi Penuh",
+    deskripsi: "Tiap ruang kecampur rata dari semua kelas asal di jenjang itu.",
+  },
+  {
+    value: "rantai",
+    label: "V3 - Rantai Muter",
+    deskripsi: "Tiap ruang cuma gabungan 2 kelas yang bersebelahan.",
+  },
+];
+
+const VERSI_DEFAULT = "silang";
+
+/**
+ * Peta nilai `versi_skema` LAMA yang udah terlanjur tersimpan di DB ke
+ * kode baru. Record ujian yang dibikin sebelum Silang Jenjang ada nyimpen
+ * "v1" (= Rotasi Penuh) dan "v2" (= Rantai Muter) -- tanpa peta ini,
+ * ujian lama bakal kebaca sebagai versi yang SALAH begitu penomoran UI
+ * digeser.
+ */
+const PETA_VERSI_LEGACY = {
+  v1: "rotasi",
+  v2: "rantai",
+};
+
+/**
+ * Terjemahkan nilai versi apa pun (kode baru, nilai legacy, null/undefined
+ * dari record lama yang kolomnya masih kosong) jadi kode yang valid.
+ */
+function normalisasiVersiSkema(versi) {
+  if (!versi) return VERSI_DEFAULT;
+  if (VERSI_SKEMA_LIST.some((o) => o.value === versi)) return versi;
+  return PETA_VERSI_LEGACY[versi] || VERSI_DEFAULT;
+}
+
+/** Label tampilan buat sebuah kode versi, mis. "V2 - Rotasi Penuh". */
+function labelVersiSkema(versi) {
+  const kode = normalisasiVersiSkema(versi);
+  return VERSI_SKEMA_LIST.find((o) => o.value === kode)?.label || kode;
+}
 
 /**
  * Helper internal: potong 1 "ruangan" dari beberapa antrian (per kelas)
@@ -174,14 +245,26 @@ function bagiSatuJenjangV2(dataSiswaPerKelasJenjang) {
  *
  * @param {object} dataSiswaPerKelas - SEMUA kelas yang ikut ujian ini (lintas jenjang),
  *   format sama seperti input bagiRuangan() lama: { "7A": [...], "8B": [...], ... }
- * @param {"v1"|"v2"} versiSkema - versi algoritma yang dipilih admin
+ * @param {"silang"|"rotasi"|"rantai"} versiSkema - versi algoritma yang dipilih
+ *   admin. Nilai legacy "v1"/"v2" (dari record ujian lama di DB) otomatis
+ *   dipetakan ke "rotasi"/"rantai" lewat normalisasiVersiSkema().
+ *   "silang" dilempar ke bagiRuanganSilangJenjang() karena skema itu
+ *   mencampur jenjang, jadi gak lewat jalur per-jenjang di bawah.
  * @returns {Array} [{ nomor_ruangan, jenjang, siswa: [{ id, nama, nis, asal_kelas, no_kursi }] }]
  *   nomor_ruangan JALAN TERUS lintas jenjang (jenjang kecil duluan: 7,
  *   lalu 8, lalu 9). Field `jenjang` ditambahin per ruang biar gampang
  *   di-group di UI (tab Komposisi Ruangan / Preview) tanpa perlu
  *   nebak-nebak dari asal_kelas siswa pertamanya.
  */
-function bagiRuanganPerJenjang(dataSiswaPerKelas, versiSkema = "v1") {
+function bagiRuanganPerJenjang(dataSiswaPerKelas, versiSkema = VERSI_DEFAULT) {
+  const versi = normalisasiVersiSkema(versiSkema);
+
+  // V1 Silang Jenjang punya alur sendiri (ruang dicampur lintas jenjang),
+  // jadi langsung dilempar ke modulnya dan gak ikut loop per-jenjang.
+  if (versi === "silang") {
+    return bagiRuanganSilangJenjang(dataSiswaPerKelas);
+  }
+
   const semuaKelas = Object.keys(dataSiswaPerKelas);
 
   // Kelompokkan nama kelas per jenjang, urut jenjang naik (7, 8, 9, ...)
@@ -204,7 +287,7 @@ function bagiRuanganPerJenjang(dataSiswaPerKelas, versiSkema = "v1") {
     });
 
     const hasilJenjangIni =
-      versiSkema === "v2"
+      versi === "rantai"
         ? bagiSatuJenjangV2(dataSiswaPerKelasJenjang)
         : bagiSatuJenjangV1(dataSiswaPerKelasJenjang);
 
@@ -267,4 +350,11 @@ function bangunMatrixKomposisi(hasilRuangan, dataSiswaPerKelas) {
   });
 }
 
-export { bagiRuanganPerJenjang, bangunMatrixKomposisi };
+export {
+  bagiRuanganPerJenjang,
+  bangunMatrixKomposisi,
+  VERSI_SKEMA_LIST,
+  VERSI_DEFAULT,
+  normalisasiVersiSkema,
+  labelVersiSkema,
+};

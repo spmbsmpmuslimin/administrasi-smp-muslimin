@@ -42,6 +42,7 @@ import {
   ambilDaftarGuru,
   ambilJadwalSesi,
   simpanJadwalSesi,
+  mataPelajaranUntukJenjang,
   hapusJadwalSesi,
   ambilPengawasUntukJadwal,
   tambahPengawas,
@@ -67,6 +68,8 @@ const emptyJadwalForm = {
   waktu_mulai: "",
   waktu_selesai: "",
   mata_pelajaran: "",
+  mata_pelajaran_kelas8: "",
+  mata_pelajaran_kelas9: "",
 };
 
 /**
@@ -148,6 +151,12 @@ const JadwalPengawasTab = ({ jenisUjian, showToast, onBack, tabPaksa = null }) =
   const [rekapPerJadwal, setRekapPerJadwal] = useState({}); // { [jadwalId]: { [nomor_ruangan]: [{id, nama}] } }
   const [loadingRekap, setLoadingRekap] = useState(false);
   const [hariRekapAktif, setHariRekapAktif] = useState(null);
+
+  // Jenjang peserta ujian ini (PSAS: 7/8/9, PSAT: 7/8, PSAJ: 9 saja) --
+  // dipakai buat nentuin input override mata pelajaran kelas 8/9 mana yang
+  // perlu ditampilkan di form Tambah/Edit Sesi (gak semua jenis ujian
+  // punya kelas 8 atau 9).
+  const gradesUjianIni = KONFIGURASI_JENIS_UJIAN[jenisUjian]?.grades || ["7", "8", "9"];
 
   const semesterDibutuhkan = KONFIGURASI_JENIS_UJIAN[jenisUjian]?.semester;
   // Kalau jenis ujian tidak dikenal (semesterDibutuhkan undefined), filter
@@ -364,6 +373,8 @@ const JadwalPengawasTab = ({ jenisUjian, showToast, onBack, tabPaksa = null }) =
       waktu_mulai: jadwal.waktu_mulai || "",
       waktu_selesai: jadwal.waktu_selesai || "",
       mata_pelajaran: jadwal.mata_pelajaran,
+      mata_pelajaran_kelas8: jadwal.mata_pelajaran_kelas8 || "",
+      mata_pelajaran_kelas9: jadwal.mata_pelajaran_kelas9 || "",
     });
     setShowModalJadwal(true);
   };
@@ -390,6 +401,8 @@ const JadwalPengawasTab = ({ jenisUjian, showToast, onBack, tabPaksa = null }) =
         waktu_mulai: formJadwal.waktu_mulai || null,
         waktu_selesai: formJadwal.waktu_selesai || null,
         mata_pelajaran: formJadwal.mata_pelajaran.trim(),
+        mata_pelajaran_kelas8: formJadwal.mata_pelajaran_kelas8.trim() || null,
+        mata_pelajaran_kelas9: formJadwal.mata_pelajaran_kelas9.trim() || null,
       });
       showToast?.(editingJadwal ? "Jadwal diperbarui" : "Jadwal ditambahkan", "success");
       closeModalJadwal();
@@ -617,48 +630,48 @@ const JadwalPengawasTab = ({ jenisUjian, showToast, onBack, tabPaksa = null }) =
           )}
 
           {!tabPaksa && (
-          <div className="flex flex-wrap gap-1 mb-4 border-b border-gray-200 dark:border-gray-700">
-            <button
-              onClick={() => setTabAktif("jadwal")}
-              className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
-                tabAktif === "jadwal"
-                  ? "border-indigo-600 text-indigo-600 dark:text-indigo-400"
-                  : "border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
-              }`}
-            >
-              <CalendarClock size={15} /> Jadwal Sesi
-            </button>
-            <button
-              onClick={() => setTabAktif("daftar")}
-              className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
-                tabAktif === "daftar"
-                  ? "border-indigo-600 text-indigo-600 dark:text-indigo-400"
-                  : "border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
-              }`}
-            >
-              <ClipboardList size={15} /> Daftar Pengawas
-            </button>
-            <button
-              onClick={() => setTabAktif("pengawas")}
-              className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
-                tabAktif === "pengawas"
-                  ? "border-indigo-600 text-indigo-600 dark:text-indigo-400"
-                  : "border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
-              }`}
-            >
-              <Users size={15} /> Jadwal Ngawas
-            </button>
-            <button
-              onClick={() => setTabAktif("rekap")}
-              className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
-                tabAktif === "rekap"
-                  ? "border-indigo-600 text-indigo-600 dark:text-indigo-400"
-                  : "border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
-              }`}
-            >
-              <Table2 size={15} /> Rekap
-            </button>
-          </div>
+            <div className="flex flex-wrap gap-1 mb-4 border-b border-gray-200 dark:border-gray-700">
+              <button
+                onClick={() => setTabAktif("jadwal")}
+                className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
+                  tabAktif === "jadwal"
+                    ? "border-indigo-600 text-indigo-600 dark:text-indigo-400"
+                    : "border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
+                }`}
+              >
+                <CalendarClock size={15} /> Jadwal Sesi
+              </button>
+              <button
+                onClick={() => setTabAktif("daftar")}
+                className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
+                  tabAktif === "daftar"
+                    ? "border-indigo-600 text-indigo-600 dark:text-indigo-400"
+                    : "border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
+                }`}
+              >
+                <ClipboardList size={15} /> Daftar Pengawas
+              </button>
+              <button
+                onClick={() => setTabAktif("pengawas")}
+                className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
+                  tabAktif === "pengawas"
+                    ? "border-indigo-600 text-indigo-600 dark:text-indigo-400"
+                    : "border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
+                }`}
+              >
+                <Users size={15} /> Jadwal Ngawas
+              </button>
+              <button
+                onClick={() => setTabAktif("rekap")}
+                className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
+                  tabAktif === "rekap"
+                    ? "border-indigo-600 text-indigo-600 dark:text-indigo-400"
+                    : "border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
+                }`}
+              >
+                <Table2 size={15} /> Rekap
+              </button>
+            </div>
           )}
 
           {tabAktif === "jadwal" && (
@@ -701,7 +714,23 @@ const JadwalPengawasTab = ({ jenisUjian, showToast, onBack, tabPaksa = null }) =
                                 : "-"}
                             </td>
                             <td className="py-2 pr-3 font-medium text-gray-800 dark:text-gray-100">
-                              {j.mata_pelajaran}
+                              {j.mata_pelajaran_kelas8 || j.mata_pelajaran_kelas9 ? (
+                                <div className="space-y-0.5">
+                                  <div>Kelas 7: {j.mata_pelajaran}</div>
+                                  {gradesUjianIni.includes("8") && (
+                                    <div>
+                                      Kelas 8: {j.mata_pelajaran_kelas8 || j.mata_pelajaran}
+                                    </div>
+                                  )}
+                                  {gradesUjianIni.includes("9") && (
+                                    <div>
+                                      Kelas 9: {j.mata_pelajaran_kelas9 || j.mata_pelajaran}
+                                    </div>
+                                  )}
+                                </div>
+                              ) : (
+                                j.mata_pelajaran
+                              )}
                             </td>
                             <td className="py-2 text-right whitespace-nowrap">
                               <button
@@ -1046,14 +1075,26 @@ const JadwalPengawasTab = ({ jenisUjian, showToast, onBack, tabPaksa = null }) =
                                 >
                                   <td className="py-2 pr-3 font-medium whitespace-nowrap text-gray-800 dark:text-gray-100">
                                     Ruang {r.nomor_ruangan}
+                                    {r.jenjang && (
+                                      <span className="block text-sm font-normal text-gray-500 dark:text-gray-400">
+                                        Kelas {r.jenjang}
+                                      </span>
+                                    )}
                                   </td>
                                   {sesiHariIni.map((s) => {
                                     const pengawas = rekapPerJadwal[s.id]?.[r.nomor_ruangan] || [];
+                                    const mapelRuangIni = mataPelajaranUntukJenjang(s, r.jenjang);
+                                    const beda = mapelRuangIni !== s.mata_pelajaran;
                                     return (
                                       <td
                                         key={s.id}
                                         className="py-2 pr-3 text-gray-700 dark:text-gray-300"
                                       >
+                                        {beda && (
+                                          <div className="text-sm font-semibold text-amber-700 dark:text-amber-400 mb-0.5">
+                                            {mapelRuangIni}
+                                          </div>
+                                        )}
                                         {pengawas.length === 0 ? (
                                           <span className="text-gray-400 italic">Belum ada</span>
                                         ) : (
@@ -1154,7 +1195,43 @@ const JadwalPengawasTab = ({ jenisUjian, showToast, onBack, tabPaksa = null }) =
                   placeholder="mis. Matematika"
                   className="w-full px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100"
                 />
+                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                  Berlaku buat kelas 7{gradesUjianIni.includes("8") ? ", 8" : ""}
+                  {gradesUjianIni.includes("9") ? ", 9" : ""} -- kecuali diisi beda di bawah.
+                </p>
               </div>
+
+              {gradesUjianIni.includes("8") && (
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+                    Mata Pelajaran khusus Kelas 8 (opsional)
+                  </label>
+                  <input
+                    value={formJadwal.mata_pelajaran_kelas8}
+                    onChange={(e) =>
+                      setFormJadwal({ ...formJadwal, mata_pelajaran_kelas8: e.target.value })
+                    }
+                    placeholder="Kosongkan kalau sama kayak di atas"
+                    className="w-full px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100"
+                  />
+                </div>
+              )}
+
+              {gradesUjianIni.includes("9") && (
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+                    Mata Pelajaran khusus Kelas 9 (opsional)
+                  </label>
+                  <input
+                    value={formJadwal.mata_pelajaran_kelas9}
+                    onChange={(e) =>
+                      setFormJadwal({ ...formJadwal, mata_pelajaran_kelas9: e.target.value })
+                    }
+                    placeholder="Kosongkan kalau sama kayak di atas"
+                    className="w-full px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100"
+                  />
+                </div>
+              )}
 
               <div className="flex gap-2 pt-2">
                 <button

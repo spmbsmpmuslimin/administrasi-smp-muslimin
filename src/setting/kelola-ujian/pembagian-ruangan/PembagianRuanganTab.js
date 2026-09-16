@@ -59,7 +59,14 @@ import {
   resetUntukProsesUlang,
   KONFIGURASI_JENIS_UJIAN,
 } from "./pembagianRuanganSupabase";
-import { bagiRuanganPerJenjang, bangunMatrixKomposisi } from "./bagiRuanganPerJenjang";
+import {
+  bagiRuanganPerJenjang,
+  bangunMatrixKomposisi,
+  VERSI_SKEMA_LIST,
+  VERSI_DEFAULT,
+  normalisasiVersiSkema,
+  labelVersiSkema,
+} from "./bagiRuanganPerJenjang";
 import { terapkanQuotaManual, hitungTotalPerKelas } from "./bagiRuangan";
 import { exportDaftarPesertaUjian } from "./daftarPesertaExcelExport";
 import { exportDaftarPesertaUjianPdf } from "./daftarPesertaPdfExport";
@@ -71,24 +78,14 @@ const JENIS_UJIAN_LABEL = {
   PSAJ: "PSAJ - Penilaian Sumatif Akhir Jenjang (kelas 9)",
 };
 
-// Pilihan algoritma pembagian ruangan (lihat bagiRuanganPerJenjang.js buat
-// detail cara kerja tiap versi). versi_skema tersimpan di record `ujian`
-// pas pertama kali diproses & disimpan -- gak bisa diganti lagi setelah
-// itu lewat sub-fitur ini (lihat versiSkemaTerkunci di bawah).
-const VERSI_SKEMA_LIST = [
-  {
-    value: "v1",
-    label: "V1 - Rotasi Penuh",
-    deskripsi: "Tiap ruang kecampur rata dari semua kelas asal di jenjang itu.",
-  },
-  {
-    value: "v2",
-    label: "V2 - Rantai Muter",
-    deskripsi: "Tiap ruang cuma gabungan 2 kelas yang bersebelahan.",
-  },
-];
+// Pilihan algoritma pembagian ruangan sekarang di-import dari
+// bagiRuanganPerJenjang.js (VERSI_SKEMA_LIST) supaya cuma ada 1 sumber
+// kebenaran -- dulu daftarnya ditulis ulang di sini dan gampang ketinggalan
+// tiap ada versi baru. versi_skema tersimpan di record `ujian` pas pertama
+// kali diproses & disimpan -- gak bisa diganti lagi setelah itu lewat
+// sub-fitur ini (lihat versiSkemaTerkunci di bawah).
 
-// 2 tab level PALING ATAS: "Komposisi Ruangan" (bandingin V1 vs V2 dulu,
+// 2 tab level PALING ATAS: "Komposisi Ruangan" (bandingin semua versi dulu,
 // murni preview, belum proses/simpan apa-apa) dan "Pembagian Ruangan"
 // (alur asli: proses -> quota manual -> simpan). Beda sama TAB_LIST di
 // bawah, yang itu sub-tab DI DALAM "Pembagian Ruangan" doang.
@@ -233,7 +230,7 @@ const PembagianRuanganTab = ({
   const [kapasitas, setKapasitas] = useState(
     KONFIGURASI_JENIS_UJIAN[jenisUjian]?.defaultKapasitas || 40
   );
-  const [versiSkema, setVersiSkema] = useState("v1");
+  const [versiSkema, setVersiSkema] = useState(VERSI_DEFAULT);
   // true kalau ujian utk kombinasi jenisUjian+tahunAjaranId ini SUDAH ada
   // record-nya di DB (udah pernah diproses & disimpan) -- versi_skema
   // record itu gak bisa diganti lagi lewat sub-fitur ini, jadi radio-nya
@@ -253,16 +250,17 @@ const PembagianRuanganTab = ({
   const [viewInternal, setViewInternal] = useState("pembagian");
   const viewAktif = viewPaksa || viewInternal;
   const setViewAktif = setViewInternal;
-  // Hasil bangunMatrixKomposisi() buat KEDUA versi sekaligus: { v1: [...], v2: [...] },
-  // masing-masing array per jenjang. null = belum pernah dihitung.
+  // Hasil bangunMatrixKomposisi() buat SEMUA versi sekaligus:
+  // { silang: [...], rotasi: [...], rantai: [...] }, masing-masing array
+  // per jenjang. null = belum pernah dihitung.
   const [komposisiData, setKomposisiData] = useState(null);
   const [memuatKomposisi, setMemuatKomposisi] = useState(false);
   // tahunAjaranId waktu komposisiData terakhir dihitung -- dipakai buat
   // deteksi "udah basi" (tahun ajaran diganti) tanpa perlu useEffect+reset
   // terpisah; render tinggal bandingin ini sama tahunAjaranId yang aktif.
   const [komposisiUntukTahunAjaran, setKomposisiUntukTahunAjaran] = useState(null);
-  // Sub-tab DI DALAM tab Komposisi Ruangan: lagi liatin V1 atau V2.
-  const [komposisiVersiAktif, setKomposisiVersiAktif] = useState("v1");
+  // Sub-tab DI DALAM tab Komposisi Ruangan: lagi liatin versi yang mana.
+  const [komposisiVersiAktif, setKomposisiVersiAktif] = useState(VERSI_DEFAULT);
 
   const [loadingTahunAjaran, setLoadingTahunAjaran] = useState(true);
   const [memproses, setMemproses] = useState(false);
@@ -356,7 +354,9 @@ const PembagianRuanganTab = ({
       try {
         const ujian = await cariUjian(supabase, jenisUjian, tahunAjaranId);
         if (!ujian) return; // belum pernah diproses buat kombinasi ini
-        setVersiSkema(ujian.versi_skema || "v1");
+        // normalisasi: record lama nyimpen "v1"/"v2" yang artinya Rotasi
+        // Penuh / Rantai Muter -- sekarang V2/V3, kodenya "rotasi"/"rantai"
+        setVersiSkema(normalisasiVersiSkema(ujian.versi_skema));
         setVersiSkemaTerkunci(true);
         const tersimpan = await ambilPembagianTersimpan(supabase, ujian.id);
         if (dibatalkan || tersimpan.length === 0) return;
@@ -403,12 +403,14 @@ const PembagianRuanganTab = ({
     try {
       const allowedGrades = KONFIGURASI_JENIS_UJIAN[jenisUjian]?.grades || null;
       const dataSiswaPerKelas = await ambilSiswaPerKelas(supabase, tahunAjaranId, allowedGrades);
-      const hasilV1 = bagiRuanganPerJenjang(dataSiswaPerKelas, "v1");
-      const hasilV2 = bagiRuanganPerJenjang(dataSiswaPerKelas, "v2");
-      setKomposisiData({
-        v1: bangunMatrixKomposisi(hasilV1, dataSiswaPerKelas),
-        v2: bangunMatrixKomposisi(hasilV2, dataSiswaPerKelas),
+      // Dihitung buat SEMUA versi di VERSI_SKEMA_LIST, jadi nambah versi
+      // baru nanti gak perlu nyentuh fungsi ini lagi.
+      const semuaKomposisi = {};
+      VERSI_SKEMA_LIST.forEach((opsi) => {
+        const hasil = bagiRuanganPerJenjang(dataSiswaPerKelas, opsi.value);
+        semuaKomposisi[opsi.value] = bangunMatrixKomposisi(hasil, dataSiswaPerKelas);
       });
+      setKomposisiData(semuaKomposisi);
       setKomposisiUntukTahunAjaran(tahunAjaranId);
     } catch (err) {
       console.error(err);
@@ -426,7 +428,7 @@ const PembagianRuanganTab = ({
     if (versiSkemaTerkunci) {
       showToast?.(
         "Versi udah terkunci ke " +
-          versiSkema.toUpperCase() +
+          labelVersiSkema(versiSkema) +
           " -- ujian ini sudah pernah diproses/disimpan",
         "error"
       );
@@ -789,8 +791,9 @@ const PembagianRuanganTab = ({
       {viewAktif === "komposisi" && (
         <div className="mb-6">
           <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">
-            Bandingkan hasil 2 versi algoritma sebelum diproses beneran -- V1 (Rotasi Penuh) vs V2
-            (Rantai Muter). Murni hitungan preview di memori, belum nyimpen apa-apa ke database.
+            Bandingkan hasil {VERSI_SKEMA_LIST.length} versi algoritma sebelum diproses beneran --
+            V1 (Silang Jenjang) vs V2 (Rotasi Penuh) vs V3 (Rantai Muter). Murni hitungan preview di
+            memori, belum nyimpen apa-apa ke database.
           </p>
 
           {!tahunAjaranId && (
@@ -860,7 +863,7 @@ const PembagianRuanganTab = ({
 
               {versiSkemaTerkunci && (
                 <p className="text-xs text-amber-600 dark:text-amber-400 mt-2">
-                  Versi udah terkunci ke {versiSkema.toUpperCase()} -- ujian ini sudah pernah
+                  Versi udah terkunci ke {labelVersiSkema(versiSkema)} -- ujian ini sudah pernah
                   diproses/disimpan, jadi pilihan di sini nggak berpengaruh lagi.
                 </p>
               )}
@@ -884,7 +887,7 @@ const PembagianRuanganTab = ({
               Versi Algoritma Pembagian
             </label>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
               {VERSI_SKEMA_LIST.map((opsi) => (
                 <label
                   key={opsi.value}
@@ -922,7 +925,7 @@ const PembagianRuanganTab = ({
               <div className="mt-2">
                 <p className="text-xs text-amber-600 dark:text-amber-400">
                   Versi terkunci — ujian ini sudah pernah diproses/disimpan dengan versi{" "}
-                  <span className="font-semibold">{versiSkema.toUpperCase()}</span>. Ganti versi
+                  <span className="font-semibold">{labelVersiSkema(versiSkema)}</span>. Ganti versi
                   cuma bisa dilakukan lewat "Proses Ulang dengan Versi Lain" di bawah, karena itu
                   bakal menghapus data ruangan yang udah tersimpan.
                 </p>

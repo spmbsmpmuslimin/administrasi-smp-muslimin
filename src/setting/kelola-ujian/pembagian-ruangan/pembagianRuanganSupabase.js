@@ -1,4 +1,8 @@
-import { bagiRuanganPerJenjang } from "./bagiRuanganPerJenjang";
+import {
+  bagiRuanganPerJenjang,
+  VERSI_DEFAULT,
+  normalisasiVersiSkema,
+} from "./bagiRuanganPerJenjang";
 import { getAllAcademicYears } from "../../../services/academicYearService";
 import { bangunPetaNoPeserta } from "./noPeserta";
 
@@ -77,7 +81,8 @@ async function ambilSiswaPerKelas(supabase, academicYearId, allowedGrades = null
  * "Proses Pembagian" bisa dipanggil berkali-kali tanpa bikin duplikat
  * record ujian.
  *
- * @param {"v1"|"v2"} versiSkema - versi algoritma yang dipilih admin.
+ * @param {"silang"|"rotasi"|"rantai"} versiSkema - versi algoritma yang
+ *   dipilih admin (lihat VERSI_SKEMA_LIST di bagiRuanganPerJenjang.js).
  *   CUMA dipakai pas BIKIN record baru -- kalau record `jenis` +
  *   `academicYearId` ini udah ada, versi_skema-nya TETAP yang lama
  *   (gak ke-update diam-diam walau admin ganti pilihan versi di UI).
@@ -90,7 +95,7 @@ async function getOrCreateUjian(
   jenis,
   academicYearId,
   kapasitas = 40,
-  versiSkema = "v1"
+  versiSkema = VERSI_DEFAULT
 ) {
   const { data: existing, error: errSelect } = await supabase
     .from("ujian")
@@ -108,7 +113,7 @@ async function getOrCreateUjian(
       jenis,
       academic_year_id: academicYearId,
       kapasitas_ruangan: kapasitas,
-      versi_skema: versiSkema,
+      versi_skema: normalisasiVersiSkema(versiSkema),
     })
     .select()
     .single();
@@ -131,9 +136,15 @@ async function getOrCreateUjian(
  *   (buat disimpan di record ujian & peringatan di UI) -- BUKAN lagi
  *   penentu jumlah ruang. Jumlah ruang sekarang = jumlah kelas asal per
  *   jenjang. Lihat komentar di bagiRuanganPerJenjang.js.
- * @param {"v1"|"v2"} versiSkema - "v1" = rotasi penuh (tiap ruang kecampur
- *   rata dari SEMUA kelas asal di jenjang itu), "v2" = rantai muter
- *   (tiap ruang cuma 2 kelas bersebelahan). Default "v1".
+ * @param {"silang"|"rotasi"|"rantai"} versiSkema -
+ *   "silang" (V1) = tiap ruang campuran 1 potongan dari TIAP jenjang,
+ *   pasangan kelasnya bergeser tiap putaran (jumlah ruang = jumlah kelas
+ *   x jumlah jenjang);
+ *   "rotasi" (V2) = per jenjang, tiap ruang kecampur rata dari SEMUA kelas
+ *   asal di jenjang itu;
+ *   "rantai" (V3) = per jenjang, tiap ruang cuma 2 kelas bersebelahan.
+ *   Default "silang". Nilai legacy "v1"/"v2" dipetakan otomatis ke
+ *   "rotasi"/"rantai".
  * @returns {Promise<Array>} hasil pembagian ruangan (untuk ditampilkan / preview di UI dulu sebelum disimpan)
  */
 async function prosesPembagianRuangan(
@@ -141,7 +152,7 @@ async function prosesPembagianRuangan(
   academicYearId,
   jenisUjian,
   kapasitas = 40,
-  versiSkema = "v1"
+  versiSkema = VERSI_DEFAULT
 ) {
   const allowedGrades = KONFIGURASI_JENIS_UJIAN[jenisUjian]?.grades || null;
   const dataSiswaPerKelas = await ambilSiswaPerKelas(supabase, academicYearId, allowedGrades);

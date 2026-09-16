@@ -12,22 +12,44 @@
 async function ambilRuanganUjian(supabase, ujianId) {
   const { data, error } = await supabase
     .from("peserta_ujian")
-    .select("nomor_ruangan")
+    .select("nomor_ruangan, asal_kelas")
     .eq("ujian_id", ujianId);
 
   if (error) throw error;
 
+  // Ruangan TIDAK dicampur lintas jenjang (lihat bagiRuanganPerJenjang.js),
+  // jadi semua siswa dalam 1 nomor_ruangan pasti 1 jenjang yang sama --
+  // cukup ambil jenjang dari baris pertama yang ketemu per ruangan, dipakai
+  // buat nentuin mata pelajaran mana (default/kelas8/kelas9) yang berlaku
+  // di ruangan itu waktu ditampilkan di tab "Rekap".
   const hitung = {};
+  const jenjangRuangan = {};
   (data || []).forEach((row) => {
     hitung[row.nomor_ruangan] = (hitung[row.nomor_ruangan] || 0) + 1;
+    if (!jenjangRuangan[row.nomor_ruangan]) {
+      jenjangRuangan[row.nomor_ruangan] = row.asal_kelas?.match(/^\d+/)?.[0] || null;
+    }
   });
 
   return Object.entries(hitung)
     .map(([nomor_ruangan, jumlah_siswa]) => ({
       nomor_ruangan: Number(nomor_ruangan),
       jumlah_siswa,
+      jenjang: jenjangRuangan[nomor_ruangan],
     }))
     .sort((a, b) => a.nomor_ruangan - b.nomor_ruangan);
+}
+
+/**
+ * Tentuin mata pelajaran yang berlaku buat 1 jenjang tertentu di 1 sesi
+ * jadwal. `mata_pelajaran` adalah nilai default (selalu berlaku buat
+ * kelas 7, dan buat kelas 8/9 juga KECUALI ada override-nya sendiri di
+ * kolom mata_pelajaran_kelas8/mata_pelajaran_kelas9).
+ */
+function mataPelajaranUntukJenjang(jadwal, jenjang) {
+  if (jenjang === "8" && jadwal.mata_pelajaran_kelas8) return jadwal.mata_pelajaran_kelas8;
+  if (jenjang === "9" && jadwal.mata_pelajaran_kelas9) return jadwal.mata_pelajaran_kelas9;
+  return jadwal.mata_pelajaran;
 }
 
 /**
@@ -65,7 +87,9 @@ async function ambilDaftarGuru(supabase) {
 async function ambilJadwalSesi(supabase, ujianId) {
   const { data, error } = await supabase
     .from("ujian_jadwal")
-    .select("id, ujian_id, tanggal, sesi_ke, waktu_mulai, waktu_selesai, mata_pelajaran")
+    .select(
+      "id, ujian_id, tanggal, sesi_ke, waktu_mulai, waktu_selesai, mata_pelajaran, mata_pelajaran_kelas8, mata_pelajaran_kelas9"
+    )
     .eq("ujian_id", ujianId)
     .order("tanggal", { ascending: true })
     .order("sesi_ke", { ascending: true });
@@ -85,6 +109,8 @@ async function simpanJadwalSesi(supabase, jadwal) {
         waktu_mulai: jadwal.waktu_mulai,
         waktu_selesai: jadwal.waktu_selesai,
         mata_pelajaran: jadwal.mata_pelajaran,
+        mata_pelajaran_kelas8: jadwal.mata_pelajaran_kelas8 || null,
+        mata_pelajaran_kelas9: jadwal.mata_pelajaran_kelas9 || null,
       })
       .eq("id", jadwal.id);
     if (error) throw error;
@@ -98,6 +124,8 @@ async function simpanJadwalSesi(supabase, jadwal) {
     waktu_mulai: jadwal.waktu_mulai,
     waktu_selesai: jadwal.waktu_selesai,
     mata_pelajaran: jadwal.mata_pelajaran,
+    mata_pelajaran_kelas8: jadwal.mata_pelajaran_kelas8 || null,
+    mata_pelajaran_kelas9: jadwal.mata_pelajaran_kelas9 || null,
   });
   if (error) throw error;
 }
@@ -252,6 +280,8 @@ async function simpanJadwalSesiBulk(supabase, ujianId, daftarSesi) {
     waktu_mulai: s.waktu_mulai || null,
     waktu_selesai: s.waktu_selesai || null,
     mata_pelajaran: s.mata_pelajaran.trim(),
+    mata_pelajaran_kelas8: s.mata_pelajaran_kelas8?.trim() || null,
+    mata_pelajaran_kelas9: s.mata_pelajaran_kelas9?.trim() || null,
   }));
 
   const { error } = await supabase.from("ujian_jadwal").insert(rows);
@@ -352,6 +382,7 @@ export {
   ambilJadwalSesi,
   simpanJadwalSesi,
   simpanJadwalSesiBulk,
+  mataPelajaranUntukJenjang,
   hapusJadwalSesi,
   ambilPengawasUntukJadwal,
   tambahPengawas,
