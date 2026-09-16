@@ -33,41 +33,17 @@ async function ambilDaftarTahunAjaran() {
  * Ambil semua siswa aktif untuk 1 tahun ajaran, dikelompokkan per class_id
  * (class_id formatnya udah "7A", "8B", dst — sama seperti key yang dipakai bagiRuangan)
  *
- * ⚠️ PENTING (Sept 2026): filter di sini SENGAJA pakai kolom `academic_year`
- * (teks, mis. "2026/2027") di tabel students, BUKAN `academic_year_id`.
- * `academicYearId` yang diterima function ini adalah ID baris SEMESTER
- * TERTENTU (mis. baris "2026/2027 Semester 2" khusus buat PSAT/PSAJ),
- * sedangkan `students.academic_year_id` cuma nunjuk ke SATU semester yang
- * lagi aktif sekarang (ikut disinkron tiap toggle semester, lihat
- * setActiveAcademicYear() di academicYearService.js). Kalau match langsung
- * ke academicYearId, PSAT baru ketemu siswanya pas semester aktif KEBETULAN
- * lagi semester 2 — nggak bisa dipreview dari semester 1 padahal siswa kelas
- * 7/8-nya sama aja. Semester itu atribut jenis ujian, bukan kriteria siswa —
- * makanya di sini kita samain dulu academicYearId -> label tahun ajarannya,
- * baru filter siswa pakai label itu.
- *
  * @param {object} supabase - instance supabase client
- * @param {string} academicYearId - id baris academic_years (semester tertentu)
- *   yang dipilih admin di dropdown; dipakai buat nentuin TAHUN AJARANNYA, bukan
- *   buat match langsung ke academic_year_id siswa.
+ * @param {string} academicYearId - academic_year_id yang aktif (uuid)
  * @param {string[]|null} allowedGrades - jenjang yang boleh ikut, misal ["7","8"].
  *   Kalau null, semua jenjang diambil (dipakai buat PSAS).
  * @returns {Promise<object>} dataSiswaPerKelas siap dipakai bagiRuangan()
  */
 async function ambilSiswaPerKelas(supabase, academicYearId, allowedGrades = null) {
-  // Samain academicYearId (ID semester spesifik) -> label tahun ajaran (teks).
-  const { data: tahunAjaran, error: errTahun } = await supabase
-    .from("academic_years")
-    .select("year")
-    .eq("id", academicYearId)
-    .single();
-
-  if (errTahun) throw errTahun;
-
   const { data: siswa, error } = await supabase
     .from("students")
     .select("id, full_name, nis, nisn, class_id, gender")
-    .eq("academic_year", tahunAjaran.year) // <- diganti dari academic_year_id
+    .eq("academic_year_id", academicYearId)
     .eq("is_active", true)
     .order("full_name", { ascending: true }); // urutan dalam 1 kelas: alfabetis nama
 
@@ -126,22 +102,15 @@ async function getOrCreateUjian(supabase, jenis, academicYearId, kapasitas = 40)
  * -> bagi ruangan -> return preview (belum disimpan ke DB)
  *
  * @param {object} supabase - instance supabase client
- * @param {string} academicYearId - id baris academic_years (semester tertentu, mis.
- *   "2026/2027 Semester 2" buat PSAT) yang dipilih admin di dropdown. Cuma
- *   dipakai buat nentuin TAHUN AJARANNYA (lihat catatan di ambilSiswaPerKelas)
- *   dan buat scope record `ujian` -- bukan buat match langsung ke
- *   academic_year_id siswa.
+ * @param {string} academicYearId - academic_year_id yang dipakai untuk filter siswa
  * @param {string} jenisUjian - "PSAS" | "PSAT" | "PSAJ", nentuin jenjang mana yang ikut
- * @param {number} kapasitas - kapasitas ideal per ruangan (default 40) -- CUMA
- *   dipakai sebagai metadata (kapasitas_ruangan) & ambang warning di UI,
- *   TIDAK dipakai buat nentuin jumlah ruangan (lihat bagiRuangan.js -- jumlah
- *   ruangan sekarang murni dari jumlah rombel per angkatan).
+ * @param {number} kapasitas - kapasitas per ruangan (default 40)
  * @returns {Promise<Array>} hasil pembagian ruangan (untuk ditampilkan / preview di UI dulu sebelum disimpan)
  */
 async function prosesPembagianRuangan(supabase, academicYearId, jenisUjian, kapasitas = 40) {
   const allowedGrades = KONFIGURASI_JENIS_UJIAN[jenisUjian]?.grades || null;
   const dataSiswaPerKelas = await ambilSiswaPerKelas(supabase, academicYearId, allowedGrades);
-  const hasilRuangan = bagiRuangan(dataSiswaPerKelas);
+  const hasilRuangan = bagiRuangan(dataSiswaPerKelas, kapasitas);
   return hasilRuangan; // { nomor_ruangan, siswa: [{ id, nama, nis, asal_kelas, no_kursi }] }[]
 }
 
@@ -151,17 +120,17 @@ async function prosesPembagianRuangan(supabase, academicYearId, jenisUjian, kapa
  * dihapus dulu baru diganti yang baru -- supaya "Proses Ulang" aman
  * dipakai kalau ada siswa baru/pindah kelas.
  *
- * no_peserta yang ditulis ke DB formatnya "2627-07-001" (tahun masuk dari
- * NIS siswa + kode angkatan + nomor urut RESET per angkatan, lihat
- * noPeserta.js) -- BUKAN lagi angka lokal per-ruangan. Ini yang dibaca
- * langsung sama Kartu Ujian (kartuUjianSupabase.js) buat nyetak
- * "No. Peserta", jadi begitu disimpan di sini, Kartu Ujian otomatis ikut
- * benar tanpa perlu diubah.
+ * no_peserta yang ditulis ke DB formatnya "26-27-001" (kode tahun ajaran +
+ * nomor urut GLOBAL lintas ruangan, lihat noPeserta.js) -- BUKAN lagi angka
+ * lokal per-ruangan. Ini yang dibaca langsung sama Kartu Ujian
+ * (kartuUjianSupabase.js) buat nyetak "No. Peserta", jadi begitu disimpan
+ * di sini, Kartu Ujian otomatis ikut benar tanpa perlu diubah.
  *
- * Prefix tahun & kode angkatan diambil per-siswa (dari NIS & asal_kelas
- * masing-masing), jadi fungsi ini gak lagi butuh parameter tahunAjaran.
+ * @param {string} tahunAjaran - label tahun ajaran, mis. "2026/2027" -- dipakai
+ *   buat bikin prefix kode. WAJIB dikirim; kalau kosong, no_peserta jadi
+ *   angka urut polos tanpa prefix (fallback, jangan sengaja diandalkan).
  */
-async function simpanPembagianRuangan(supabase, ujianId, hasilRuangan) {
+async function simpanPembagianRuangan(supabase, ujianId, hasilRuangan, tahunAjaran) {
   const { error: errDelete } = await supabase
     .from("peserta_ujian")
     .delete()
@@ -169,9 +138,9 @@ async function simpanPembagianRuangan(supabase, ujianId, hasilRuangan) {
   if (errDelete) throw errDelete;
 
   // Dihitung dari SELURUH hasilRuangan yang dikirim (bukan per-ruangan) --
-  // itu yang bikin nomor urut per angkatan jalan terus lintas ruangan
-  // (bukan balik ke 001 tiap ganti ruangan).
-  const petaNoPeserta = bangunPetaNoPeserta(hasilRuangan);
+  // itu yang bikin no_peserta ruangan ke-2 lanjut dari ruangan ke-1, bukan
+  // balik ke 001.
+  const petaNoPeserta = bangunPetaNoPeserta(hasilRuangan, tahunAjaran);
 
   const rows = [];
   for (const ruangan of hasilRuangan) {
