@@ -1,6 +1,6 @@
 // setting/kelola-ujian/laporanRekapAkhirSupabase.js
 // Data layer untuk sub-fitur "Laporan Rekap Akhir" -- kumpulan rekap dari
-// sub-fitur lain (Peserta & Pembagian Ruangan, Jadwal & Pengawas, Anggaran
+// sub-fitur lain (Jadwal & Pembagian Ruangan, Peserta & Pengawas, Anggaran
 // & Biaya) plus 2 tabel baru khusus laporan ini:
 //
 // rekap_kehadiran_ujian -- input manual TU/panitia setelah ujian selesai,
@@ -21,7 +21,7 @@ import { ambilAnggaran, hitungRingkasanAnggaran } from "./anggaranBiayaSupabase"
 
 /**
  * Rekap peserta & ruangan -- total siswa per ruangan + total keseluruhan.
- * Reuse data dari sub-fitur "Peserta & Pembagian Ruangan".
+ * Reuse data dari sub-fitur "Peserta & Pengawas".
  */
 async function ambilRekapPeserta(supabase, ujianId) {
   const perRuangan = await ambilPembagianTersimpan(supabase, ujianId);

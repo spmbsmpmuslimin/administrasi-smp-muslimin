@@ -11,14 +11,40 @@
 
 const PANDUAN = [
   {
+    id: "jadwal-pengawas",
+    title: "Jadwal & Pembagian Ruangan",
+    iconName: "CalendarClock",
+    langkah: [
+      {
+        judul: "Pilih Tahun Ajaran",
+        deskripsi: "Buka kartu, lalu pilih Tahun Ajaran yang sama dengan Peserta & Pengawas.",
+      },
+      {
+        judul: "Tab Jadwal Sesi",
+        deskripsi:
+          "Tambahkan sesi ujian satu per satu: tanggal, jam, dan mata pelajaran yang diujikan.",
+      },
+      {
+        judul: "Tab Daftar Pengawas",
+        deskripsi:
+          "Daftarkan guru yang bertugas sebagai pengawas beserta kode singkatnya (dipakai di jadwal ngawas & kartu pengawas).",
+      },
+      {
+        judul: "Tab Jadwal Ngawas",
+        deskripsi:
+          "Tetapkan guru pengawas untuk tiap ruangan pada setiap sesi. Daftar ruangan diambil otomatis dari hasil Peserta & Pengawas -- kalau belum muncul, pastikan sub-fitur itu sudah diproses & disimpan dulu.",
+      },
+    ],
+  },
+  {
     id: "pembagian-ruangan",
-    title: "Peserta & Pembagian Ruangan",
+    title: "Peserta & Pengawas",
     iconName: "DoorOpen",
     langkah: [
       {
         judul: "Pilih Jenis Ujian & Tahun Ajaran",
         deskripsi:
-          'Dari halaman utama Manajemen Ujian, pilih jenis ujian (PSAS/PSAT/PSAJ), lalu buka kartu "Peserta & Pembagian Ruangan" dan pilih Tahun Ajaran yang sesuai.',
+          'Dari halaman utama Manajemen Ujian, pilih jenis ujian (PSAS/PSAT/PSAJ), lalu buka kartu "Peserta & Pengawas" dan pilih Tahun Ajaran yang sesuai.',
       },
       {
         judul: "Proses Pembagian",
@@ -38,38 +64,12 @@ const PANDUAN = [
       {
         judul: "Simpan ke Database",
         deskripsi:
-          'Klik "Simpan ke Database" agar hasil pembagian tersimpan. Sub-fitur lain (Jadwal & Pengawas, Kartu Ujian, Presensi) baru bisa jalan setelah data ini tersimpan.',
+          'Klik "Simpan ke Database" agar hasil pembagian tersimpan. Sub-fitur lain (Jadwal & Pembagian Ruangan, Kartu Ujian, Presensi) baru bisa jalan setelah data ini tersimpan.',
       },
       {
         judul: "Export Daftar Peserta",
         deskripsi:
           'Di tab "Export", unduh daftar peserta per ruangan atau semua ruangan sekaligus dalam format Excel atau PDF -- untuk ditempel di pintu ruangan.',
-      },
-    ],
-  },
-  {
-    id: "jadwal-pengawas",
-    title: "Jadwal & Pengawas",
-    iconName: "CalendarClock",
-    langkah: [
-      {
-        judul: "Pilih Tahun Ajaran",
-        deskripsi: "Buka kartu, lalu pilih Tahun Ajaran yang sama dengan Pembagian Ruangan.",
-      },
-      {
-        judul: "Tab Jadwal Sesi",
-        deskripsi:
-          "Tambahkan sesi ujian satu per satu: tanggal, jam, dan mata pelajaran yang diujikan.",
-      },
-      {
-        judul: "Tab Daftar Pengawas",
-        deskripsi:
-          "Daftarkan guru yang bertugas sebagai pengawas beserta kode singkatnya (dipakai di jadwal ngawas & kartu pengawas).",
-      },
-      {
-        judul: "Tab Jadwal Ngawas",
-        deskripsi:
-          "Tetapkan guru pengawas untuk tiap ruangan pada setiap sesi. Daftar ruangan diambil otomatis dari hasil Pembagian Ruangan -- kalau belum muncul, pastikan sub-fitur itu sudah diproses & disimpan dulu.",
       },
     ],
   },
@@ -95,11 +95,11 @@ const PANDUAN = [
       {
         judul: "Cetak Kartu Pengawas",
         deskripsi:
-          "Pilih guru pengawas, lalu cetak kartu penugasan berdasarkan jadwal ngawas yang sudah diatur di sub-fitur Jadwal & Pengawas.",
+          "Pilih guru pengawas, lalu cetak kartu penugasan berdasarkan jadwal ngawas yang sudah diatur di sub-fitur Jadwal & Pembagian Ruangan.",
       },
     ],
     catatan:
-      "Pastikan Pembagian Ruangan dan Jadwal & Pengawas sudah lengkap dulu supaya data di kartu akurat.",
+      "Pastikan Peserta & Pengawas dan Jadwal & Pembagian Ruangan sudah lengkap dulu supaya data di kartu akurat.",
   },
   {
     id: "presensi-berita-acara",
@@ -109,7 +109,7 @@ const PANDUAN = [
       {
         judul: "Pilih Tahun Ajaran & Sesi",
         deskripsi:
-          "Pilih Tahun Ajaran, lalu pilih Sesi Ujian dari dropdown (daftar sesi diambil dari Jadwal & Pengawas).",
+          "Pilih Tahun Ajaran, lalu pilih Sesi Ujian dari dropdown (daftar sesi diambil dari Jadwal & Pembagian Ruangan).",
       },
       {
         judul: "Cetak Daftar Hadir",

@@ -235,7 +235,7 @@ const ExportSemuaTab = ({ jenisUjian, showToast, onBack }) => {
         <div className="p-4 mb-5 rounded-xl border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20">
           <p className="text-sm text-amber-800 dark:text-amber-300">
             Ujian untuk tahun ajaran ini belum pernah diproses -- belum ada apa pun untuk diexport.
-            Mulai dulu dari <strong>Peserta & Pembagian Ruangan</strong>.
+            Mulai dulu dari <strong>Peserta & Pengawas</strong>.
           </p>
         </div>
       )}

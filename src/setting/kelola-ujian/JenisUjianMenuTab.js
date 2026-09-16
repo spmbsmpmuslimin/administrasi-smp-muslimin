@@ -6,10 +6,10 @@
 // KONFIGURASI_JENIS_UJIAN di pembagianRuanganSupabase.js).
 //
 // Skema kartu (lihat dokumentasi "dokumentasi-kelola-ujian.md"):
-// 1. Peserta & Pembagian Ruangan (Aktif)
-// 2. Jadwal & Pengawas (aktif) -- sekarang punya 3 tab di dalamnya:
+// 1. Jadwal & Pembagian Ruangan (aktif) -- sekarang punya 3 tab di dalamnya:
 //    Jadwal Sesi, Daftar Pengawas, dan Jadwal Ngawas. "Daftar Pengawas"
 //    dulu Kartu sendiri, sekarang di-embed di sini (lihat JadwalPengawasTab.js).
+// 2. Peserta & Pengawas (Aktif)
 // 3. Kartu Ujian (aktif)
 // 4. Presensi & Berita Acara (aktif) -- bagian "Laporan" (rekap akhir)
 //    BELUM dibangun, cuma Daftar Hadir + Berita Acara (keduanya PDF form
@@ -64,20 +64,20 @@ const JENIS_UJIAN_LABEL = {
 
 const SUB_FITUR = [
   {
-    id: "pembagian-ruangan",
-    title: "Peserta & Pembagian Ruangan",
+    id: "jadwal-pengawas",
+    title: "Jadwal & Pembagian Ruangan",
     description:
-      "Kelola daftar peserta & bagi siswa ke ruangan ujian otomatis berdasarkan kelas & huruf",
-    icon: DoorOpen,
+      "Atur jadwal sesi ujian per mapel, kode & daftar pengawas, dan pembagian ruangan jaga (penugasan guru pengawas per ruangan) tiap sesi",
+    icon: CalendarClock,
     status: "done",
     clickable: true,
   },
   {
-    id: "jadwal-pengawas",
-    title: "Jadwal & Pengawas",
+    id: "pembagian-ruangan",
+    title: "Peserta & Pengawas",
     description:
-      "Atur jadwal sesi ujian per mapel, kode & daftar pengawas, dan penugasan guru pengawas per ruangan",
-    icon: CalendarClock,
+      "Kelola daftar peserta & bagi siswa ke ruangan ujian otomatis berdasarkan kelas & huruf, siap jadi acuan pengawas ruangan",
+    icon: DoorOpen,
     status: "done",
     clickable: true,
   },
@@ -259,7 +259,7 @@ const JenisUjianMenuTab = ({ jenisUjian, showToast, onBack }) => {
             Modul dalam pengembangan
           </p>
           <p className="text-xs text-indigo-700 dark:text-indigo-400 mt-0.5">
-            Sub-fitur akan diaktifkan satu per satu. Peserta & Pembagian Ruangan, Jadwal & Pengawas,
+            Sub-fitur akan diaktifkan satu per satu. Jadwal & Pembagian Ruangan, Peserta & Pengawas,
             Kartu Ujian, Presensi & Berita Acara, Anggaran & Biaya, Petunjuk & Penggunaan Aplikasi,
             Program Kerja Pelaksanaan, dan Laporan Rekap Akhir sudah bisa dipakai.
           </p>

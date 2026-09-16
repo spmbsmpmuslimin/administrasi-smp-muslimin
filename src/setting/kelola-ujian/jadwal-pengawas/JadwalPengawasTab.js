@@ -1,5 +1,5 @@
 // setting/kelola-ujian/JadwalPengawasTab.js
-// Sub-fitur "Jadwal & Pengawas" dari Manajemen Ujian, sekarang punya 3 tab:
+// Sub-fitur "Jadwal & Pembagian Ruangan" dari Manajemen Ujian, sekarang punya 3 tab:
 // 1. "Jadwal Sesi" -- kelola daftar sesi ujian (tanggal, jam, mapel).
 // 2. "Daftar Pengawas" -- kode singkat per guru (embed dari
 //    DaftarPengawasTab.js, dulu kartu sub-fitur sendiri).
@@ -177,8 +177,8 @@ const JadwalPengawasTab = ({ jenisUjian, showToast, onBack }) => {
   }, [daftarTahunAjaran]);
 
   // Begitu tahun ajaran fix, ambil/bikin record `ujian` (idempotent, sama
-  // seperti Pembagian Ruangan -- kapasitas default cuma dipakai kalau
-  // admin buka Jadwal & Pengawas duluan sebelum Pembagian Ruangan).
+  // seperti Peserta & Pengawas -- kapasitas default cuma dipakai kalau
+  // admin buka Jadwal & Pembagian Ruangan duluan sebelum Peserta & Pengawas).
   useEffect(() => {
     if (!tahunAjaranId) {
       setUjian(null);

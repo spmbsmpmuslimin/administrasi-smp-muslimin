@@ -25,10 +25,12 @@ import {
   FileSpreadsheet,
   FileText,
   Loader2,
+  LayoutGrid,
 } from "lucide-react";
 import { supabase } from "../../../supabaseClient";
 import {
   ambilDaftarTahunAjaran,
+  ambilSiswaPerKelas,
   getOrCreateUjian,
   cariUjian,
   prosesPembagianRuangan,
@@ -36,6 +38,7 @@ import {
   ambilPembagianTersimpan,
   KONFIGURASI_JENIS_UJIAN,
 } from "./pembagianRuanganSupabase";
+import { bagiRuanganPerJenjang, bangunMatrixKomposisi } from "./bagiRuanganPerJenjang";
 import { terapkanQuotaManual, hitungTotalPerKelas } from "./bagiRuangan";
 import { exportDaftarPesertaUjian } from "./daftarPesertaExcelExport";
 import { exportDaftarPesertaUjianPdf } from "./daftarPesertaPdfExport";
@@ -46,6 +49,32 @@ const JENIS_UJIAN_LABEL = {
   PSAT: "PSAT - Penilaian Sumatif Akhir Tahun (kelas 7-8)",
   PSAJ: "PSAJ - Penilaian Sumatif Akhir Jenjang (kelas 9)",
 };
+
+// Pilihan algoritma pembagian ruangan (lihat bagiRuanganPerJenjang.js buat
+// detail cara kerja tiap versi). versi_skema tersimpan di record `ujian`
+// pas pertama kali diproses & disimpan -- gak bisa diganti lagi setelah
+// itu lewat sub-fitur ini (lihat versiSkemaTerkunci di bawah).
+const VERSI_SKEMA_LIST = [
+  {
+    value: "v1",
+    label: "V1 - Rotasi Penuh",
+    deskripsi: "Tiap ruang kecampur rata dari semua kelas asal di jenjang itu.",
+  },
+  {
+    value: "v2",
+    label: "V2 - Rantai Muter",
+    deskripsi: "Tiap ruang cuma gabungan 2 kelas yang bersebelahan.",
+  },
+];
+
+// 2 tab level PALING ATAS: "Komposisi Ruangan" (bandingin V1 vs V2 dulu,
+// murni preview, belum proses/simpan apa-apa) dan "Pembagian Ruangan"
+// (alur asli: proses -> quota manual -> simpan). Beda sama TAB_LIST di
+// bawah, yang itu sub-tab DI DALAM "Pembagian Ruangan" doang.
+const VIEW_TAB_LIST = [
+  { id: "komposisi", label: "Komposisi Ruangan", icon: LayoutGrid },
+  { id: "pembagian", label: "Pembagian Ruangan", icon: DoorOpen },
+];
 
 // Definisi 3 tab di bagian bawah (dulu masing-masing ditulis manual jadi
 // 3 blok JSX yang identik kecuali label/ikon) -- sekarang cukup 1 array
@@ -62,6 +91,101 @@ function labelTahunAjaran(row) {
   return row.year || row.tahun_ajaran || row.name || row.label || row.nama || `ID: ${row.id}`;
 }
 
+// Render 1 tabel matrix (Ruang x Kelas) buat 1 jenjang, gaya sama kayak
+// file Excel referensi awal: baris = ruang, kolom = kelas asal, + baris
+// "Cek Total" (dijumlah dari hasil pembagian) & "Data Asli" (jumlah siswa
+// kelas itu sebelum dibagi) buat validasi visual -- kalau 2 baris itu gak
+// pas di 1 kolom, kolomnya di-highlight merah (harusnya nggak pernah
+// kejadian selama algoritmanya bener, tapi tetep dicek biar keliatan
+// kalau ada yang aneh).
+const TabelMatrixJenjang = ({ data }) => {
+  const { jenjang, urutanKelas, ruang, cekTotal, dataAsli } = data;
+  return (
+    <div className="mb-6">
+      <p className="text-sm font-bold text-gray-900 dark:text-white mb-2">Jenjang {jenjang}</p>
+      <div className="overflow-x-auto -mx-4 sm:mx-0 px-4 sm:px-0">
+        <table className="w-full text-xs sm:text-sm border-collapse rounded-lg overflow-hidden border border-gray-300 dark:border-gray-600">
+          <thead>
+            <tr className="bg-gray-100 dark:bg-gray-700">
+              <th className="text-left py-2.5 px-3 font-bold text-gray-900 dark:text-white whitespace-nowrap border-b border-gray-300 dark:border-gray-600">
+                Ruangan
+              </th>
+              {urutanKelas.map((kelas) => (
+                <th
+                  key={kelas}
+                  className="text-center py-2.5 px-3 font-bold text-gray-900 dark:text-white whitespace-nowrap border-b border-gray-300 dark:border-gray-600"
+                >
+                  {kelas}
+                </th>
+              ))}
+              <th className="text-center py-2.5 px-3 font-bold text-gray-900 dark:text-white whitespace-nowrap border-b border-gray-300 dark:border-gray-600">
+                Total
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {ruang.map((r, idx) => (
+              <tr
+                key={r.nomor_ruangan}
+                className={`border-b border-gray-200 dark:border-gray-700 ${
+                  idx % 2 === 1 ? "bg-gray-50 dark:bg-gray-800/40" : "bg-white dark:bg-gray-800"
+                }`}
+              >
+                <td className="py-2 px-3 font-semibold text-gray-900 dark:text-white whitespace-nowrap">
+                  Ruang {r.nomor_ruangan}
+                </td>
+                {urutanKelas.map((kelas) => (
+                  <td
+                    key={kelas}
+                    className="text-center py-2 px-3 font-medium text-gray-900 dark:text-white"
+                  >
+                    {r.perKelas[kelas] || 0}
+                  </td>
+                ))}
+                <td className="text-center py-2 px-3 font-bold text-gray-900 dark:text-white">
+                  {r.total}
+                </td>
+              </tr>
+            ))}
+            <tr className="border-t-2 border-gray-400 dark:border-gray-500 bg-gray-50 dark:bg-gray-800/60">
+              <td className="py-2 px-3 font-bold text-gray-900 dark:text-white">Cek Total</td>
+              {urutanKelas.map((kelas) => {
+                const pas = (cekTotal[kelas] || 0) === (dataAsli[kelas] || 0);
+                return (
+                  <td key={kelas} className="text-center py-2 px-3">
+                    <span
+                      className={`inline-block min-w-[2rem] px-2 py-0.5 rounded-md font-bold ${
+                        pas
+                          ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-300"
+                          : "bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300"
+                      }`}
+                    >
+                      {cekTotal[kelas] || 0}
+                    </span>
+                  </td>
+                );
+              })}
+              <td></td>
+            </tr>
+            <tr className="bg-gray-50 dark:bg-gray-800/60">
+              <td className="py-2 px-3 font-semibold text-gray-900 dark:text-white">Data Asli</td>
+              {urutanKelas.map((kelas) => (
+                <td
+                  key={kelas}
+                  className="text-center py-2 px-3 font-medium text-gray-900 dark:text-white"
+                >
+                  {dataAsli[kelas] || 0}
+                </td>
+              ))}
+              <td></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+};
+
 // jenisUjian sekarang datang dari level atas (JenisUjianMenuTab / pemilihan
 // PSAS-PSAT-PSAJ) -- sudah fixed di sini, jadi tidak ada lagi dropdown buat
 // gonta-ganti jenis ujian di dalam sub-fitur ini.
@@ -71,6 +195,26 @@ const PembagianRuanganTab = ({ jenisUjian, showToast, onBack }) => {
   const [kapasitas, setKapasitas] = useState(
     KONFIGURASI_JENIS_UJIAN[jenisUjian]?.defaultKapasitas || 40
   );
+  const [versiSkema, setVersiSkema] = useState("v1");
+  // true kalau ujian utk kombinasi jenisUjian+tahunAjaranId ini SUDAH ada
+  // record-nya di DB (udah pernah diproses & disimpan) -- versi_skema
+  // record itu gak bisa diganti lagi lewat sub-fitur ini, jadi radio-nya
+  // dikunci & cuma nampilin versi yang beneran kepake.
+  const [versiSkemaTerkunci, setVersiSkemaTerkunci] = useState(false);
+
+  // Tab level PALING ATAS: "komposisi" (bandingin V1 vs V2, preview doang)
+  // atau "pembagian" (alur proses -> quota manual -> simpan, default).
+  const [viewAktif, setViewAktif] = useState("pembagian");
+  // Hasil bangunMatrixKomposisi() buat KEDUA versi sekaligus: { v1: [...], v2: [...] },
+  // masing-masing array per jenjang. null = belum pernah dihitung.
+  const [komposisiData, setKomposisiData] = useState(null);
+  const [memuatKomposisi, setMemuatKomposisi] = useState(false);
+  // tahunAjaranId waktu komposisiData terakhir dihitung -- dipakai buat
+  // deteksi "udah basi" (tahun ajaran diganti) tanpa perlu useEffect+reset
+  // terpisah; render tinggal bandingin ini sama tahunAjaranId yang aktif.
+  const [komposisiUntukTahunAjaran, setKomposisiUntukTahunAjaran] = useState(null);
+  // Sub-tab DI DALAM tab Komposisi Ruangan: lagi liatin V1 atau V2.
+  const [komposisiVersiAktif, setKomposisiVersiAktif] = useState("v1");
 
   const [loadingTahunAjaran, setLoadingTahunAjaran] = useState(true);
   const [memproses, setMemproses] = useState(false);
@@ -158,9 +302,12 @@ const PembagianRuanganTab = ({ jenisUjian, showToast, onBack }) => {
       setMemuatTersimpan(true);
       setHasilAsli(null);
       setQuotaPerRuangan(null);
+      setVersiSkemaTerkunci(false);
       try {
         const ujian = await cariUjian(supabase, jenisUjian, tahunAjaranId);
         if (!ujian) return; // belum pernah diproses buat kombinasi ini
+        setVersiSkema(ujian.versi_skema || "v1");
+        setVersiSkemaTerkunci(true);
         const tersimpan = await ambilPembagianTersimpan(supabase, ujian.id);
         if (dibatalkan || tersimpan.length === 0) return;
 
@@ -193,6 +340,52 @@ const PembagianRuanganTab = ({ jenisUjian, showToast, onBack }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tahunAjaranId, jenisUjian]);
 
+  // Hitung V1 & V2 SEKALIGUS (murni di memori, gak nyentuh DB) buat
+  // ditampilin berdampingan di tab "Komposisi Ruangan" -- beda dari
+  // handleProses di bawah yang cuma proses 1 versi (yang lagi dipilih di
+  // radio) dan itu yang bakal disimpan.
+  const handleLihatKomposisi = async () => {
+    if (!tahunAjaranId) {
+      showToast?.("Pilih tahun ajaran dulu", "error");
+      return;
+    }
+    setMemuatKomposisi(true);
+    try {
+      const allowedGrades = KONFIGURASI_JENIS_UJIAN[jenisUjian]?.grades || null;
+      const dataSiswaPerKelas = await ambilSiswaPerKelas(supabase, tahunAjaranId, allowedGrades);
+      const hasilV1 = bagiRuanganPerJenjang(dataSiswaPerKelas, "v1");
+      const hasilV2 = bagiRuanganPerJenjang(dataSiswaPerKelas, "v2");
+      setKomposisiData({
+        v1: bangunMatrixKomposisi(hasilV1, dataSiswaPerKelas),
+        v2: bangunMatrixKomposisi(hasilV2, dataSiswaPerKelas),
+      });
+      setKomposisiUntukTahunAjaran(tahunAjaranId);
+    } catch (err) {
+      console.error(err);
+      showToast?.("Gagal memuat komposisi ruangan: " + err.message, "error");
+    } finally {
+      setMemuatKomposisi(false);
+    }
+  };
+
+  // Dipanggil dari tombol "Pakai versi ini" di tab Komposisi Ruangan --
+  // set radio versiSkema di tab Pembagian Ruangan, terus langsung pindah
+  // ke tab itu biar admin tinggal klik "Proses Pembagian". Gak ngapa-
+  // ngapain kalau versinya udah terkunci (ujian ini udah pernah diproses).
+  const handlePilihVersi = (value) => {
+    if (versiSkemaTerkunci) {
+      showToast?.(
+        "Versi udah terkunci ke " +
+          versiSkema.toUpperCase() +
+          " -- ujian ini sudah pernah diproses/disimpan",
+        "error"
+      );
+      return;
+    }
+    setVersiSkema(value);
+    setViewAktif("pembagian");
+  };
+
   const handleProses = async () => {
     if (!tahunAjaranId) {
       showToast?.("Pilih tahun ajaran dulu", "error");
@@ -209,7 +402,13 @@ const PembagianRuanganTab = ({ jenisUjian, showToast, onBack }) => {
     setHasilAsli(null);
     setQuotaPerRuangan(null);
     try {
-      const hasil = await prosesPembagianRuangan(supabase, tahunAjaranId, jenisUjian, kapasitas);
+      const hasil = await prosesPembagianRuangan(
+        supabase,
+        tahunAjaranId,
+        jenisUjian,
+        kapasitas,
+        versiSkema
+      );
       if (hasil.length === 0) {
         showToast?.("Tidak ada siswa aktif ditemukan untuk kombinasi ini", "error");
       }
@@ -296,7 +495,13 @@ const PembagianRuanganTab = ({ jenisUjian, showToast, onBack }) => {
       const hasilFinal = terapkanQuotaManual(hasilAsli, quotaPerRuangan).filter(
         (r) => r.siswa.length > 0
       );
-      const ujian = await getOrCreateUjian(supabase, jenisUjian, tahunAjaranId, kapasitas);
+      const ujian = await getOrCreateUjian(
+        supabase,
+        jenisUjian,
+        tahunAjaranId,
+        kapasitas,
+        versiSkema
+      );
       const jumlah = await simpanPembagianRuangan(
         supabase,
         ujian.id,
@@ -440,354 +645,534 @@ const PembagianRuanganTab = ({ jenisUjian, showToast, onBack }) => {
         </div>
       </div>
 
-      {memuatTersimpan && (
-        <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">Memuat data tersimpan...</p>
-      )}
+      {/* Tab level PALING ATAS: bandingin V1 vs V2 dulu di "Komposisi
+          Ruangan" (preview doang, belum proses/simpan apa-apa), atau
+          langsung ke alur "Pembagian Ruangan" (proses -> quota manual ->
+          simpan). Beda sama TAB_LIST di bawah, yang itu sub-tab DI DALAM
+          "Pembagian Ruangan". */}
+      <div className="flex flex-wrap gap-1 mb-5 border-b border-gray-200 dark:border-gray-700">
+        {VIEW_TAB_LIST.map((tab) => {
+          const Icon = tab.icon;
+          return (
+            <button
+              key={tab.id}
+              onClick={() => setViewAktif(tab.id)}
+              className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
+                viewAktif === tab.id
+                  ? "border-indigo-600 text-indigo-600 dark:text-indigo-400"
+                  : "border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
+              }`}
+            >
+              <Icon size={15} /> {tab.label}
+            </button>
+          );
+        })}
+      </div>
 
-      <button
-        onClick={handleProses}
-        disabled={memproses || memuatTersimpan}
-        className="flex items-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 text-white text-sm font-medium rounded-xl transition-all active:scale-95"
-      >
-        <RefreshCw size={16} className={memproses ? "animate-spin" : ""} />
-        {memproses ? "Memproses..." : "Proses Pembagian (Preview)"}
-      </button>
+      {viewAktif === "komposisi" && (
+        <div className="mb-6">
+          <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">
+            Bandingkan hasil 2 versi algoritma sebelum diproses beneran -- V1 (Rotasi Penuh) vs V2
+            (Rantai Muter). Murni hitungan preview di memori, belum nyimpen apa-apa ke database.
+          </p>
 
-      {/* Tabel quota manual -- hasil auto-generate ditampilkan di sini,
-          admin boleh ubah angkanya per kelas per ruangan sebelum disimpan. */}
-      {quotaPerRuangan && (
-        <div className="mt-6">
-          <div className="flex flex-wrap items-center gap-4 mb-4 text-sm">
-            <span className="flex items-center gap-1.5 text-gray-700 dark:text-gray-300">
-              <DoorOpen size={16} /> {quotaPerRuangan.length} ruangan
-            </span>
-            <span className="flex items-center gap-1.5 text-gray-700 dark:text-gray-300">
-              <Users size={16} /> {totalSiswaQuota} siswa
-            </span>
-          </div>
+          {!tahunAjaranId && (
+            <p className="text-xs text-amber-600 dark:text-amber-400 mb-3">
+              Pilih tahun ajaran dulu di atas.
+            </p>
+          )}
 
-          {/* Tab switcher: Pembagian Ruangan <-> Preview Per Ruangan <-> Export.
-              flex-wrap supaya 3 tab ini nggak kepotong/nyempil di layar HP sempit. */}
-          <div className="flex flex-wrap gap-1 mb-4 border-b border-gray-200 dark:border-gray-700">
-            {TAB_LIST.map((tab) => {
-              const Icon = tab.icon;
-              return (
-                <button
-                  key={tab.id}
-                  onClick={() => setTabAktif(tab.id)}
-                  className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
-                    tabAktif === tab.id
-                      ? "border-indigo-600 text-indigo-600 dark:text-indigo-400"
-                      : "border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
-                  }`}
-                >
-                  <Icon size={15} /> {tab.label}
-                </button>
-              );
-            })}
-          </div>
+          {tahunAjaranId && (!komposisiData || komposisiUntukTahunAjaran !== tahunAjaranId) && (
+            <button
+              onClick={handleLihatKomposisi}
+              disabled={memuatKomposisi}
+              className="flex items-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 text-white text-sm font-medium rounded-xl transition-all active:scale-95"
+            >
+              <RefreshCw size={16} className={memuatKomposisi ? "animate-spin" : ""} />
+              {memuatKomposisi ? "Menghitung..." : "Lihat Komposisi Ruangan"}
+            </button>
+          )}
 
-          {tabAktif === "edit" && (
+          {komposisiData && komposisiUntukTahunAjaran === tahunAjaranId && (
             <>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">
-                Angka di bawah hasil auto-generate (proporsional) -- boleh diubah manual per kelas
-                per ruangan sesuai kebutuhan. Total tiap kolom kelas harus PAS sama jumlah siswa
-                kelas itu sebelum bisa disimpan.
-              </p>
-
-              <div className="overflow-x-auto mb-2 -mx-4 sm:mx-0 px-4 sm:px-0">
-                <table className="w-full text-xs sm:text-sm border-collapse">
-                  <thead>
-                    <tr>
-                      <th className="text-left py-2 pr-3 font-medium text-gray-600 dark:text-gray-400 whitespace-nowrap">
-                        Ruangan
-                      </th>
-                      {daftarKelas.map((kelas) => (
-                        <th
-                          key={kelas}
-                          className="text-center py-2 px-2 font-medium text-gray-600 dark:text-gray-400 whitespace-nowrap"
-                        >
-                          {kelas}
-                        </th>
-                      ))}
-                      <th className="text-center py-2 px-2 font-medium text-gray-600 dark:text-gray-400 whitespace-nowrap">
-                        Total
-                      </th>
-                      <th></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {quotaPerRuangan.map((r) => {
-                      const totalRuanganIni = Object.values(r.quota).reduce(
-                        (sum, v) => sum + (Number(v) || 0),
-                        0
-                      );
-                      return (
-                        <tr
-                          key={r.nomor_ruangan}
-                          className="border-t border-gray-100 dark:border-gray-700"
-                        >
-                          <td className="py-1.5 pr-3 font-medium text-gray-700 dark:text-gray-300 whitespace-nowrap">
-                            Ruang {r.nomor_ruangan}
-                          </td>
-                          {daftarKelas.map((kelas) => (
-                            <td key={kelas} className="py-1.5 px-2">
-                              <input
-                                type="number"
-                                min={0}
-                                value={!r.quota[kelas] ? "" : r.quota[kelas]}
-                                onChange={(e) =>
-                                  handleUbahQuota(r.nomor_ruangan, kelas, e.target.value)
-                                }
-                                className="w-14 sm:w-16 text-center px-1.5 py-1 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100"
-                              />
-                            </td>
-                          ))}
-                          <td
-                            className={`text-center px-2 font-semibold ${
-                              totalRuanganIni > kapasitas
-                                ? "text-red-600 dark:text-red-400"
-                                : "text-gray-700 dark:text-gray-300"
-                            }`}
-                          >
-                            {totalRuanganIni}
-                          </td>
-                          <td className="text-center px-1">
-                            <button
-                              onClick={() => handleHapusRuangan(r.nomor_ruangan)}
-                              title="Hapus ruangan ini"
-                              className="p-1 text-gray-400 hover:text-red-600 dark:hover:text-red-400"
-                            >
-                              <Trash2 size={14} />
-                            </button>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                    {/* Baris target & selisih, buat bantu admin liat kolom mana yang belum pas */}
-                    <tr className="border-t-2 border-gray-200 dark:border-gray-600">
-                      <td className="py-1.5 pr-3 text-gray-500 dark:text-gray-400">Target</td>
-                      {daftarKelas.map((kelas) => {
-                        const sudah = totalPerKelasSaatIni[kelas] || 0;
-                        const target = targetPerKelas[kelas] || 0;
-                        const pas = sudah === target;
-                        return (
-                          <td
-                            key={kelas}
-                            className={`text-center px-2 ${
-                              pas
-                                ? "text-emerald-600 dark:text-emerald-400"
-                                : "text-red-600 dark:text-red-400 font-semibold"
-                            }`}
-                          >
-                            {sudah}/{target}
-                          </td>
-                        );
-                      })}
-                      <td></td>
-                      <td></td>
-                    </tr>
-                  </tbody>
-                </table>
+              {/* Sub-tab: lagi liatin matrix versi mana */}
+              <div className="flex flex-wrap gap-1 mb-4 mt-1 border-b border-gray-200 dark:border-gray-700">
+                {VERSI_SKEMA_LIST.map((opsi) => (
+                  <button
+                    key={opsi.value}
+                    onClick={() => setKomposisiVersiAktif(opsi.value)}
+                    className={`px-3 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
+                      komposisiVersiAktif === opsi.value
+                        ? "border-indigo-600 text-indigo-600 dark:text-indigo-400"
+                        : "border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
+                    }`}
+                  >
+                    {opsi.label}
+                  </button>
+                ))}
               </div>
 
-              <button
-                onClick={handleTambahRuangan}
-                className="flex items-center gap-1.5 text-sm text-indigo-600 dark:text-indigo-400 hover:underline mb-5"
-              >
-                <Plus size={15} /> Tambah Ruangan
-              </button>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">
+                {VERSI_SKEMA_LIST.find((o) => o.value === komposisiVersiAktif)?.deskripsi}
+              </p>
+
+              {komposisiData[komposisiVersiAktif].map((matrixJenjang) => (
+                <TabelMatrixJenjang key={matrixJenjang.jenjang} data={matrixJenjang} />
+              ))}
+
+              <div className="flex flex-wrap items-center gap-3">
+                <button
+                  onClick={() => handlePilihVersi(komposisiVersiAktif)}
+                  disabled={versiSkemaTerkunci}
+                  className="flex items-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 text-white text-sm font-medium rounded-xl transition-all active:scale-95"
+                >
+                  Pakai {VERSI_SKEMA_LIST.find((o) => o.value === komposisiVersiAktif)?.label} untuk
+                  Pembagian Ruangan
+                </button>
+
+                <button
+                  onClick={handleLihatKomposisi}
+                  disabled={memuatKomposisi}
+                  className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline"
+                >
+                  {memuatKomposisi
+                    ? "Menghitung ulang..."
+                    : "Hitung ulang (kalau data siswa berubah)"}
+                </button>
+              </div>
+
+              {versiSkemaTerkunci && (
+                <p className="text-xs text-amber-600 dark:text-amber-400 mt-2">
+                  Versi udah terkunci ke {versiSkema.toUpperCase()} -- ujian ini sudah pernah
+                  diproses/disimpan, jadi pilihan di sini nggak berpengaruh lagi.
+                </p>
+              )}
             </>
           )}
+        </div>
+      )}
 
-          {tabAktif === "preview" && (
-            <div className="mb-5">
-              <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
-                Pilih Ruangan
-              </label>
-              <select
-                value={ruanganPreviewAktif ?? ""}
-                onChange={(e) => setRuanganPreviewAktif(Number(e.target.value))}
-                className="w-full sm:w-64 px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 mb-4"
-              >
-                {quotaPerRuangan.map((r) => (
-                  <option key={r.nomor_ruangan} value={r.nomor_ruangan}>
-                    Ruang {r.nomor_ruangan}
-                  </option>
-                ))}
-              </select>
+      {viewAktif === "pembagian" && (
+        <>
+          {/* Versi algoritma -- terkunci begitu ujian ini punya record tersimpan
+              (lihat versiSkemaTerkunci), karena versi_skema cuma boleh dipilih
+              sekali pas record ujian pertama kali dibikin. */}
+          <div className="mb-5">
+            <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">
+              Versi Algoritma Pembagian
+            </label>
 
-              {(() => {
-                const siswaRuanganIni =
-                  hasilLive.find((h) => h.nomor_ruangan === ruanganPreviewAktif)?.siswa || [];
-
-                if (siswaRuanganIni.length === 0) {
-                  return (
-                    <p className="text-xs text-gray-400 italic">Belum ada siswa di ruangan ini.</p>
-                  );
-                }
-
-                // Urut pakai no_kursi (= no_peserta yang disimpan ke DB) --
-                // sama persis dengan urutan di daftarPesertaExcelExport.js,
-                // biar preview ini benar-benar cerminan hasil Excel-nya.
-                const siswaTerurut = [...siswaRuanganIni].sort(
-                  (a, b) => (a.no_kursi || 0) - (b.no_kursi || 0)
-                );
-
-                return (
-                  <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-5">
-                    {/* Kop dokumen -- meniru letterhead di file Excel */}
-                    <div className="text-center mb-4 pb-3 border-b border-gray-100 dark:border-gray-700">
-                      <p className="text-sm font-semibold text-gray-800 dark:text-gray-100">
-                        DAFTAR PESERTA {(JENIS_UJIAN_LABEL[jenisUjian] || jenisUjian).toUpperCase()}
-                      </p>
-                      {labelTahunAjaranAktif && (
-                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                          TAHUN AJARAN {labelTahunAjaranAktif}
-                        </p>
-                      )}
-                      <p className="text-xs font-medium text-gray-700 dark:text-gray-300 mt-0.5">
-                        RUANG {String(ruanganPreviewAktif).padStart(2, "0")}
-                      </p>
-                    </div>
-
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-xs">
-                        <thead>
-                          <tr className="border-b border-gray-200 dark:border-gray-700">
-                            <th className="py-1.5 pr-3 w-10 text-left font-semibold text-gray-600 dark:text-gray-300">
-                              No
-                            </th>
-                            <th className="py-1.5 pr-3 text-left font-semibold text-gray-600 dark:text-gray-300">
-                              Nama Peserta
-                            </th>
-                            <th className="py-1.5 pr-3 text-center font-semibold text-gray-600 dark:text-gray-300">
-                              No. Peserta
-                            </th>
-                            <th className="py-1.5 text-center font-semibold text-gray-600 dark:text-gray-300">
-                              NIS
-                            </th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {siswaTerurut.map((s, idx) => (
-                            <tr
-                              key={s.id}
-                              className="border-b border-gray-50 dark:border-gray-800/60"
-                            >
-                              <td className="py-1.5 pr-3 text-gray-700 dark:text-gray-300">
-                                {idx + 1}
-                              </td>
-                              <td className="py-1.5 pr-3 text-gray-800 dark:text-gray-100 truncate">
-                                {s.nama || "-"}
-                              </td>
-                              <td className="py-1.5 pr-3 text-center text-gray-700 dark:text-gray-300">
-                                {petaNoPeserta.get(String(s.id)) || "-"}
-                              </td>
-                              <td className="py-1.5 text-center text-gray-700 dark:text-gray-300">
-                                {s.nis || "-"}
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-
-                    <p className="text-right text-[11px] text-gray-500 dark:text-gray-400 mt-3">
-                      {siswaRuanganIni.length} siswa
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {VERSI_SKEMA_LIST.map((opsi) => (
+                <label
+                  key={opsi.value}
+                  className={`flex items-start gap-2.5 p-3 rounded-xl border transition-all ${
+                    versiSkema === opsi.value
+                      ? "border-indigo-400 dark:border-indigo-600 bg-indigo-50 dark:bg-indigo-900/20"
+                      : "border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800"
+                  } ${
+                    versiSkemaTerkunci
+                      ? "opacity-60 cursor-not-allowed"
+                      : "cursor-pointer hover:border-indigo-300 dark:hover:border-indigo-700"
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="versiSkema"
+                    value={opsi.value}
+                    checked={versiSkema === opsi.value}
+                    disabled={versiSkemaTerkunci}
+                    onChange={(e) => setVersiSkema(e.target.value)}
+                    className="mt-0.5"
+                  />
+                  <div>
+                    <p className="text-sm font-medium text-gray-800 dark:text-gray-100">
+                      {opsi.label}
+                    </p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                      {opsi.deskripsi}
                     </p>
                   </div>
-                );
-              })()}
+                </label>
+              ))}
             </div>
-          )}
-
-          {tabAktif === "export" && (
-            <div className="mb-5">
-              <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">
-                Export daftar peserta ke Excel — buat ditempel di pintu ruangan & pegangan pengawas.
-                Isinya mengikuti pembagian yang sedang tampil di layar, termasuk perubahan quota
-                yang belum disimpan.
+            {versiSkemaTerkunci && (
+              <p className="text-xs text-amber-600 dark:text-amber-400 mt-2">
+                Versi terkunci — ujian ini sudah pernah diproses/disimpan dengan versi{" "}
+                <span className="font-semibold">{versiSkema.toUpperCase()}</span>. Ganti versi cuma
+                bisa dilakukan buat ujian yang belum pernah disimpan pada kombinasi jenis ujian +
+                tahun ajaran ini.
               </p>
+            )}
+          </div>
 
-              <div className="flex flex-col sm:flex-row sm:items-end gap-3 mb-4">
-                <div className="flex-1 sm:max-w-xs">
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Ruangan
-                  </label>
-                  <select
-                    value={ruanganExport}
-                    onChange={(e) => setRuanganExport(e.target.value)}
-                    className="w-full px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100"
-                  >
-                    <option value="semua">Semua Ruangan (1 file, 1 sheet per ruangan)</option>
-                    {quotaPerRuangan.map((r) => (
-                      <option key={r.nomor_ruangan} value={r.nomor_ruangan}>
-                        Ruang {String(r.nomor_ruangan).padStart(2, "0")}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <button
-                  onClick={handleExportExcel}
-                  disabled={mengexport || hasilLive.length === 0}
-                  className="flex items-center justify-center gap-2 px-4 py-2.5 w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 text-white text-sm font-medium rounded-xl transition-all active:scale-95"
-                >
-                  {mengexport ? (
-                    <Loader2 size={16} className="animate-spin" />
-                  ) : (
-                    <FileSpreadsheet size={16} />
-                  )}
-                  {mengexport ? "Menyiapkan file..." : "Download Excel"}
-                </button>
-
-                <button
-                  onClick={handleExportPdf}
-                  disabled={mengexportPdf || hasilLive.length === 0}
-                  className="flex items-center justify-center gap-2 px-4 py-2.5 w-full sm:w-auto bg-rose-600 hover:bg-rose-700 disabled:opacity-60 text-white text-sm font-medium rounded-xl transition-all active:scale-95"
-                >
-                  {mengexportPdf ? (
-                    <Loader2 size={16} className="animate-spin" />
-                  ) : (
-                    <FileText size={16} />
-                  )}
-                  {mengexportPdf ? "Menyiapkan file..." : "Download PDF"}
-                </button>
-              </div>
-
-              <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 p-4 mb-4">
-                <p className="text-sm font-semibold text-gray-800 dark:text-gray-100 mb-1">
-                  Isi file
-                </p>
-                <p className="text-sm text-gray-600 dark:text-gray-300">
-                  Kop SMP Muslimin Cililin, judul{" "}
-                  <span className="font-medium">
-                    Daftar Peserta {JENIS_UJIAN_LABEL[jenisUjian]?.split(" - ")[1] || jenisUjian}
-                  </span>
-                  , Tahun Ajaran {labelTahunAjaranAktif || "-"}, nomor ruangan, lalu tabel: No, Nama
-                  Peserta, No. Peserta, NIS.
-                </p>
-              </div>
-            </div>
-          )}
-
-          {!quotaValid && (
-            <p className="text-xs text-red-600 dark:text-red-400 mb-3">
-              Total per kelas belum pas dengan jumlah siswa aktif -- cek baris "Target" di atas
-              (kolom yang merah berarti belum sesuai).
+          {memuatTersimpan && (
+            <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
+              Memuat data tersimpan...
             </p>
           )}
 
           <button
-            onClick={handleSimpan}
-            disabled={menyimpan || !quotaValid}
-            className="flex items-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 text-white text-sm font-medium rounded-xl transition-all active:scale-95"
+            onClick={handleProses}
+            disabled={memproses || memuatTersimpan}
+            className="flex items-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 text-white text-sm font-medium rounded-xl transition-all active:scale-95"
           >
-            <Save size={16} />
-            {menyimpan ? "Menyimpan..." : "Simpan ke Database"}
+            <RefreshCw size={16} className={memproses ? "animate-spin" : ""} />
+            {memproses ? "Memproses..." : "Proses Pembagian (Preview)"}
           </button>
-        </div>
+
+          {/* Tabel quota manual -- hasil auto-generate ditampilkan di sini,
+          admin boleh ubah angkanya per kelas per ruangan sebelum disimpan. */}
+          {quotaPerRuangan && (
+            <div className="mt-6">
+              <div className="flex flex-wrap items-center gap-4 mb-4 text-sm">
+                <span className="flex items-center gap-1.5 text-gray-700 dark:text-gray-300">
+                  <DoorOpen size={16} /> {quotaPerRuangan.length} ruangan
+                </span>
+                <span className="flex items-center gap-1.5 text-gray-700 dark:text-gray-300">
+                  <Users size={16} /> {totalSiswaQuota} siswa
+                </span>
+              </div>
+
+              {/* Tab switcher: Pembagian Ruangan <-> Preview Per Ruangan <-> Export.
+              flex-wrap supaya 3 tab ini nggak kepotong/nyempil di layar HP sempit. */}
+              <div className="flex flex-wrap gap-1 mb-4 border-b border-gray-200 dark:border-gray-700">
+                {TAB_LIST.map((tab) => {
+                  const Icon = tab.icon;
+                  return (
+                    <button
+                      key={tab.id}
+                      onClick={() => setTabAktif(tab.id)}
+                      className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
+                        tabAktif === tab.id
+                          ? "border-indigo-600 text-indigo-600 dark:text-indigo-400"
+                          : "border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
+                      }`}
+                    >
+                      <Icon size={15} /> {tab.label}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {tabAktif === "edit" && (
+                <>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">
+                    Angka di bawah hasil auto-generate (proporsional) -- boleh diubah manual per
+                    kelas per ruangan sesuai kebutuhan. Total tiap kolom kelas harus PAS sama jumlah
+                    siswa kelas itu sebelum bisa disimpan.
+                  </p>
+
+                  <div className="overflow-x-auto mb-2 -mx-4 sm:mx-0 px-4 sm:px-0">
+                    <table className="w-full text-xs sm:text-sm border-collapse rounded-lg overflow-hidden border border-gray-300 dark:border-gray-600">
+                      <thead>
+                        <tr className="bg-gray-100 dark:bg-gray-700">
+                          <th className="text-left py-2.5 px-3 font-bold text-gray-900 dark:text-white whitespace-nowrap border-b border-gray-300 dark:border-gray-600">
+                            Ruangan
+                          </th>
+                          {daftarKelas.map((kelas) => (
+                            <th
+                              key={kelas}
+                              className="text-center py-2.5 px-3 font-bold text-gray-900 dark:text-white whitespace-nowrap border-b border-gray-300 dark:border-gray-600"
+                            >
+                              {kelas}
+                            </th>
+                          ))}
+                          <th className="text-center py-2.5 px-3 font-bold text-gray-900 dark:text-white whitespace-nowrap border-b border-gray-300 dark:border-gray-600">
+                            Total
+                          </th>
+                          <th className="border-b border-gray-300 dark:border-gray-600"></th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {quotaPerRuangan.map((r, idx) => {
+                          const totalRuanganIni = Object.values(r.quota).reduce(
+                            (sum, v) => sum + (Number(v) || 0),
+                            0
+                          );
+                          return (
+                            <tr
+                              key={r.nomor_ruangan}
+                              className={`border-b border-gray-200 dark:border-gray-700 ${
+                                idx % 2 === 1
+                                  ? "bg-gray-50 dark:bg-gray-800/40"
+                                  : "bg-white dark:bg-gray-800"
+                              }`}
+                            >
+                              <td className="py-2 px-3 font-semibold text-gray-900 dark:text-white whitespace-nowrap">
+                                Ruang {r.nomor_ruangan}
+                              </td>
+                              {daftarKelas.map((kelas) => (
+                                <td key={kelas} className="py-1.5 px-2">
+                                  <input
+                                    type="number"
+                                    min={0}
+                                    value={!r.quota[kelas] ? "" : r.quota[kelas]}
+                                    onChange={(e) =>
+                                      handleUbahQuota(r.nomor_ruangan, kelas, e.target.value)
+                                    }
+                                    className="w-14 sm:w-16 text-center px-1.5 py-1 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 font-semibold text-gray-900 dark:text-white"
+                                  />
+                                </td>
+                              ))}
+                              <td
+                                className={`text-center px-3 font-bold ${
+                                  totalRuanganIni > kapasitas
+                                    ? "text-red-600 dark:text-red-400"
+                                    : "text-gray-900 dark:text-white"
+                                }`}
+                              >
+                                {totalRuanganIni}
+                              </td>
+                              <td className="text-center px-1">
+                                <button
+                                  onClick={() => handleHapusRuangan(r.nomor_ruangan)}
+                                  title="Hapus ruangan ini"
+                                  className="p-1 text-gray-400 hover:text-red-600 dark:hover:text-red-400"
+                                >
+                                  <Trash2 size={14} />
+                                </button>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                        {/* Baris target & selisih, buat bantu admin liat kolom mana yang belum pas */}
+                        <tr className="border-t-2 border-gray-400 dark:border-gray-500 bg-gray-50 dark:bg-gray-800/60">
+                          <td className="py-2 px-3 font-bold text-gray-900 dark:text-white">
+                            Target
+                          </td>
+                          {daftarKelas.map((kelas) => {
+                            const sudah = totalPerKelasSaatIni[kelas] || 0;
+                            const target = targetPerKelas[kelas] || 0;
+                            const pas = sudah === target;
+                            return (
+                              <td key={kelas} className="text-center px-3 py-2">
+                                <span
+                                  className={`inline-block min-w-[2.5rem] px-2 py-0.5 rounded-md font-bold ${
+                                    pas
+                                      ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-300"
+                                      : "bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300"
+                                  }`}
+                                >
+                                  {sudah}/{target}
+                                </span>
+                              </td>
+                            );
+                          })}
+                          <td></td>
+                          <td></td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+
+                  <button
+                    onClick={handleTambahRuangan}
+                    className="flex items-center gap-1.5 text-sm text-indigo-600 dark:text-indigo-400 hover:underline mb-5"
+                  >
+                    <Plus size={15} /> Tambah Ruangan
+                  </button>
+                </>
+              )}
+
+              {tabAktif === "preview" && (
+                <div className="mb-5">
+                  <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+                    Pilih Ruangan
+                  </label>
+                  <select
+                    value={ruanganPreviewAktif ?? ""}
+                    onChange={(e) => setRuanganPreviewAktif(Number(e.target.value))}
+                    className="w-full sm:w-64 px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 mb-4"
+                  >
+                    {quotaPerRuangan.map((r) => (
+                      <option key={r.nomor_ruangan} value={r.nomor_ruangan}>
+                        Ruang {r.nomor_ruangan}
+                      </option>
+                    ))}
+                  </select>
+
+                  {(() => {
+                    const siswaRuanganIni =
+                      hasilLive.find((h) => h.nomor_ruangan === ruanganPreviewAktif)?.siswa || [];
+
+                    if (siswaRuanganIni.length === 0) {
+                      return (
+                        <p className="text-xs text-gray-400 italic">
+                          Belum ada siswa di ruangan ini.
+                        </p>
+                      );
+                    }
+
+                    // Urut pakai no_kursi (= no_peserta yang disimpan ke DB) --
+                    // sama persis dengan urutan di daftarPesertaExcelExport.js,
+                    // biar preview ini benar-benar cerminan hasil Excel-nya.
+                    const siswaTerurut = [...siswaRuanganIni].sort(
+                      (a, b) => (a.no_kursi || 0) - (b.no_kursi || 0)
+                    );
+
+                    return (
+                      <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-5">
+                        {/* Kop dokumen -- meniru letterhead di file Excel */}
+                        <div className="text-center mb-4 pb-3 border-b border-gray-100 dark:border-gray-700">
+                          <p className="text-sm font-semibold text-gray-800 dark:text-gray-100">
+                            DAFTAR PESERTA{" "}
+                            {(JENIS_UJIAN_LABEL[jenisUjian] || jenisUjian).toUpperCase()}
+                          </p>
+                          {labelTahunAjaranAktif && (
+                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                              TAHUN AJARAN {labelTahunAjaranAktif}
+                            </p>
+                          )}
+                          <p className="text-xs font-medium text-gray-700 dark:text-gray-300 mt-0.5">
+                            RUANG {String(ruanganPreviewAktif).padStart(2, "0")}
+                          </p>
+                        </div>
+
+                        <div className="overflow-x-auto rounded-lg border border-gray-300 dark:border-gray-600">
+                          <table className="w-full text-xs border-collapse">
+                            <thead>
+                              <tr className="bg-gray-100 dark:bg-gray-700">
+                                <th className="py-2 pl-3 pr-3 w-10 text-left font-bold text-gray-900 dark:text-white border-b border-gray-300 dark:border-gray-600">
+                                  No
+                                </th>
+                                <th className="py-2 pr-3 text-left font-bold text-gray-900 dark:text-white border-b border-gray-300 dark:border-gray-600">
+                                  Nama Peserta
+                                </th>
+                                <th className="py-2 pr-3 text-center font-bold text-gray-900 dark:text-white border-b border-gray-300 dark:border-gray-600">
+                                  No. Peserta
+                                </th>
+                                <th className="py-2 pr-3 text-center font-bold text-gray-900 dark:text-white border-b border-gray-300 dark:border-gray-600">
+                                  NIS
+                                </th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {siswaTerurut.map((s, idx) => (
+                                <tr
+                                  key={s.id}
+                                  className={`border-b border-gray-200 dark:border-gray-700 ${
+                                    idx % 2 === 1
+                                      ? "bg-gray-50 dark:bg-gray-800/40"
+                                      : "bg-white dark:bg-gray-800"
+                                  }`}
+                                >
+                                  <td className="py-1.5 pl-3 pr-3 font-medium text-gray-900 dark:text-white">
+                                    {idx + 1}
+                                  </td>
+                                  <td className="py-1.5 pr-3 font-semibold text-gray-900 dark:text-white truncate">
+                                    {s.nama || "-"}
+                                  </td>
+                                  <td className="py-1.5 pr-3 text-center font-medium text-gray-900 dark:text-white">
+                                    {petaNoPeserta.get(String(s.id)) || "-"}
+                                  </td>
+                                  <td className="py-1.5 pr-3 text-center font-medium text-gray-900 dark:text-white">
+                                    {s.nis || "-"}
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+
+                        <p className="text-right text-[11px] text-gray-500 dark:text-gray-400 mt-3">
+                          {siswaRuanganIni.length} siswa
+                        </p>
+                      </div>
+                    );
+                  })()}
+                </div>
+              )}
+
+              {tabAktif === "export" && (
+                <div className="mb-5">
+                  <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">
+                    Export daftar peserta ke Excel — buat ditempel di pintu ruangan & pegangan
+                    pengawas. Isinya mengikuti pembagian yang sedang tampil di layar, termasuk
+                    perubahan quota yang belum disimpan.
+                  </p>
+
+                  <div className="flex flex-col sm:flex-row sm:items-end gap-3 mb-4">
+                    <div className="flex-1 sm:max-w-xs">
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Ruangan
+                      </label>
+                      <select
+                        value={ruanganExport}
+                        onChange={(e) => setRuanganExport(e.target.value)}
+                        className="w-full px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100"
+                      >
+                        <option value="semua">Semua Ruangan (1 file, 1 sheet per ruangan)</option>
+                        {quotaPerRuangan.map((r) => (
+                          <option key={r.nomor_ruangan} value={r.nomor_ruangan}>
+                            Ruang {String(r.nomor_ruangan).padStart(2, "0")}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <button
+                      onClick={handleExportExcel}
+                      disabled={mengexport || hasilLive.length === 0}
+                      className="flex items-center justify-center gap-2 px-4 py-2.5 w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 text-white text-sm font-medium rounded-xl transition-all active:scale-95"
+                    >
+                      {mengexport ? (
+                        <Loader2 size={16} className="animate-spin" />
+                      ) : (
+                        <FileSpreadsheet size={16} />
+                      )}
+                      {mengexport ? "Menyiapkan file..." : "Download Excel"}
+                    </button>
+
+                    <button
+                      onClick={handleExportPdf}
+                      disabled={mengexportPdf || hasilLive.length === 0}
+                      className="flex items-center justify-center gap-2 px-4 py-2.5 w-full sm:w-auto bg-rose-600 hover:bg-rose-700 disabled:opacity-60 text-white text-sm font-medium rounded-xl transition-all active:scale-95"
+                    >
+                      {mengexportPdf ? (
+                        <Loader2 size={16} className="animate-spin" />
+                      ) : (
+                        <FileText size={16} />
+                      )}
+                      {mengexportPdf ? "Menyiapkan file..." : "Download PDF"}
+                    </button>
+                  </div>
+
+                  <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 p-4 mb-4">
+                    <p className="text-sm font-semibold text-gray-800 dark:text-gray-100 mb-1">
+                      Isi file
+                    </p>
+                    <p className="text-sm text-gray-600 dark:text-gray-300">
+                      Kop SMP Muslimin Cililin, judul{" "}
+                      <span className="font-medium">
+                        Daftar Peserta{" "}
+                        {JENIS_UJIAN_LABEL[jenisUjian]?.split(" - ")[1] || jenisUjian}
+                      </span>
+                      , Tahun Ajaran {labelTahunAjaranAktif || "-"}, nomor ruangan, lalu tabel: No,
+                      Nama Peserta, No. Peserta, NIS.
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {!quotaValid && (
+                <p className="text-xs text-red-600 dark:text-red-400 mb-3">
+                  Total per kelas belum pas dengan jumlah siswa aktif -- cek baris "Target" di atas
+                  (kolom yang merah berarti belum sesuai).
+                </p>
+              )}
+
+              <button
+                onClick={handleSimpan}
+                disabled={menyimpan || !quotaValid}
+                className="flex items-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 text-white text-sm font-medium rounded-xl transition-all active:scale-95"
+              >
+                <Save size={16} />
+                {menyimpan ? "Menyimpan..." : "Simpan ke Database"}
+              </button>
+            </div>
+          )}
+        </>
       )}
     </div>
   );

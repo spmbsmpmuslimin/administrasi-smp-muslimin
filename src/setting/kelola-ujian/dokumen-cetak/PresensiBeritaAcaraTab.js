@@ -3,7 +3,7 @@
 // Acara -- "Laporan" rekap akhir belum dibangun, lihat catatan di
 // JenisUjianMenuTab.js).
 //
-// Alur: pilih tahun ajaran -> pilih sesi ujian (dari Jadwal & Pengawas)
+// Alur: pilih tahun ajaran -> pilih sesi ujian (dari Jadwal & Pembagian Ruangan)
 // -> cetak Daftar Hadir dan/atau Berita Acara, per ruangan atau semua
 // ruangan sekaligus. Kedua dokumen adalah PDF form KOSONG buat dicetak &
 // diisi/ditandatangani manual di kertas -- BUKAN presensi digital.
@@ -243,7 +243,7 @@ const PresensiBeritaAcaraTab = ({ jenisUjian, showToast, onBack }) => {
       {ujian && !loadingData && daftarJadwal.length === 0 && (
         <div className="p-3 text-xs bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl text-amber-700 dark:text-amber-300">
           Belum ada sesi jadwal untuk tahun ajaran ini. Atur dulu di{" "}
-          <strong>Jadwal & Pengawas</strong> supaya Daftar Hadir & Berita Acara bisa dicetak.
+          <strong>Jadwal & Pembagian Ruangan</strong> supaya Daftar Hadir & Berita Acara bisa dicetak.
         </div>
       )}
 

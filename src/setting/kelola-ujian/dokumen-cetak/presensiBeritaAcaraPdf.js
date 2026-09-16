@@ -8,7 +8,7 @@
 // 2. Berita Acara  -- form isian (jumlah hadir, catatan kejadian, TTD
 //    pengawas). Mapel/tanggal/sesi/ruang & jumlah peserta terdaftar
 //    otomatis terisi, sisanya (termasuk NAMA PENGAWAS) sengaja
-//    dikosongkan -- penugasan pengawas di "Jadwal & Pengawas" kadang
+//    dikosongkan -- penugasan pengawas di "Jadwal & Pembagian Ruangan" kadang
 //    nggak sesuai kenyataan di lapangan, jadi lebih aman ditulis tangan
 //    langsung saat ujian berlangsung daripada auto-fill yang belum tentu benar.
 //

@@ -1,4 +1,4 @@
-import { bagiRuangan } from "./bagiRuangan";
+import { bagiRuanganPerJenjang } from "./bagiRuanganPerJenjang";
 import { getAllAcademicYears } from "../../../services/academicYearService";
 import { bangunPetaNoPeserta } from "./noPeserta";
 
@@ -31,13 +31,14 @@ async function ambilDaftarTahunAjaran() {
 
 /**
  * Ambil semua siswa aktif untuk 1 tahun ajaran, dikelompokkan per class_id
- * (class_id formatnya udah "7A", "8B", dst — sama seperti key yang dipakai bagiRuangan)
+ * (class_id formatnya udah "7A", "8B", dst — sama seperti key yang dipakai
+ * bagiRuanganPerJenjang)
  *
  * @param {object} supabase - instance supabase client
  * @param {string} academicYearId - academic_year_id yang aktif (uuid)
  * @param {string[]|null} allowedGrades - jenjang yang boleh ikut, misal ["7","8"].
  *   Kalau null, semua jenjang diambil (dipakai buat PSAS).
- * @returns {Promise<object>} dataSiswaPerKelas siap dipakai bagiRuangan()
+ * @returns {Promise<object>} dataSiswaPerKelas siap dipakai bagiRuanganPerJenjang()
  */
 async function ambilSiswaPerKelas(supabase, academicYearId, allowedGrades = null) {
   const { data: siswa, error } = await supabase
@@ -75,8 +76,22 @@ async function ambilSiswaPerKelas(supabase, academicYearId, allowedGrades = null
  * Kalau belum ada, bikin baru (status "draft"). Ini bikin proses
  * "Proses Pembagian" bisa dipanggil berkali-kali tanpa bikin duplikat
  * record ujian.
+ *
+ * @param {"v1"|"v2"} versiSkema - versi algoritma yang dipilih admin.
+ *   CUMA dipakai pas BIKIN record baru -- kalau record `jenis` +
+ *   `academicYearId` ini udah ada, versi_skema-nya TETAP yang lama
+ *   (gak ke-update diam-diam walau admin ganti pilihan versi di UI).
+ *   Ganti versi buat ujian yang udah pernah diproses itu mestinya
+ *   keputusan eksplisit lewat "Proses Ulang", bukan efek samping dari
+ *   fungsi ini dipanggil ulang.
  */
-async function getOrCreateUjian(supabase, jenis, academicYearId, kapasitas = 40) {
+async function getOrCreateUjian(
+  supabase,
+  jenis,
+  academicYearId,
+  kapasitas = 40,
+  versiSkema = "v1"
+) {
   const { data: existing, error: errSelect } = await supabase
     .from("ujian")
     .select("*")
@@ -89,7 +104,12 @@ async function getOrCreateUjian(supabase, jenis, academicYearId, kapasitas = 40)
 
   const { data: created, error: errInsert } = await supabase
     .from("ujian")
-    .insert({ jenis, academic_year_id: academicYearId, kapasitas_ruangan: kapasitas })
+    .insert({
+      jenis,
+      academic_year_id: academicYearId,
+      kapasitas_ruangan: kapasitas,
+      versi_skema: versiSkema,
+    })
     .select()
     .single();
 
@@ -99,19 +119,34 @@ async function getOrCreateUjian(supabase, jenis, academicYearId, kapasitas = 40)
 
 /**
  * Proses lengkap: ambil data siswa (difilter jenjang sesuai jenis ujian)
- * -> bagi ruangan -> return preview (belum disimpan ke DB)
+ * -> bagi ruangan PER JENJANG lewat bagiRuanganPerJenjang() (gantiin
+ * bagiRuangan() lama yang nyampur semua jenjang dalam 1 ruangan) ->
+ * return preview (belum disimpan ke DB).
  *
  * @param {object} supabase - instance supabase client
  * @param {string} academicYearId - academic_year_id yang dipakai untuk filter siswa
  * @param {string} jenisUjian - "PSAS" | "PSAT" | "PSAJ", nentuin jenjang mana yang ikut
- * @param {number} kapasitas - kapasitas per ruangan (default 40)
+ * @param {number} kapasitas - kapasitas per ruangan (default 40). CATATAN: sejak
+ *   pindah ke bagiRuanganPerJenjang(), kapasitas ini murni informasi/acuan
+ *   (buat disimpan di record ujian & peringatan di UI) -- BUKAN lagi
+ *   penentu jumlah ruang. Jumlah ruang sekarang = jumlah kelas asal per
+ *   jenjang. Lihat komentar di bagiRuanganPerJenjang.js.
+ * @param {"v1"|"v2"} versiSkema - "v1" = rotasi penuh (tiap ruang kecampur
+ *   rata dari SEMUA kelas asal di jenjang itu), "v2" = rantai muter
+ *   (tiap ruang cuma 2 kelas bersebelahan). Default "v1".
  * @returns {Promise<Array>} hasil pembagian ruangan (untuk ditampilkan / preview di UI dulu sebelum disimpan)
  */
-async function prosesPembagianRuangan(supabase, academicYearId, jenisUjian, kapasitas = 40) {
+async function prosesPembagianRuangan(
+  supabase,
+  academicYearId,
+  jenisUjian,
+  kapasitas = 40,
+  versiSkema = "v1"
+) {
   const allowedGrades = KONFIGURASI_JENIS_UJIAN[jenisUjian]?.grades || null;
   const dataSiswaPerKelas = await ambilSiswaPerKelas(supabase, academicYearId, allowedGrades);
-  const hasilRuangan = bagiRuangan(dataSiswaPerKelas, kapasitas);
-  return hasilRuangan; // { nomor_ruangan, siswa: [{ id, nama, nis, asal_kelas, no_kursi }] }[]
+  const hasilRuangan = bagiRuanganPerJenjang(dataSiswaPerKelas, versiSkema);
+  return hasilRuangan; // { nomor_ruangan, jenjang, siswa: [{ id, nama, nis, asal_kelas, no_kursi }] }[]
 }
 
 /**
@@ -125,6 +160,12 @@ async function prosesPembagianRuangan(supabase, academicYearId, jenisUjian, kapa
  * lokal per-ruangan. Ini yang dibaca langsung sama Kartu Ujian
  * (kartuUjianSupabase.js) buat nyetak "No. Peserta", jadi begitu disimpan
  * di sini, Kartu Ujian otomatis ikut benar tanpa perlu diubah.
+ *
+ * CATATAN: field `jenjang` yang ada di tiap elemen hasilRuangan (dari
+ * bagiRuanganPerJenjang) SENGAJA gak disimpan di sini -- peserta_ujian
+ * gak punya kolom jenjang, dan nilainya toh selalu bisa di-derive lagi
+ * dari asal_kelas tiap siswa. Lihat ambilPembagianTersimpan() di bawah,
+ * yang nge-derive balik field ini pas data dibaca ulang dari DB.
  *
  * @param {string} tahunAjaran - label tahun ajaran, mis. "2026/2027" -- dipakai
  *   buat bikin prefix kode. WAJIB dikirim; kalau kosong, no_peserta jadi
@@ -167,6 +208,9 @@ async function simpanPembagianRuangan(supabase, ujianId, hasilRuangan, tahunAjar
  * tahun ajaran diganti -- kalau dipakai getOrCreateUjian malah bikin
  * record ujian kosong cuma buat sekedar ngecek doang.
  *
+ * select("*") otomatis ikut narik kolom `versi_skema` -- gak perlu
+ * perubahan apa-apa di sini buat itu.
+ *
  * @returns {Promise<object|null>} record ujian, atau null kalau belum ada
  */
 async function cariUjian(supabase, jenis, academicYearId) {
@@ -184,11 +228,14 @@ async function cariUjian(supabase, jenis, academicYearId) {
 /**
  * Ambil hasil pembagian ruangan yang SUDAH TERSIMPAN di peserta_ujian
  * buat 1 ujian tertentu, dibentuk ulang ke format yang SAMA PERSIS
- * seperti output bagiRuangan() -- [{ nomor_ruangan, siswa: [{ id, nama,
- * nis, asal_kelas, no_kursi }] }] -- biar bisa langsung dipakai ngisi
- * ulang state UI (hasilAsli) tanpa perlu generate ulang dari tabel
- * students. Ini yang bikin data tersimpan tetap muncul lagi walau
- * admin pindah tab terus balik lagi.
+ * seperti output bagiRuanganPerJenjang() -- [{ nomor_ruangan, jenjang,
+ * siswa: [{ id, nama, nis, asal_kelas, no_kursi }] }] -- biar bisa
+ * langsung dipakai ngisi ulang state UI (hasilAsli) tanpa perlu generate
+ * ulang dari tabel students. Ini yang bikin data tersimpan tetap muncul
+ * lagi walau admin pindah tab terus balik lagi -- termasuk buat UI yang
+ * nge-group tampilan per jenjang (field `jenjang` di-derive dari
+ * asal_kelas siswa pertama di tiap ruang, karena peserta_ujian sendiri
+ * gak nyimpen kolom jenjang terpisah).
  *
  * CATATAN soal no_kursi di sini: nilainya diisi dari kolom no_peserta di DB
  * apa adanya, yang sejak migrasi format-no-peserta ISINYA STRING KODE
@@ -224,7 +271,12 @@ async function ambilPembagianTersimpan(supabase, ujianId) {
   }
 
   return Object.entries(perRuangan)
-    .map(([nomor, siswa]) => ({ nomor_ruangan: Number(nomor), siswa }))
+    .map(([nomor, siswa]) => ({
+      nomor_ruangan: Number(nomor),
+      // derive dari asal_kelas siswa pertama di ruang ini (format "7A" -> "7")
+      jenjang: siswa[0]?.asal_kelas?.match(/^\d+/)?.[0] || null,
+      siswa,
+    }))
     .sort((a, b) => a.nomor_ruangan - b.nomor_ruangan);
 }
 

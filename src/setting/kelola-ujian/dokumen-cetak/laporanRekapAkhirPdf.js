@@ -233,8 +233,8 @@ function generateLaporanRekapAkhirPdf(opsi) {
   // ---------- BAB II: PELAKSANAAN ----------
   y = babBaru(doc, "II", "PELAKSANAAN");
 
-  // A. Peserta & Pembagian Ruangan
-  y = addSectionLabel(doc, "A. Peserta & Pembagian Ruangan", y);
+  // A. Peserta & Pengawas
+  y = addSectionLabel(doc, "A. Peserta & Pengawas", y);
   y += 6;
   if (pilihan.peserta && rekapPeserta && rekapPeserta.perRuangan.length > 0) {
     y = tulisParagraf(

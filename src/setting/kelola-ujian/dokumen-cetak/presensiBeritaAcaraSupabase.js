@@ -8,7 +8,7 @@
 //
 // Makanya sub-fitur ini TIDAK butuh tabel baru di database. Semua data
 // yang perlu (peserta per ruangan, jadwal sesi, siapa pengawasnya) udah
-// ada dari sub-fitur "Peserta & Pembagian Ruangan" dan "Jadwal &
+// ada dari sub-fitur "Jadwal & Pembagian Ruangan" dan "Peserta &
 // Pengawas" -- di sini cuma reuse & sedikit reshape biar gampang dipakai
 // generator PDF-nya.
 

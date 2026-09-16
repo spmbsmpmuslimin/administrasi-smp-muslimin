@@ -318,7 +318,7 @@ const KartuUjianTab = ({ jenisUjian, showToast, onBack }) => {
               {daftarGuruJadwal.length === 0 ? (
                 <div className="p-3 text-xs bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl text-amber-700 dark:text-amber-300">
                   Belum ada guru yang kebagian jadwal mengawas. Atur dulu di{" "}
-                  <strong>Jadwal & Pengawas</strong> supaya kartu pengawas bisa dicetak.
+                  <strong>Jadwal & Pembagian Ruangan</strong> supaya kartu pengawas bisa dicetak.
                 </div>
               ) : (
                 <>

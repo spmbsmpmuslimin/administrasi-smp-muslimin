@@ -25,6 +25,7 @@ import {
 const SchoolSettingsTab = ({ user, loading, setLoading, showToast }) => {
   const [schoolSettings, setSchoolSettings] = useState({
     school_name: "SMP Muslimin Cililin",
+    principal_name: "",
     school_level: "SMP",
     school_address: "Jl. Raya Cililin No. 123, Cililin, Bandung Barat",
     school_phone: "022-1234567",
@@ -723,7 +724,7 @@ const SchoolSettingsTab = ({ user, loading, setLoading, showToast }) => {
 
             {/* Identity fields */}
             <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="sm:col-span-2">
+              <div>
                 <label className={labelClass}>Nama Sekolah *</label>
                 {editingSchoolSettings ? (
                   <input
@@ -739,6 +740,23 @@ const SchoolSettingsTab = ({ user, loading, setLoading, showToast }) => {
                   <div className={`${displayClass} font-semibold`}>
                     {schoolSettings.school_name}
                   </div>
+                )}
+              </div>
+
+              <div>
+                <label className={labelClass}>Nama Kepala Sekolah</label>
+                {editingSchoolSettings ? (
+                  <input
+                    type="text"
+                    value={tempSchoolSettings.principal_name || ""}
+                    onChange={(e) =>
+                      setTempSchoolSettings((prev) => ({ ...prev, principal_name: e.target.value }))
+                    }
+                    className={inputClass}
+                    placeholder="Masukkan nama kepala sekolah"
+                  />
+                ) : (
+                  <div className={displayClass}>{schoolSettings.principal_name || "-"}</div>
                 )}
               </div>
 

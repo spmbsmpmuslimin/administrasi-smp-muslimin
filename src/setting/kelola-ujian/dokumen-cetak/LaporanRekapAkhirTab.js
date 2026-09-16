@@ -5,8 +5,8 @@
 // pada sistematika laporan standar).
 //
 // Item yang datanya reuse langsung dari sub-fitur lain (read-only di sini):
-//   1. Rekap Peserta & Ruangan   (dari Peserta & Pembagian Ruangan)
-//   3. Rekap Pengawas             (dari Jadwal & Pengawas)
+//   1. Rekap Peserta & Ruangan   (dari Peserta & Pengawas)
+//   3. Rekap Pengawas             (dari Jadwal & Pembagian Ruangan)
 //   4. Rekap Anggaran & Realisasi (dari Anggaran & Biaya)
 //
 // Item yang butuh input manual di sini (belum ada datanya di modul lain):
@@ -512,7 +512,7 @@ const LaporanRekapAkhirTab = ({ jenisUjian, showToast, onBack }) => {
             ) : (
               <p className="text-xs text-gray-400">
                 Belum ada data. Proses & simpan dulu di{" "}
-                <strong>Peserta & Pembagian Ruangan</strong>.
+                <strong>Peserta & Pengawas</strong>.
               </p>
             )}
           </SeksiCard>
@@ -531,7 +531,7 @@ const LaporanRekapAkhirTab = ({ jenisUjian, showToast, onBack }) => {
           >
             {baristKehadiran.length === 0 ? (
               <p className="text-xs text-gray-400">
-                Belum ada ruangan. Proses dulu <strong>Peserta & Pembagian Ruangan</strong>.
+                Belum ada ruangan. Proses dulu <strong>Peserta & Pengawas</strong>.
               </p>
             ) : (
               <div className="space-y-2">
@@ -639,7 +639,7 @@ const LaporanRekapAkhirTab = ({ jenisUjian, showToast, onBack }) => {
               </div>
             ) : (
               <p className="text-xs text-gray-400">
-                Belum ada data. Atur dulu di <strong>Jadwal & Pengawas</strong>.
+                Belum ada data. Atur dulu di <strong>Jadwal & Pembagian Ruangan</strong>.
               </p>
             )}
           </SeksiCard>

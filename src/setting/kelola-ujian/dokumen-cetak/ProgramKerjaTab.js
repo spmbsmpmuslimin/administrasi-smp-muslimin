@@ -6,10 +6,10 @@
 //
 // Item yang datanya reuse langsung dari sub-fitur lain (read-only di sini):
 //   - Pembagian Ruang  -- dari ambilRekapPeserta() (sub-fitur Peserta &
-//     Pembagian Ruangan sudah mengisi ini sebelum ujian, jadi valid dipakai
+//     Pengawas sudah mengisi ini sebelum ujian, jadi valid dipakai
 //     untuk rencana, bukan cuma rekap pasca-ujian).
 //   - Daftar Pengawas  -- dari ambilRekapPengawas() (sub-fitur Jadwal &
-//     Pengawas), ditampilkan sebagai jumlah sesi jaga per guru.
+//     Pembagian Ruangan), ditampilkan sebagai jumlah sesi jaga per guru.
 //
 // Item yang butuh input manual di sini (belum ada sumber datanya):
 //   - Susunan Panitia  -- belum ada tabelnya di database (dikonfirmasi),
@@ -411,7 +411,7 @@ const ProgramKerjaTab = ({ jenisUjian, showToast, onBack, kepalaSekolah }) => {
       <SeksiCard
         icon={UserCheck}
         title="Pembagian Ruang & Pengawas"
-        subtitle="Otomatis dari sub-fitur Peserta & Pembagian Ruangan / Jadwal & Pengawas"
+        subtitle="Otomatis dari sub-fitur Jadwal & Pembagian Ruangan / Peserta & Pengawas"
       >
         <p className="text-xs text-gray-500 dark:text-gray-400">
           {rekapPeserta

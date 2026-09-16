@@ -1,5 +1,5 @@
 // setting/kelola-ujian/jadwalPengawasSupabase.js
-// Service layer untuk sub-fitur "Jadwal & Pengawas" di Manajemen Ujian.
+// Service layer untuk sub-fitur "Jadwal & Pembagian Ruangan" di Manajemen Ujian.
 // Tabel yang dipakai: `ujian_jadwal` (sesi ujian per mapel) dan
 // `ujian_pengawas` (penugasan guru pengawas per ruangan per sesi).
 // Lihat SQL di dokumentasi untuk skema kedua tabel ini.
