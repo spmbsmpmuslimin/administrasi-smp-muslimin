@@ -1,124 +1,93 @@
 /**
  * Algoritma Pembagian Ruangan Ujian (PSAS/PSAT/PSAJ)
  * ----------------------------------------------------
- * Logika (proporsional per angkatan, seimbang):
- * 1. Kelas dikelompokkan berdasarkan huruf (7A+8A+9A = grup A, 7B+8B+9B = grup B, dst)
- * 2. Tiap angkatan (7/8/9) punya ANTRIAN sendiri -- diisi urut per huruf
- *    (semua anak 7 dari huruf A dulu, lalu huruf B, dst -- FIFO)
- * 3. Begitu total sisa di semua antrian udah >= kapasitas, potong 1 ruangan:
- *    jatah tiap angkatan di ruangan itu PROPORSIONAL ke jumlah sisa di
- *    antrian angkatan itu SAAT INI (largest remainder method, biar totalnya
- *    pas ke kapasitas walau hasil bagi gak bulat)
- * 4. Sisa yang belum cukup buat 1 ruangan penuh OTOMATIS lanjut nyampur
- *    sama huruf berikutnya (karena masih nongkrong di antrian) -- jadi
- *    ruangan "penyambung" antar huruf juga tetap proporsional, bukan cuma
- *    nempelin sisa apa adanya.
- * 5. Nomor ruangan JALAN TERUS lintas huruf (tidak reset tiap huruf)
+ * Prinsip: JUMLAH RUANGAN per angkatan = JUMLAH ROMBEL (kelas) di angkatan
+ * itu -- bukan dihitung dari total siswa dibagi kapasitas. Ruangan yang
+ * tersedia di sekolah pada dasarnya sama banyak dengan rombel yang ada
+ * (1 rombel kira-kira butuh 1 ruangan), jadi angka itu yang dipakai
+ * langsung, apa pun jumlah siswa aktualnya per rombel.
  *
- * Contoh (kapasitas 40): 7A=35, 8A=40, 9A=32 siswa.
- * -> Ruangan 1: 7A=13, 8A=15, 9A=12 (total 40)
- * -> Ruangan 2: 7A=13, 8A=15, 9A=12 (total 40, dari sisa 22/25/20)
- * -> Sisa 7A=9, 8A=10, 9A=8 (total 27) BELUM cukup 1 ruangan -> nyambung ke
- *    huruf B. Kalau 7B/8B/9B masuk, Ruangan 3 bakal berisi sisa 27 dari A
- *    itu + 13 dari B (proporsional lagi), BUKAN ruangan sendiri yang cuma
- *    keisi 27.
+ * Logika (angkatan dipisah, TIDAK dicampur):
+ * 1. Angkatan diproses SATU-SATU secara berurutan (7 dulu sampai habis,
+ *    baru 8, baru 9) -- TIDAK ada campuran angkatan dalam satu ruangan.
+ * 2. Buat satu angkatan: jumlah ruangannya = jumlah rombel (huruf kelas)
+ *    yang ada di angkatan itu (mis. 7A-7F = 6 rombel = 6 ruangan). Kalau
+ *    angkatan lain rombelnya beda jumlah (mis. kelas 9 cuma 9A-9C = 3
+ *    rombel), ruangannya ikut cuma 3 -- gak perlu sama rata antar angkatan.
+ * 3. Siswa dalam satu angkatan diantrikan urut per huruf kelas (A dulu,
+ *    lalu B, dst -- FIFO), lalu dibagi RATA (balanced, largest remainder)
+ *    ke ruangan sejumlah rombel tadi -- bukan penuh-penuh-lalu-sisa di
+ *    ruangan terakhir, dan boleh saja hasilnya di atas "kapasitas ideal"
+ *    kalau memang rombelnya sedikit tapi siswanya banyak.
+ * 4. Nomor ruangan JALAN TERUS lintas angkatan (tidak reset)
+ *
+ * Contoh: kelas 7 (7A-7F, 6 rombel) total 218 siswa.
+ * -> 6 ruangan (jumlah rombel), dasar = floor(218/6) = 36, sisa = 2
+ * -> Ruangan 1-2: 37 siswa, Ruangan 3-6: 36 siswa (total 2*37+4*36=218)
+ *
+ * Contoh lain: kelas 8 (8A-8F, 6 rombel) total 244 siswa.
+ * -> tetap 6 ruangan (jumlah rombel, BUKAN ceil(244/40)=7)
+ * -> dasar = floor(244/6) = 40, sisa = 244-40*6 = 4
+ * -> 4 ruangan isi 41 siswa, 2 ruangan isi 40 siswa
  *
  * Contoh input dataSiswaPerKelas:
  * {
- *   "7A": [{id: 1, nama: "Ahmad"}, ...],   // 14 siswa
- *   "8A": [{id: 15, nama: "Budi"}, ...],   // 13 siswa
- *   "9A": [{id: 28, nama: "Citra"}, ...],  // 13 siswa
- *   "7B": [...], "8B": [...], "9B": [...],
+ *   "7A": [{id: 1, nama: "Ahmad"}, ...],
+ *   "7B": [...], "8A": [...], "8B": [...], "9A": [...], "9B": [...],
  *   ...
  * }
  */
 
-function bagiRuangan(dataSiswaPerKelas, kapasitas = 40) {
-  // Guard: kapasitas <= 0 (atau bukan angka valid) bikin
-  // potongSatuRuangan() ambil 0 siswa per iterasi -- totalSisa() gak
-  // pernah berkurang -> while loop di bawah looping tanpa henti.
-  if (!Number.isFinite(kapasitas) || kapasitas <= 0) {
-    throw new Error("Kapasitas ruangan harus angka positif");
-  }
-
-  // 1. Ambil semua huruf kelas yang unik, urutkan abjad (A, B, C, ...)
+function bagiRuangan(dataSiswaPerKelas) {
   const semuaKelas = Object.keys(dataSiswaPerKelas);
-  const hurufSet = [...new Set(semuaKelas.map((k) => k.slice(-1)))].sort();
 
   // Angkatan diambil DINAMIS dari data yang ada (bukan hardcode 7/8/9),
-  // supaya otomatis benar juga untuk PSAT (cuma kelas 7-8) atau PSAJ
-  // (cuma kelas 9) yang datanya emang udah difilter sebelum masuk sini.
+  // supaya otomatis benar juga untuk PSAT (kelas 7-8) atau PSAJ (kelas 9
+  // saja) yang datanya emang udah difilter sebelum masuk sini.
   const angkatanUrut = [
     ...new Set(semuaKelas.map((k) => k.match(/^\d+/)?.[0]).filter(Boolean)),
   ].sort((a, b) => Number(a) - Number(b));
 
-  // Antrian per angkatan (FIFO) -- diisi urut per huruf, jadi urutan siswa
-  // di dalamnya otomatis "huruf A dulu, baru B, baru C" tanpa perlu dicatat
-  // terpisah.
-  const antrianPerAngkatan = {};
-  angkatanUrut.forEach((a) => (antrianPerAngkatan[a] = []));
-
   const hasilRuangan = []; // [{ nomor_ruangan, siswa: [...] }]
   let nomorRuanganBerjalan = 1;
 
-  const totalSisa = () => angkatanUrut.reduce((sum, a) => sum + antrianPerAngkatan[a].length, 0);
+  for (const angkatan of angkatanUrut) {
+    // Rombel (huruf kelas) milik angkatan ini -- "7A", "7B", dst, sudah
+    // urut abjad karena sort() string dengan prefix angka sama panjang.
+    const kelasAngkatanIni = semuaKelas
+      .filter((k) => k.match(/^\d+/)?.[0] === angkatan)
+      .sort();
 
-  // Potong 1 ruangan dari antrian yang ada SEKARANG, jatah tiap angkatan
-  // proporsional ke sisa antrian angkatan itu saat ini (largest remainder
-  // method: bulatkan ke bawah dulu, sisa kursi karena pembulatan dikasih
-  // ke angkatan yang desimalnya paling gede duluan, biar totalnya presisi
-  // pas ke kapasitas ruangan).
-  function potongSatuRuangan() {
-    const sisaPerAngkatan = angkatanUrut.map((a) => antrianPerAngkatan[a].length);
-    const totalSisaSekarang = sisaPerAngkatan.reduce((s, v) => s + v, 0);
-    // Ruangan terakhir (sisa < kapasitas) gak perlu dipaksa penuh.
-    const kapasitasRuanganIni = Math.min(kapasitas, totalSisaSekarang);
+    const jumlahRuangan = kelasAngkatanIni.length;
+    if (jumlahRuangan === 0) continue;
 
-    const jatahEksak = sisaPerAngkatan.map((n) => (n / totalSisaSekarang) * kapasitasRuanganIni);
-    const jatahBulat = jatahEksak.map(Math.floor);
-    let sisaKursi = kapasitasRuanganIni - jatahBulat.reduce((s, v) => s + v, 0);
-
-    const urutanBerdasarkanSisaDesimal = jatahEksak
-      .map((v, i) => ({ i, frac: v - Math.floor(v) }))
-      .sort((a, b) => b.frac - a.frac);
-    for (let k = 0; k < sisaKursi; k++) {
-      jatahBulat[urutanBerdasarkanSisaDesimal[k].i]++;
-    }
-
-    const siswaRuanganIni = [];
-    angkatanUrut.forEach((a, i) => {
-      const ambil = antrianPerAngkatan[a].splice(0, jatahBulat[i]);
-      siswaRuanganIni.push(...ambil);
-    });
-
-    hasilRuangan.push({
-      nomor_ruangan: nomorRuanganBerjalan,
-      siswa: siswaRuanganIni.map((s, idx) => ({ ...s, no_kursi: idx + 1 })),
-    });
-    nomorRuanganBerjalan++;
-  }
-
-  for (const huruf of hurufSet) {
-    // 2. Masukkan siswa huruf ini ke antrian angkatan masing-masing
-    for (const angkatan of angkatanUrut) {
-      const namaKelas = `${angkatan}${huruf}`;
+    // Antrian siswa angkatan ini, urut per rombel (A dulu, lalu B, dst)
+    const antrian = [];
+    for (const namaKelas of kelasAngkatanIni) {
       const siswaKelasIni = dataSiswaPerKelas[namaKelas] || [];
-      antrianPerAngkatan[angkatan].push(
-        ...siswaKelasIni.map((s) => ({ ...s, asal_kelas: namaKelas }))
-      );
+      antrian.push(...siswaKelasIni.map((s) => ({ ...s, asal_kelas: namaKelas })));
     }
 
-    // 3. Potong ruangan proporsional selama total antrian masih cukup 1 ruangan penuh
-    while (totalSisa() >= kapasitas) {
-      potongSatuRuangan();
-    }
-    // sisa antrian (< kapasitas) otomatis nyambung ke huruf berikutnya
-  }
+    const totalSiswa = antrian.length;
+    if (totalSiswa === 0) continue;
 
-  // 4. Kalau masih ada sisa siswa setelah semua huruf habis, jadiin 1 ruangan
-  // terakhir yang gak penuh (proporsional juga ke sisa yang ada).
-  if (totalSisa() > 0) {
-    potongSatuRuangan();
+    // Bagi rata (largest remainder) ke sejumlah ruangan = jumlah rombel,
+    // supaya selisih antar ruangan maksimal cuma 1 siswa.
+    const dasar = Math.floor(totalSiswa / jumlahRuangan);
+    const sisaLebih = totalSiswa - dasar * jumlahRuangan; // ruangan pertama sejumlah ini dapat +1
+
+    let idx = 0;
+    for (let r = 0; r < jumlahRuangan; r++) {
+      const ukuranRuanganIni = dasar + (r < sisaLebih ? 1 : 0);
+      const siswaRuanganIni = antrian.slice(idx, idx + ukuranRuanganIni);
+      idx += ukuranRuanganIni;
+
+      hasilRuangan.push({
+        nomor_ruangan: nomorRuanganBerjalan,
+        siswa: siswaRuanganIni.map((s, i) => ({ ...s, no_kursi: i + 1 })),
+      });
+      nomorRuanganBerjalan++;
+    }
   }
 
   return hasilRuangan;
@@ -131,9 +100,9 @@ function bagiRuangan(dataSiswaPerKelas, kapasitas = 40) {
  * ruangan yang diganti sesuai input admin).
  *
  * Alur pemakaian:
- * 1. bagiRuangan() dipanggil dulu (auto-generate, proporsional) -> hasilAsli
+ * 1. bagiRuangan() dipanggil dulu (auto-generate, balanced per angkatan) -> hasilAsli
  * 2. Admin lihat breakdown per ruangan di UI, dan BOLEH mengubah jumlah
- *    per kelas per ruangan (mis. Ruang 1: 7A=14, 8A=13, 9A=13)
+ *    per kelas per ruangan (mis. Ruang 1: 7A=14, 7B=13, 7C=13)
  * 3. Quota yang sudah diedit itu (quotaPerRuangan) dikirim ke sini bareng
  *    hasilAsli -- fungsi ini yang nentuin SIAPA (siswa mana persis) yang
  *    masuk tiap ruangan berdasarkan quota baru itu.
@@ -145,7 +114,7 @@ function bagiRuangan(dataSiswaPerKelas, kapasitas = 40) {
  * hitungTotalPerKelas di bawah, dipakai untuk validasi itu).
  *
  * @param {Array} hasilAsli - hasil bagiRuangan() asli (sumber urutan siswa per kelas)
- * @param {Array} quotaPerRuangan - [{ nomor_ruangan, quota: { "7A": 14, "8A": 13, ... } }, ...]
+ * @param {Array} quotaPerRuangan - [{ nomor_ruangan, quota: { "7A": 14, "7B": 13, ... } }, ...]
  * @returns {Array} hasil ruangan baru sesuai quota manual, format sama seperti bagiRuangan()
  */
 function terapkanQuotaManual(hasilAsli, quotaPerRuangan) {

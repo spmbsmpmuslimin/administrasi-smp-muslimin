@@ -64,7 +64,7 @@ export async function exportDaftarPesertaUjian({
   // Peta nomor peserta DIHITUNG DULU dari seluruh ruangan, sebelum difilter
   // -- ini yang bikin Ruang 02 mulai dari 041 dan bukan 001 waktu dicetak
   // sendirian.
-  const petaNoPeserta = bangunPetaNoPeserta(semuaRuangan || [], tahunAjaran);
+  const petaNoPeserta = bangunPetaNoPeserta(semuaRuangan || []);
 
   const ruangan =
     nomorRuangan == null

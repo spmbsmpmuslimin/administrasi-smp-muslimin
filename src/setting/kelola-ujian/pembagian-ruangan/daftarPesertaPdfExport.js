@@ -117,7 +117,7 @@ export async function exportDaftarPesertaUjianPdf({
 }) {
   // Peta nomor peserta DIHITUNG DULU dari seluruh ruangan, sebelum
   // difilter -- sama alasannya kayak di daftarPesertaExcelExport.js.
-  const petaNoPeserta = bangunPetaNoPeserta(semuaRuangan || [], tahunAjaran);
+  const petaNoPeserta = bangunPetaNoPeserta(semuaRuangan || []);
 
   const ruangan =
     nomorRuangan == null

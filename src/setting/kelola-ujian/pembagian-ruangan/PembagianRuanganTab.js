@@ -198,9 +198,10 @@ const PembagianRuanganTab = ({ jenisUjian, showToast, onBack }) => {
       showToast?.("Pilih tahun ajaran dulu", "error");
       return;
     }
-    // Guard: kapasitas <= 0 (misal field dikosongin admin) bikin
-    // bagiRuangan() looping tanpa henti -- ditangkep di sini dulu sebelum
-    // sempat manggil algoritmanya.
+    // Guard: kapasitas <= 0 (misal field dikosongin admin) -- field ini
+    // sekarang cuma metadata (kapasitas_ruangan) & ambang warning di UI
+    // (bukan lagi penentu jumlah ruangan), tapi tetap harus angka positif
+    // biar gak aneh pas disimpan/ditampilkan.
     if (!Number.isFinite(kapasitas) || kapasitas <= 0) {
       showToast?.("Kapasitas per ruangan harus angka positif", "error");
       return;
@@ -297,12 +298,7 @@ const PembagianRuanganTab = ({ jenisUjian, showToast, onBack }) => {
         (r) => r.siswa.length > 0
       );
       const ujian = await getOrCreateUjian(supabase, jenisUjian, tahunAjaranId, kapasitas);
-      const jumlah = await simpanPembagianRuangan(
-        supabase,
-        ujian.id,
-        hasilFinal,
-        labelTahunAjaranAktif
-      );
+      const jumlah = await simpanPembagianRuangan(supabase, ujian.id, hasilFinal);
       showToast?.(`Berhasil disimpan: ${jumlah} siswa ke ${hasilFinal.length} ruangan`, "success");
     } catch (err) {
       console.error(err);
@@ -325,10 +321,7 @@ const PembagianRuanganTab = ({ jenisUjian, showToast, onBack }) => {
   // hasilLive UTUH (semua ruangan, bukan cuma yang lagi dipilih di
   // dropdown) biar nomornya urut lintas ruangan, PERSIS sama kayak yang
   // dipakai di daftarPesertaExcelExport.js.
-  const petaNoPeserta = useMemo(
-    () => bangunPetaNoPeserta(hasilLive, labelTahunAjaranAktif),
-    [hasilLive, labelTahunAjaranAktif]
-  );
+  const petaNoPeserta = useMemo(() => bangunPetaNoPeserta(hasilLive), [hasilLive]);
 
   const handleExportExcel = async () => {
     setMengexport(true);

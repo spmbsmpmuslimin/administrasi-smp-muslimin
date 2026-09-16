@@ -132,13 +132,16 @@ async function getOrCreateUjian(supabase, jenis, academicYearId, kapasitas = 40)
  *   dan buat scope record `ujian` -- bukan buat match langsung ke
  *   academic_year_id siswa.
  * @param {string} jenisUjian - "PSAS" | "PSAT" | "PSAJ", nentuin jenjang mana yang ikut
- * @param {number} kapasitas - kapasitas per ruangan (default 40)
+ * @param {number} kapasitas - kapasitas ideal per ruangan (default 40) -- CUMA
+ *   dipakai sebagai metadata (kapasitas_ruangan) & ambang warning di UI,
+ *   TIDAK dipakai buat nentuin jumlah ruangan (lihat bagiRuangan.js -- jumlah
+ *   ruangan sekarang murni dari jumlah rombel per angkatan).
  * @returns {Promise<Array>} hasil pembagian ruangan (untuk ditampilkan / preview di UI dulu sebelum disimpan)
  */
 async function prosesPembagianRuangan(supabase, academicYearId, jenisUjian, kapasitas = 40) {
   const allowedGrades = KONFIGURASI_JENIS_UJIAN[jenisUjian]?.grades || null;
   const dataSiswaPerKelas = await ambilSiswaPerKelas(supabase, academicYearId, allowedGrades);
-  const hasilRuangan = bagiRuangan(dataSiswaPerKelas, kapasitas);
+  const hasilRuangan = bagiRuangan(dataSiswaPerKelas);
   return hasilRuangan; // { nomor_ruangan, siswa: [{ id, nama, nis, asal_kelas, no_kursi }] }[]
 }
 
@@ -148,17 +151,17 @@ async function prosesPembagianRuangan(supabase, academicYearId, jenisUjian, kapa
  * dihapus dulu baru diganti yang baru -- supaya "Proses Ulang" aman
  * dipakai kalau ada siswa baru/pindah kelas.
  *
- * no_peserta yang ditulis ke DB formatnya "26-27-001" (kode tahun ajaran +
- * nomor urut GLOBAL lintas ruangan, lihat noPeserta.js) -- BUKAN lagi angka
- * lokal per-ruangan. Ini yang dibaca langsung sama Kartu Ujian
- * (kartuUjianSupabase.js) buat nyetak "No. Peserta", jadi begitu disimpan
- * di sini, Kartu Ujian otomatis ikut benar tanpa perlu diubah.
+ * no_peserta yang ditulis ke DB formatnya "2627-07-001" (tahun masuk dari
+ * NIS siswa + kode angkatan + nomor urut RESET per angkatan, lihat
+ * noPeserta.js) -- BUKAN lagi angka lokal per-ruangan. Ini yang dibaca
+ * langsung sama Kartu Ujian (kartuUjianSupabase.js) buat nyetak
+ * "No. Peserta", jadi begitu disimpan di sini, Kartu Ujian otomatis ikut
+ * benar tanpa perlu diubah.
  *
- * @param {string} tahunAjaran - label tahun ajaran, mis. "2026/2027" -- dipakai
- *   buat bikin prefix kode. WAJIB dikirim; kalau kosong, no_peserta jadi
- *   angka urut polos tanpa prefix (fallback, jangan sengaja diandalkan).
+ * Prefix tahun & kode angkatan diambil per-siswa (dari NIS & asal_kelas
+ * masing-masing), jadi fungsi ini gak lagi butuh parameter tahunAjaran.
  */
-async function simpanPembagianRuangan(supabase, ujianId, hasilRuangan, tahunAjaran) {
+async function simpanPembagianRuangan(supabase, ujianId, hasilRuangan) {
   const { error: errDelete } = await supabase
     .from("peserta_ujian")
     .delete()
@@ -166,9 +169,9 @@ async function simpanPembagianRuangan(supabase, ujianId, hasilRuangan, tahunAjar
   if (errDelete) throw errDelete;
 
   // Dihitung dari SELURUH hasilRuangan yang dikirim (bukan per-ruangan) --
-  // itu yang bikin no_peserta ruangan ke-2 lanjut dari ruangan ke-1, bukan
-  // balik ke 001.
-  const petaNoPeserta = bangunPetaNoPeserta(hasilRuangan, tahunAjaran);
+  // itu yang bikin nomor urut per angkatan jalan terus lintas ruangan
+  // (bukan balik ke 001 tiap ganti ruangan).
+  const petaNoPeserta = bangunPetaNoPeserta(hasilRuangan);
 
   const rows = [];
   for (const ruangan of hasilRuangan) {
