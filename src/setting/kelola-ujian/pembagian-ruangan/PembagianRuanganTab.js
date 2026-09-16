@@ -221,12 +221,14 @@ const TabelMatrixJenjang = ({ data, versiAktif }) => {
               })}
               <td></td>
             </tr>
-            <tr className="bg-gray-50 dark:bg-gray-800/60">
-              <td className="py-2 px-3 font-semibold text-gray-900 dark:text-white">Data Asli</td>
+            <tr className="bg-indigo-50 dark:bg-indigo-900/30">
+              <td className="py-2 px-3 font-bold text-indigo-800 dark:text-indigo-300">
+                Data Asli (Total Siswa)
+              </td>
               {urutanKelas.map((kelas) => (
                 <td
                   key={kelas}
-                  className="text-center py-2 px-3 font-medium text-gray-900 dark:text-white"
+                  className="text-center py-2 px-3 font-extrabold text-indigo-800 dark:text-indigo-300"
                 >
                   {dataAsli[kelas] || 0}
                 </td>
@@ -789,24 +791,24 @@ const PembagianRuanganTab = ({
         (kartu Peserta & Pengawas) datanya read-only dari DB, jadi field ini
         disembunyiin biar nggak bikin ngira bisa diubah dari sini. */}
         {!modePeserta && (
-        <div>
-          <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
-            Kapasitas per Ruangan
-          </label>
-          <input
-            type="number"
-            min={1}
-            // value dikosongin (bukan "0") pas kapasitas lagi 0/kosong -- kalau
-            // dipaksa selalu jadi angka, field-nya nempelin "0" di depan tiap
-            // admin ngetik ulang abis clear (bug klasik controlled number input).
-            value={kapasitas === 0 ? "" : kapasitas}
-            onChange={(e) => {
-              const nilai = e.target.value;
-              setKapasitas(nilai === "" ? 0 : Number(nilai));
-            }}
-            className="w-full px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100"
-          />
-        </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+              Kapasitas per Ruangan
+            </label>
+            <input
+              type="number"
+              min={1}
+              // value dikosongin (bukan "0") pas kapasitas lagi 0/kosong -- kalau
+              // dipaksa selalu jadi angka, field-nya nempelin "0" di depan tiap
+              // admin ngetik ulang abis clear (bug klasik controlled number input).
+              value={kapasitas === 0 ? "" : kapasitas}
+              onChange={(e) => {
+                const nilai = e.target.value;
+                setKapasitas(nilai === "" ? 0 : Number(nilai));
+              }}
+              className="w-full px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100"
+            />
+          </div>
         )}
       </div>
 
@@ -816,24 +818,24 @@ const PembagianRuanganTab = ({
           simpan). Beda sama TAB_LIST di bawah, yang itu sub-tab DI DALAM
           "Pembagian Ruangan". */}
       {!viewPaksa && (
-      <div className="flex flex-wrap gap-1 mb-5 border-b border-gray-200 dark:border-gray-700">
-        {VIEW_TAB_LIST.map((tab) => {
-          const Icon = tab.icon;
-          return (
-            <button
-              key={tab.id}
-              onClick={() => setViewAktif(tab.id)}
-              className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
-                viewAktif === tab.id
-                  ? "border-indigo-600 text-indigo-600 dark:text-indigo-400"
-                  : "border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
-              }`}
-            >
-              <Icon size={15} /> {tab.label}
-            </button>
-          );
-        })}
-      </div>
+        <div className="flex flex-wrap gap-1 mb-5 border-b border-gray-200 dark:border-gray-700">
+          {VIEW_TAB_LIST.map((tab) => {
+            const Icon = tab.icon;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setViewAktif(tab.id)}
+                className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
+                  viewAktif === tab.id
+                    ? "border-indigo-600 text-indigo-600 dark:text-indigo-400"
+                    : "border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
+                }`}
+              >
+                <Icon size={15} /> {tab.label}
+              </button>
+            );
+          })}
+        </div>
       )}
 
       {viewAktif === "komposisi" && (
@@ -930,83 +932,83 @@ const PembagianRuanganTab = ({
           muncul di mode "ruangan"/"full". Di kartu "Peserta & Pengawas"
           (mode "peserta") data cuma dibaca dari DB, nggak diproses ulang. */}
           {!modePeserta && (
-          <>
-          {/* Versi algoritma -- terkunci begitu ujian ini punya record tersimpan
+            <>
+              {/* Versi algoritma -- terkunci begitu ujian ini punya record tersimpan
               (lihat versiSkemaTerkunci), karena versi_skema cuma boleh dipilih
               sekali pas record ujian pertama kali dibikin. */}
-          <div className="mb-5">
-            <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">
-              Versi Algoritma Pembagian
-            </label>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-              {VERSI_SKEMA_LIST.map((opsi) => (
-                <label
-                  key={opsi.value}
-                  className={`flex items-start gap-2.5 p-3 rounded-xl border transition-all ${
-                    versiSkema === opsi.value
-                      ? "border-indigo-400 dark:border-indigo-600 bg-indigo-50 dark:bg-indigo-900/20"
-                      : "border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800"
-                  } ${
-                    versiSkemaTerkunci
-                      ? "opacity-60 cursor-not-allowed"
-                      : "cursor-pointer hover:border-indigo-300 dark:hover:border-indigo-700"
-                  }`}
-                >
-                  <input
-                    type="radio"
-                    name="versiSkema"
-                    value={opsi.value}
-                    checked={versiSkema === opsi.value}
-                    disabled={versiSkemaTerkunci}
-                    onChange={(e) => setVersiSkema(e.target.value)}
-                    className="mt-0.5"
-                  />
-                  <div>
-                    <p className="text-sm font-medium text-gray-800 dark:text-gray-100">
-                      {opsi.label}
-                    </p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                      {opsi.deskripsi}
-                    </p>
-                  </div>
+              <div className="mb-5">
+                <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">
+                  Versi Algoritma Pembagian
                 </label>
-              ))}
-            </div>
-            {versiSkemaTerkunci && (
-              <div className="mt-2">
-                <p className="text-xs text-amber-600 dark:text-amber-400">
-                  Versi terkunci — ujian ini sudah pernah diproses/disimpan dengan versi{" "}
-                  <span className="font-semibold">{labelVersiSkema(versiSkema)}</span>. Ganti versi
-                  cuma bisa dilakukan lewat "Proses Ulang dengan Versi Lain" di bawah, karena itu
-                  bakal menghapus data ruangan yang udah tersimpan.
-                </p>
-                <button
-                  onClick={handleBukaProsesUlangModal}
-                  className="flex items-center gap-1.5 mt-2 text-xs font-medium text-amber-700 dark:text-amber-400 hover:underline"
-                >
-                  <Unlock size={13} />
-                  Proses Ulang dengan Versi Lain
-                </button>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {VERSI_SKEMA_LIST.map((opsi) => (
+                    <label
+                      key={opsi.value}
+                      className={`flex items-start gap-2.5 p-3 rounded-xl border transition-all ${
+                        versiSkema === opsi.value
+                          ? "border-indigo-400 dark:border-indigo-600 bg-indigo-50 dark:bg-indigo-900/20"
+                          : "border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800"
+                      } ${
+                        versiSkemaTerkunci
+                          ? "opacity-60 cursor-not-allowed"
+                          : "cursor-pointer hover:border-indigo-300 dark:hover:border-indigo-700"
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="versiSkema"
+                        value={opsi.value}
+                        checked={versiSkema === opsi.value}
+                        disabled={versiSkemaTerkunci}
+                        onChange={(e) => setVersiSkema(e.target.value)}
+                        className="mt-0.5"
+                      />
+                      <div>
+                        <p className="text-sm font-medium text-gray-800 dark:text-gray-100">
+                          {opsi.label}
+                        </p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                          {opsi.deskripsi}
+                        </p>
+                      </div>
+                    </label>
+                  ))}
+                </div>
+                {versiSkemaTerkunci && (
+                  <div className="mt-2">
+                    <p className="text-xs text-amber-600 dark:text-amber-400">
+                      Versi terkunci — ujian ini sudah pernah diproses/disimpan dengan versi{" "}
+                      <span className="font-semibold">{labelVersiSkema(versiSkema)}</span>. Ganti
+                      versi cuma bisa dilakukan lewat "Proses Ulang dengan Versi Lain" di bawah,
+                      karena itu bakal menghapus data ruangan yang udah tersimpan.
+                    </p>
+                    <button
+                      onClick={handleBukaProsesUlangModal}
+                      className="flex items-center gap-1.5 mt-2 text-xs font-medium text-amber-700 dark:text-amber-400 hover:underline"
+                    >
+                      <Unlock size={13} />
+                      Proses Ulang dengan Versi Lain
+                    </button>
+                  </div>
+                )}
               </div>
-            )}
-          </div>
 
-          {memuatTersimpan && (
-            <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
-              Memuat data tersimpan...
-            </p>
-          )}
+              {memuatTersimpan && (
+                <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
+                  Memuat data tersimpan...
+                </p>
+              )}
 
-          <button
-            onClick={handleProses}
-            disabled={memproses || memuatTersimpan}
-            className="flex items-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 text-white text-sm font-medium rounded-xl transition-all active:scale-95"
-          >
-            <RefreshCw size={16} className={memproses ? "animate-spin" : ""} />
-            {memproses ? "Memproses..." : "Proses Pembagian (Preview)"}
-          </button>
-          </>
+              <button
+                onClick={handleProses}
+                disabled={memproses || memuatTersimpan}
+                className="flex items-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 text-white text-sm font-medium rounded-xl transition-all active:scale-95"
+              >
+                <RefreshCw size={16} className={memproses ? "animate-spin" : ""} />
+                {memproses ? "Memproses..." : "Proses Pembagian (Preview)"}
+              </button>
+            </>
           )}
 
           {/* Mode "peserta": nggak ada tombol proses, jadi kasih tau statusnya
@@ -1041,24 +1043,24 @@ const PembagianRuanganTab = ({
               {/* Tab switcher: Pembagian Ruangan <-> Preview Per Ruangan <-> Export.
               flex-wrap supaya 3 tab ini nggak kepotong/nyempil di layar HP sempit. */}
               {!tabPaksa && tabTampil.length > 1 && (
-              <div className="flex flex-wrap gap-1 mb-4 border-b border-gray-200 dark:border-gray-700">
-                {tabTampil.map((tab) => {
-                  const Icon = tab.icon;
-                  return (
-                    <button
-                      key={tab.id}
-                      onClick={() => setTabAktif(tab.id)}
-                      className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
-                        tabAktif === tab.id
-                          ? "border-indigo-600 text-indigo-600 dark:text-indigo-400"
-                          : "border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
-                      }`}
-                    >
-                      <Icon size={15} /> {tab.label}
-                    </button>
-                  );
-                })}
-              </div>
+                <div className="flex flex-wrap gap-1 mb-4 border-b border-gray-200 dark:border-gray-700">
+                  {tabTampil.map((tab) => {
+                    const Icon = tab.icon;
+                    return (
+                      <button
+                        key={tab.id}
+                        onClick={() => setTabAktif(tab.id)}
+                        className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
+                          tabAktif === tab.id
+                            ? "border-indigo-600 text-indigo-600 dark:text-indigo-400"
+                            : "border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
+                        }`}
+                      >
+                        <Icon size={15} /> {tab.label}
+                      </button>
+                    );
+                  })}
+                </div>
               )}
 
               {tabAktif === "edit" && (
@@ -1183,110 +1185,109 @@ const PembagianRuanganTab = ({
 
               {tabAktif === "preview" && (
                 <div className="mb-5">
-                  <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
-                    Pilih Ruangan
-                  </label>
-                  <select
-                    value={ruanganPreviewAktif ?? ""}
-                    onChange={(e) => setRuanganPreviewAktif(Number(e.target.value))}
-                    className="w-full sm:w-64 px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 mb-4"
-                  >
-                    {quotaPerRuangan.map((r) => (
-                      <option key={r.nomor_ruangan} value={r.nomor_ruangan}>
-                        Ruang {r.nomor_ruangan}
-                      </option>
-                    ))}
-                  </select>
+                  {/* Dulu ada dropdown "Pilih Ruangan" buat liat 1 ruangan per
+                  waktu -- sekarang semua ruangan ditumpuk & ditampilin
+                  sekaligus di 1 layar, gak perlu geser/ganti pilihan lagi. */}
+                  {quotaPerRuangan.length === 0 ? (
+                    <p className="text-sm text-gray-500 dark:text-gray-400 italic">
+                      Belum ada ruangan.
+                    </p>
+                  ) : (
+                    <div className="space-y-5">
+                      {quotaPerRuangan.map((r) => {
+                        const siswaRuanganIni =
+                          hasilLive.find((h) => h.nomor_ruangan === r.nomor_ruangan)?.siswa || [];
 
-                  {(() => {
-                    const siswaRuanganIni =
-                      hasilLive.find((h) => h.nomor_ruangan === ruanganPreviewAktif)?.siswa || [];
+                        // Urut pakai no_kursi (= no_peserta yang disimpan ke DB) --
+                        // sama persis dengan urutan di daftarPesertaExcelExport.js,
+                        // biar preview ini benar-benar cerminan hasil Excel-nya.
+                        const siswaTerurut = [...siswaRuanganIni].sort(
+                          (a, b) => (a.no_kursi || 0) - (b.no_kursi || 0)
+                        );
 
-                    if (siswaRuanganIni.length === 0) {
-                      return (
-                        <p className="text-xs text-gray-400 italic">
-                          Belum ada siswa di ruangan ini.
-                        </p>
-                      );
-                    }
+                        return (
+                          <div
+                            key={r.nomor_ruangan}
+                            className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-5"
+                          >
+                            {/* Kop dokumen -- meniru letterhead di file Excel */}
+                            <div className="text-center mb-4 pb-3 border-b border-gray-100 dark:border-gray-700">
+                              <p className="text-sm font-semibold text-gray-800 dark:text-gray-100">
+                                DAFTAR PESERTA{" "}
+                                {(JENIS_UJIAN_LABEL[jenisUjian] || jenisUjian).toUpperCase()}
+                              </p>
+                              {labelTahunAjaranAktif && (
+                                <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
+                                  TAHUN AJARAN {labelTahunAjaranAktif}
+                                </p>
+                              )}
+                              <p className="text-sm font-bold text-gray-800 dark:text-gray-100 mt-0.5">
+                                RUANG {String(r.nomor_ruangan).padStart(2, "0")}
+                              </p>
+                            </div>
 
-                    // Urut pakai no_kursi (= no_peserta yang disimpan ke DB) --
-                    // sama persis dengan urutan di daftarPesertaExcelExport.js,
-                    // biar preview ini benar-benar cerminan hasil Excel-nya.
-                    const siswaTerurut = [...siswaRuanganIni].sort(
-                      (a, b) => (a.no_kursi || 0) - (b.no_kursi || 0)
-                    );
+                            {siswaTerurut.length === 0 ? (
+                              <p className="text-sm text-gray-400 italic">
+                                Belum ada siswa di ruangan ini.
+                              </p>
+                            ) : (
+                              <>
+                                <div className="overflow-x-auto rounded-lg border border-gray-300 dark:border-gray-600">
+                                  <table className="w-full text-xs border-collapse">
+                                    <thead>
+                                      <tr className="bg-gray-100 dark:bg-gray-700">
+                                        <th className="py-2 pl-3 pr-3 w-10 text-left font-bold text-gray-900 dark:text-white border-b border-gray-300 dark:border-gray-600">
+                                          No
+                                        </th>
+                                        <th className="py-2 pr-3 text-left font-bold text-gray-900 dark:text-white border-b border-gray-300 dark:border-gray-600">
+                                          Nama Peserta
+                                        </th>
+                                        <th className="py-2 pr-3 text-center font-bold text-gray-900 dark:text-white border-b border-gray-300 dark:border-gray-600">
+                                          No. Peserta
+                                        </th>
+                                        <th className="py-2 pr-3 text-center font-bold text-gray-900 dark:text-white border-b border-gray-300 dark:border-gray-600">
+                                          NIS
+                                        </th>
+                                      </tr>
+                                    </thead>
+                                    <tbody>
+                                      {siswaTerurut.map((s, idx) => (
+                                        <tr
+                                          key={s.id}
+                                          className={`border-b border-gray-200 dark:border-gray-700 ${
+                                            idx % 2 === 1
+                                              ? "bg-gray-50 dark:bg-gray-800/40"
+                                              : "bg-white dark:bg-gray-800"
+                                          }`}
+                                        >
+                                          <td className="py-1.5 pl-3 pr-3 font-medium text-gray-900 dark:text-white">
+                                            {idx + 1}
+                                          </td>
+                                          <td className="py-1.5 pr-3 font-semibold text-gray-900 dark:text-white truncate">
+                                            {s.nama || "-"}
+                                          </td>
+                                          <td className="py-1.5 pr-3 text-center font-medium text-gray-900 dark:text-white">
+                                            {petaNoPeserta.get(String(s.id)) || "-"}
+                                          </td>
+                                          <td className="py-1.5 pr-3 text-center font-medium text-gray-900 dark:text-white">
+                                            {s.nis || "-"}
+                                          </td>
+                                        </tr>
+                                      ))}
+                                    </tbody>
+                                  </table>
+                                </div>
 
-                    return (
-                      <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-5">
-                        {/* Kop dokumen -- meniru letterhead di file Excel */}
-                        <div className="text-center mb-4 pb-3 border-b border-gray-100 dark:border-gray-700">
-                          <p className="text-sm font-semibold text-gray-800 dark:text-gray-100">
-                            DAFTAR PESERTA{" "}
-                            {(JENIS_UJIAN_LABEL[jenisUjian] || jenisUjian).toUpperCase()}
-                          </p>
-                          {labelTahunAjaranAktif && (
-                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                              TAHUN AJARAN {labelTahunAjaranAktif}
-                            </p>
-                          )}
-                          <p className="text-xs font-medium text-gray-700 dark:text-gray-300 mt-0.5">
-                            RUANG {String(ruanganPreviewAktif).padStart(2, "0")}
-                          </p>
-                        </div>
-
-                        <div className="overflow-x-auto rounded-lg border border-gray-300 dark:border-gray-600">
-                          <table className="w-full text-xs border-collapse">
-                            <thead>
-                              <tr className="bg-gray-100 dark:bg-gray-700">
-                                <th className="py-2 pl-3 pr-3 w-10 text-left font-bold text-gray-900 dark:text-white border-b border-gray-300 dark:border-gray-600">
-                                  No
-                                </th>
-                                <th className="py-2 pr-3 text-left font-bold text-gray-900 dark:text-white border-b border-gray-300 dark:border-gray-600">
-                                  Nama Peserta
-                                </th>
-                                <th className="py-2 pr-3 text-center font-bold text-gray-900 dark:text-white border-b border-gray-300 dark:border-gray-600">
-                                  No. Peserta
-                                </th>
-                                <th className="py-2 pr-3 text-center font-bold text-gray-900 dark:text-white border-b border-gray-300 dark:border-gray-600">
-                                  NIS
-                                </th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {siswaTerurut.map((s, idx) => (
-                                <tr
-                                  key={s.id}
-                                  className={`border-b border-gray-200 dark:border-gray-700 ${
-                                    idx % 2 === 1
-                                      ? "bg-gray-50 dark:bg-gray-800/40"
-                                      : "bg-white dark:bg-gray-800"
-                                  }`}
-                                >
-                                  <td className="py-1.5 pl-3 pr-3 font-medium text-gray-900 dark:text-white">
-                                    {idx + 1}
-                                  </td>
-                                  <td className="py-1.5 pr-3 font-semibold text-gray-900 dark:text-white truncate">
-                                    {s.nama || "-"}
-                                  </td>
-                                  <td className="py-1.5 pr-3 text-center font-medium text-gray-900 dark:text-white">
-                                    {petaNoPeserta.get(String(s.id)) || "-"}
-                                  </td>
-                                  <td className="py-1.5 pr-3 text-center font-medium text-gray-900 dark:text-white">
-                                    {s.nis || "-"}
-                                  </td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        </div>
-
-                        <p className="text-right text-[11px] text-gray-500 dark:text-gray-400 mt-3">
-                          {siswaRuanganIni.length} siswa
-                        </p>
-                      </div>
-                    );
-                  })()}
+                                <p className="text-right text-sm text-gray-500 dark:text-gray-400 mt-3">
+                                  {siswaRuanganIni.length} siswa
+                                </p>
+                              </>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -1404,8 +1405,8 @@ const PembagianRuanganTab = ({
                   Proses Ulang dengan Versi Lain?
                 </h4>
                 <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                  Ini bakal <span className="font-semibold">menghapus permanen</span> data ruangan
-                  & no. peserta yang sudah tersimpan untuk{" "}
+                  Ini bakal <span className="font-semibold">menghapus permanen</span> data ruangan &
+                  no. peserta yang sudah tersimpan untuk{" "}
                   <span className="font-semibold">
                     {JENIS_UJIAN_LABEL[jenisUjian]?.split(" - ")[0] || jenisUjian} —{" "}
                     {labelTahunAjaranAktif || "-"}
@@ -1414,8 +1415,9 @@ const PembagianRuanganTab = ({
                 </p>
                 <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
                   Kalau Jadwal Pengawas atau Kartu Ujian sudah pernah di-assign/dicetak pakai nomor
-                  ruangan yang sekarang, itu <span className="font-semibold">wajib dicek ulang</span>{" "}
-                  manual setelah proses ulang ini selesai.
+                  ruangan yang sekarang, itu{" "}
+                  <span className="font-semibold">wajib dicek ulang</span> manual setelah proses
+                  ulang ini selesai.
                 </p>
               </div>
             </div>
@@ -1467,8 +1469,8 @@ const PembagianRuanganTab = ({
                 className="mt-0.5"
               />
               <span className="text-sm text-gray-700 dark:text-gray-300">
-                Saya paham data ruangan lama akan terhapus dan siap mengecek ulang Jadwal Pengawas
-                & Kartu Ujian setelahnya.
+                Saya paham data ruangan lama akan terhapus dan siap mengecek ulang Jadwal Pengawas &
+                Kartu Ujian setelahnya.
               </span>
             </label>
 

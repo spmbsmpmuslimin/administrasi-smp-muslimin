@@ -60,25 +60,25 @@ import { bagiRuanganSilangJenjang } from "./bagiRuanganSilangJenjang";
  *
  * `value` = kode yang DISIMPAN di kolom `ujian.versi_skema`. Sengaja
  * BUKAN "v1"/"v2"/"v3": nomor di UI bisa bergeser kapan pun (kayak yang
- * baru aja terjadi waktu Silang Jenjang masuk jadi V1), sedangkan nilai
- * yang udah nyangkut di DB gak boleh berubah artinya.
+ * baru aja terjadi waktu Silang Jenjang dipindah dari V1 ke V3), sedangkan
+ * nilai yang udah nyangkut di DB gak boleh berubah artinya.
  */
 const VERSI_SKEMA_LIST = [
   {
-    value: "silang",
-    label: "V1 - Silang Jenjang",
-    deskripsi:
-      "Tiap ruang campuran 1 potongan dari tiap jenjang, pasangan kelasnya bergeser tiap putaran. Jumlah ruang = jumlah kelas x jumlah jenjang.",
-  },
-  {
     value: "rotasi",
-    label: "V2 - Campur Merata (1 Jenjang)",
+    label: "V1 - Campur Merata (1 Jenjang)",
     deskripsi: "Tiap ruang kecampur rata dari semua kelas asal di jenjang itu.",
   },
   {
     value: "rantai",
-    label: "V3 - Gabung 2 Kelas Berdekatan",
+    label: "V2 - Gabung 2 Kelas Berdekatan",
     deskripsi: "Tiap ruang cuma gabungan 2 kelas yang bersebelahan.",
+  },
+  {
+    value: "silang",
+    label: "V3 - Silang Jenjang",
+    deskripsi:
+      "Tiap ruang campuran 1 potongan dari tiap jenjang, pasangan kelasnya bergeser tiap putaran. Jumlah ruang = jumlah kelas x jumlah jenjang.",
   },
 ];
 
