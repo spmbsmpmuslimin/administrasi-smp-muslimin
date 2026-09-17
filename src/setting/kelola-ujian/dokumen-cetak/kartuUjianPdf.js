@@ -169,9 +169,12 @@ function gambarSatuKartu(
   barisSempit.forEach(([label, value]) => {
     cy = tulisLabelValue(doc, { ...labelOptsSempit, y: cy }, label, value) + 1.2;
   });
-  // Turun ke bawah batas badge dulu (kalau 2 baris sempit tadi ternyata
-  // lebih pendek dari tinggi badge), biar baris "Kelas" nggak nabrak badge.
-  cy = Math.max(cy, badgeY + badgeHeight + 1.2);
+  // CATATAN: sebelumnya di sini ada Math.max yang maksa cy turun sampai
+  // ke bawah badge ruangan -- niatnya biar baris "Kelas" dst nggak nabrak
+  // badge. Tapi ternyata nggak perlu: baris-baris ini (Kelas/NIS/NISN/
+  // Jenis Kelamin) teksnya pendek & rata kiri, badge-nya di ujung kanan,
+  // jadi secara horizontal nggak pernah ketemu -- paksaan itu cuma bikin
+  // jarak kosong renggang antara "Nama" & "Kelas" pas nama cuma 1 baris.
   barisPenuh.forEach(([label, value]) => {
     cy = tulisLabelValue(doc, { ...labelOptsPenuh, y: cy }, label, value) + 1.2;
   });
