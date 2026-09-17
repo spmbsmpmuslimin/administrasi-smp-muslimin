@@ -70,7 +70,7 @@ const JENIS_UJIAN_LABEL = {
 
 const SUB_FITUR = [
   {
-    id: "jadwal-pengawas",
+    id: "jadwal-ruangan",
     title: "Jadwal, Peserta & Pembagian Ruangan",
     description:
       "Atur jadwal sesi ujian per mapel, bandingkan komposisi ruangan, susun & simpan pembagian siswa ke tiap ruangan, cek previewnya, lalu export daftar pesertanya",
@@ -79,7 +79,7 @@ const SUB_FITUR = [
     clickable: true,
   },
   {
-    id: "pembagian-ruangan",
+    id: "daftar-pengawas",
     title: "Daftar & Jadwal Pengawas",
     description: "Kelola daftar pengawas, jadwal ngawas per hari, dan rekapnya",
     icon: DoorOpen,
@@ -151,7 +151,7 @@ const STATUS_STYLE = {
 const JenisUjianMenuTab = ({ jenisUjian, showToast, onBack }) => {
   const [activeSubFitur, setActiveSubFitur] = useState(null);
 
-  if (activeSubFitur === "pembagian-ruangan") {
+  if (activeSubFitur === "daftar-pengawas") {
     return (
       <PesertaPengawasTab
         jenisUjian={jenisUjian}
@@ -161,7 +161,7 @@ const JenisUjianMenuTab = ({ jenisUjian, showToast, onBack }) => {
     );
   }
 
-  if (activeSubFitur === "jadwal-pengawas") {
+  if (activeSubFitur === "jadwal-ruangan") {
     return (
       <JadwalRuanganTab
         jenisUjian={jenisUjian}

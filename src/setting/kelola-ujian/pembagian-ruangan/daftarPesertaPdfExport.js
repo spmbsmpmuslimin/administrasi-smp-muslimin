@@ -172,22 +172,25 @@ export async function exportDaftarPesertaUjianPdf({
     // tetap 1 halaman (bukan meluber ke halaman ke-2).
     const { fontSize, cellPadding } = hitungUkuranTabelMuatSatuHalaman(doc, y, siswaTerurut.length);
 
+    // Kolomnya SENGAJA disamain sama urutan & isi tabel di tab "Preview
+    // Per Ruangan" (PembagianRuanganTab.js) & versi Excel -- No, No.
+    // Peserta, Nama Peserta, Kelas -- biar WYSIWYG di ketiga tempat itu.
     autoTable(doc, {
       ...tableTheme(y, { fontSize, styles: { cellPadding } }),
-      head: [["No", "Nama Peserta", "No. Peserta", "NIS"]],
+      head: [["No", "No. Peserta", "Nama Peserta", "Kelas"]],
       body: siswaTerurut.map((s, idx) => [
         idx + 1,
-        s.nama || "-",
         petaNoPeserta.get(String(s.id)) || "-",
-        s.nis || "-",
+        s.nama || "-",
+        s.asal_kelas || "-",
       ]),
-      // Lebar kolom manual -- No & No.Peserta/NIS sempit+center, Nama
+      // Lebar kolom manual -- No, No.Peserta & Kelas sempit+center, Nama
       // Peserta ambil sisa lebar halaman.
       columnStyles: {
         0: { cellWidth: 12, halign: "center" },
-        1: { cellWidth: "auto" },
-        2: { cellWidth: 32, halign: "center" },
-        3: { cellWidth: 32, halign: "center" },
+        1: { cellWidth: 26, halign: "center" },
+        2: { cellWidth: "auto" },
+        3: { cellWidth: 22, halign: "center" },
       },
     });
   });

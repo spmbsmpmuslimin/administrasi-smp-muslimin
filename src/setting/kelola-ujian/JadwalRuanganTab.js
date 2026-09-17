@@ -10,25 +10,30 @@
 //   2. "Komposisi Ruangan"     -> PembagianRuanganTab (mode="ruangan", view "komposisi")
 //   3. "Pembagian Ruangan"     -> PembagianRuanganTab (mode="ruangan", tab "edit")
 //   4. "Preview Per Ruangan"   -> PembagianRuanganTab (mode="ruangan", tab "preview")
-//   5. "Export Daftar Peserta" -> PembagianRuanganTab (mode="ruangan", tab "export")
+//   5. "Denah Duduk"           -> PembagianRuanganTab (mode="ruangan", tab "denah")
+//   6. "Export Daftar Peserta" -> PembagianRuanganTab (mode="ruangan", tab "export")
 //
-// Tab 5 (Export) PINDAH dari kartu "Daftar & Jadwal Pengawas" (sebelumnya
+// Tab 6 (Export) PINDAH dari kartu "Daftar & Jadwal Pengawas" (sebelumnya
 // "Peserta & Pengawas") ke sini, sengaja diletakkan PALING TERAKHIR, setelah
-// Preview -- alurnya jadi: susun -> lihat preview per ruangan -> langsung
-// export/cetak, tanpa pindah kartu. Karena masih 1 instance
-// PembagianRuanganTab yang sama (mode="ruangan"), Export ini WYSIWYG:
-// isinya ngikutin quota yang lagi tampil di layar, TERMASUK yang belum
-// diklik "Simpan ke Database" -- beda dari behavior lama di kartu sebelah
-// yang cuma baca data tersimpan.
+// Preview & Denah Duduk -- alurnya jadi: susun -> lihat preview per ruangan
+// -> lihat denah duduk -> langsung export/cetak, tanpa pindah kartu. Karena
+// masih 1 instance PembagianRuanganTab yang sama (mode="ruangan"), Export
+// ini WYSIWYG: isinya ngikutin quota yang lagi tampil di layar, TERMASUK
+// yang belum diklik "Simpan ke Database" -- beda dari behavior lama di
+// kartu sebelah yang cuma baca data tersimpan.
+//
+// Tab 5 (Denah Duduk) MURNI tampilan (baca hasilLive yang sama kayak
+// Preview & Export, cuma disusun jadi grid kursi, bukan tabel) -- lihat
+// komentar di PembagianRuanganTab.js buat detail implementasinya.
 //
 // Sisa tab yang dulu ada di sini (Daftar Pengawas, Jadwal Ngawas, Rekap)
 // tetap di kartu "Daftar & Jadwal Pengawas" (PesertaPengawasTab.js).
 //
 // CATATAN: pindah dari tab "Jadwal Sesi" ke tab ruangan (atau sebaliknya)
 // bikin komponen yang ditinggal ke-unmount, jadi quota yang BELUM disimpan
-// bakal hilang. Pindah antar 4 tab ruangan (Komposisi <-> Pembagian <->
-// Preview <-> Export) aman, karena keempatnya komponen yang sama -- cuma
-// ganti prop.
+// bakal hilang. Pindah antar 5 tab ruangan (Komposisi <-> Pembagian <->
+// Preview <-> Denah Duduk <-> Export) aman, karena kelimanya komponen yang
+// sama -- cuma ganti prop.
 
 import React, { useState } from "react";
 import {
@@ -37,6 +42,7 @@ import {
   LayoutGrid,
   DoorOpen,
   Eye,
+  Armchair,
   FileSpreadsheet,
 } from "lucide-react";
 import JadwalPengawasTab from "./jadwal-pengawas/JadwalPengawasTab";
@@ -53,6 +59,7 @@ const TAB_LIST = [
   { id: "komposisi", label: "Komposisi Ruangan", icon: LayoutGrid },
   { id: "pembagian", label: "Pembagian Ruangan", icon: DoorOpen },
   { id: "preview", label: "Preview Per Ruangan", icon: Eye },
+  { id: "denah", label: "Denah Duduk", icon: Armchair },
   { id: "export", label: "Export Daftar Peserta", icon: FileSpreadsheet },
 ];
 
@@ -75,7 +82,7 @@ const JadwalRuanganTab = ({ jenisUjian, showToast, onBack }) => {
         </p>
       </div>
 
-      {/* flex-wrap supaya 5 tab ini nggak kepotong di layar HP sempit */}
+      {/* flex-wrap supaya 6 tab ini nggak kepotong di layar HP sempit */}
       <div className="flex flex-wrap gap-1 mb-5 border-b border-gray-200 dark:border-gray-700">
         {TAB_LIST.map((tab) => {
           const Icon = tab.icon;
@@ -103,7 +110,15 @@ const JadwalRuanganTab = ({ jenisUjian, showToast, onBack }) => {
           showToast={showToast}
           mode="ruangan"
           viewPaksa={tabAktif === "komposisi" ? "komposisi" : "pembagian"}
-          tabPaksa={tabAktif === "preview" ? "preview" : tabAktif === "export" ? "export" : "edit"}
+          tabPaksa={
+            tabAktif === "preview"
+              ? "preview"
+              : tabAktif === "denah"
+                ? "denah"
+                : tabAktif === "export"
+                  ? "export"
+                  : "edit"
+          }
         />
       )}
     </div>

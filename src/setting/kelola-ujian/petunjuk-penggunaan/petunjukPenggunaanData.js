@@ -8,16 +8,22 @@
 // `iconName` cuma string (bukan komponen React) biar file ini aman
 // di-import dari petunjukPenggunaanPdf.js juga (generator PDF nggak
 // butuh render ikon apa-apa).
+//
+// `id` di sini cuma dipakai internal (state accordion di
+// PetunjukPenggunaanTab.js & key React) -- TIDAK dipakai buat routing
+// sub-fitur (itu urusan JenisUjianMenuTab.js), tapi sengaja diseragamkan
+// sama id di SUB_FITUR (JenisUjianMenuTab.js) biar gampang di-cross-check
+// kalau ada rename lagi ke depannya.
 
 const PANDUAN = [
   {
-    id: "jadwal-pengawas",
-    title: "Jadwal & Pembagian Ruangan",
+    id: "jadwal-ruangan",
+    title: "Jadwal, Peserta & Pembagian Ruangan",
     iconName: "CalendarClock",
     langkah: [
       {
         judul: "Pilih Tahun Ajaran",
-        deskripsi: "Buka kartu, lalu pilih Tahun Ajaran yang sama dengan Peserta & Pengawas.",
+        deskripsi: "Buka kartu, lalu pilih Tahun Ajaran yang sama dengan Daftar & Jadwal Pengawas.",
       },
       {
         judul: "Tab Jadwal Sesi",
@@ -40,26 +46,26 @@ const PANDUAN = [
           "Lihat tampilan daftar peserta per ruangan sebelum dicetak. Isinya mengikuti quota yang sedang tampil di layar, termasuk perubahan yang belum disimpan -- enak buat ngecek hasil editan quota.",
       },
       {
+        judul: "Tab Export Daftar Peserta",
+        deskripsi:
+          "Unduh daftar peserta per ruangan atau semua ruangan sekaligus dalam format Excel atau PDF -- untuk ditempel di pintu ruangan & pegangan pengawas. Sama seperti Preview, isinya WYSIWYG mengikuti quota yang lagi tampil di layar, termasuk yang belum diklik \"Simpan ke Database\".",
+      },
+      {
         judul: "Wajib Disimpan Dulu",
         deskripsi:
-          "Selama pembagian ruangan belum disimpan, daftar ruangan belum tersedia untuk sub-fitur lain -- Peserta & Pengawas, Kartu Ujian, dan Presensi & Berita Acara baru bisa jalan setelah data ini tersimpan.",
+          "Selama pembagian ruangan belum disimpan, daftar ruangan belum tersedia untuk sub-fitur lain -- Daftar & Jadwal Pengawas, Kartu Ujian, dan Presensi & Berita Acara baru bisa jalan setelah data ini tersimpan.",
       },
     ],
   },
   {
-    id: "pembagian-ruangan",
-    title: "Peserta & Pengawas",
+    id: "daftar-pengawas",
+    title: "Daftar & Jadwal Pengawas",
     iconName: "DoorOpen",
     langkah: [
       {
         judul: "Pilih Jenis Ujian & Tahun Ajaran",
         deskripsi:
-          'Dari halaman utama Manajemen Ujian, pilih jenis ujian (PSAS/PSAT/PSAJ), lalu buka kartu "Peserta & Pengawas" dan pilih Tahun Ajaran yang sesuai.',
-      },
-      {
-        judul: "Tab Export Daftar Peserta",
-        deskripsi:
-          "Unduh daftar peserta per ruangan atau semua ruangan sekaligus dalam format Excel atau PDF -- untuk ditempel di pintu ruangan & pegangan pengawas. Isinya mengikuti pembagian yang SUDAH tersimpan, jadi kalau baru ngubah quota, simpan dulu di kartu Jadwal & Pembagian Ruangan.",
+          'Dari halaman utama Manajemen Ujian, pilih jenis ujian (PSAS/PSAT/PSAJ), lalu buka kartu "Daftar & Jadwal Pengawas" dan pilih Tahun Ajaran yang sesuai.',
       },
       {
         judul: "Tab Daftar Pengawas",
@@ -69,7 +75,7 @@ const PANDUAN = [
       {
         judul: "Tab Jadwal Ngawas",
         deskripsi:
-          "Tetapkan guru pengawas untuk tiap ruangan pada setiap hari pelaksanaan. Daftar ruangan & sesi diambil otomatis dari kartu Jadwal & Pembagian Ruangan.",
+          "Tetapkan guru pengawas untuk tiap ruangan pada setiap hari pelaksanaan. Daftar ruangan & sesi diambil otomatis dari kartu Jadwal, Peserta & Pembagian Ruangan.",
       },
       {
         judul: "Tab Rekap",
@@ -77,6 +83,8 @@ const PANDUAN = [
           "Lihat rekap semua sesi & ruangan dalam satu tabel per hari -- bahan cek cepat sebelum dicetak.",
       },
     ],
+    catatan:
+      'Cetak/unduh daftar peserta sekarang ada di kartu "Jadwal, Peserta & Pembagian Ruangan" (tab Export Daftar Peserta), bukan di sini lagi.',
   },
   {
     id: "kartu-ujian",
@@ -100,21 +108,21 @@ const PANDUAN = [
       {
         judul: "Cetak Kartu Pengawas",
         deskripsi:
-          "Pilih guru pengawas, lalu cetak kartu penugasan berdasarkan jadwal ngawas yang sudah diatur di sub-fitur Peserta & Pengawas.",
+          "Pilih guru pengawas, lalu cetak kartu penugasan berdasarkan jadwal ngawas yang sudah diatur di sub-fitur Daftar & Jadwal Pengawas.",
       },
     ],
     catatan:
-      "Pastikan Peserta & Pengawas dan Jadwal & Pembagian Ruangan sudah lengkap dulu supaya data di kartu akurat.",
+      "Pastikan Daftar & Jadwal Pengawas dan Jadwal, Peserta & Pembagian Ruangan sudah lengkap dulu supaya data di kartu akurat.",
   },
   {
-    id: "presensi-berita-acara",
+    id: "laporan",
     title: "Presensi & Berita Acara",
     iconName: "FileBarChart2",
     langkah: [
       {
         judul: "Pilih Tahun Ajaran & Sesi",
         deskripsi:
-          "Pilih Tahun Ajaran, lalu pilih Sesi Ujian dari dropdown (daftar sesi diambil dari Jadwal & Pembagian Ruangan).",
+          "Pilih Tahun Ajaran, lalu pilih Sesi Ujian dari dropdown (daftar sesi diambil dari Jadwal, Peserta & Pembagian Ruangan).",
       },
       {
         judul: "Cetak Daftar Hadir",
@@ -132,12 +140,40 @@ const PANDUAN = [
   },
   {
     id: "kepanitiaan",
-    title: "Kepanitiaan & Regulasi",
+    title: "Program Kerja Pelaksanaan",
     iconName: "FileText",
-    belumTersedia: true,
-    langkah: [],
+    langkah: [
+      {
+        judul: "Pilih Tahun Ajaran",
+        deskripsi: "Buka kartu, lalu pilih Tahun Ajaran.",
+      },
+      {
+        judul: "Isi Surat Keputusan Panitia",
+        deskripsi: "Masukkan nomor & tanggal SK panitia -- diketik manual tiap tahun ajaran.",
+      },
+      {
+        judul: "Susun Panitia",
+        deskripsi:
+          'Tambah baris per jabatan (Penanggung Jawab, Ketua, Sekretaris, Bendahara, Anggota, dst) beserta nama gurunya. Data ini belum ada tabelnya di database, jadi diisi manual tiap kali generate.',
+      },
+      {
+        judul: "Isi Jadwal per Sesi",
+        deskripsi:
+          "Tambahkan tanggal, waktu, dan mata pelajaran tiap sesi ujian secara manual -- belum ada sumber data terstruktur buat ini.",
+      },
+      {
+        judul: "Pembagian Ruang & Pengawas",
+        deskripsi:
+          "Bagian ini otomatis, diambil dari data yang sudah tersimpan di Jadwal, Peserta & Pembagian Ruangan serta Daftar & Jadwal Pengawas -- tidak perlu isi ulang.",
+      },
+      {
+        judul: "Export PDF",
+        deskripsi:
+          'Klik "Export PDF" untuk mengunduh dokumen lengkap: dasar hukum, susunan panitia, jadwal per sesi, pembagian ruang & pengawas, sampai Tata Tertib Peserta dan Tata Tertib Pengawas (isinya baku, otomatis ditambahkan, tidak perlu diketik).',
+      },
+    ],
     catatan:
-      "Sub-fitur ini belum dibangun. Rencananya akan berisi SK panitia, SK tugas pengawas, dan tata tertib ujian.",
+      "Dokumen ini untuk SEBELUM ujian berlangsung -- bahan pemeriksaan pengawas/pengawas satuan pendidikan.",
   },
   {
     id: "anggaran-biaya",
@@ -169,6 +205,39 @@ const PANDUAN = [
           "Klik ikon tempat sampah pada pos yang tidak jadi/salah input. Akan ada konfirmasi sebelum data benar-benar dihapus.",
       },
     ],
+  },
+  {
+    id: "laporan-rekap-akhir",
+    title: "Laporan Rekap Akhir",
+    iconName: "ClipboardCheck",
+    langkah: [
+      {
+        judul: "Pilih Tahun Ajaran",
+        deskripsi: "Buka kartu, lalu pilih Tahun Ajaran.",
+      },
+      {
+        judul: "Rekap Otomatis (Peserta & Ruangan, Pengawas, Anggaran)",
+        deskripsi:
+          "3 item ini read-only di sini, datanya reuse langsung dari Jadwal, Peserta & Pembagian Ruangan, Daftar & Jadwal Pengawas, dan Anggaran & Biaya -- pastikan ketiga sub-fitur itu sudah lengkap dulu supaya rekapnya akurat.",
+      },
+      {
+        judul: "Isi Rekap Kehadiran",
+        deskripsi:
+          "Setelah ujian selesai, rekap ulang jumlah hadir/tidak hadir per ruangan ke sini berdasarkan Daftar Hadir kertas dari sub-fitur Presensi & Berita Acara, lalu klik Simpan per ruangan.",
+      },
+      {
+        judul: "Isi Keterangan Nilai, Evaluasi & Kendala, Kesimpulan & Saran",
+        deskripsi:
+          "3 catatan naratif manual: status ringkas penyerahan nilai (bukan rekap nilai detail per siswa), kendala teknis/non-teknis selama persiapan & pelaksanaan, serta kesimpulan & saran untuk periode berikutnya.",
+      },
+      {
+        judul: "Export Laporan Lengkap (PDF)",
+        deskripsi:
+          'Klik "Export Laporan Lengkap", centang/hilangkan section yang mau diikutkan (urutannya sama seperti di dokumen), lalu unduh PDF -- bahan Laporan Pelaksanaan Ujian (Bab Pelaksanaan, Pembiayaan, Penutup).',
+      },
+    ],
+    catatan:
+      "Dokumen ini untuk SETELAH ujian selesai -- kebalikan dari Program Kerja Pelaksanaan yang isinya rencana sebelum ujian.",
   },
 ];
 

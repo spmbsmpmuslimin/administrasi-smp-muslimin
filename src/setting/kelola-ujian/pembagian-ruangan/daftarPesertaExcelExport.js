@@ -90,8 +90,10 @@ export async function exportDaftarPesertaUjian({
     const namaRuang = labelRuang(r.nomor_ruangan);
     const worksheet = workbook.addWorksheet(namaRuang);
 
-    // mergeCols = 4 (No, Nama Peserta, No. Peserta, NIS) -- judul di-center
-    // penuh selebar tabel.
+    // mergeCols = 4 (No, No. Peserta, Nama Peserta, Kelas) -- judul di-center
+    // penuh selebar tabel. Kolomnya SENGAJA disamain sama urutan & isi
+    // tabel di tab "Preview Per Ruangan" (PembagianRuanganTab.js) biar
+    // WYSIWYG -- apa yang keliatan di preview itu juga yang keexport.
     const headerRowIndex = addLetterhead(worksheet, {
       title: `DAFTAR PESERTA ${judul}`,
       mergeCols: 4,
@@ -103,13 +105,13 @@ export async function exportDaftarPesertaUjian({
     // Lebar awal; nanti disesuaikan lagi sama autoFitColumns() di bawah.
     worksheet.columns = [
       { width: 5 }, // No
-      { width: 32 }, // Nama Peserta
       { width: 14 }, // No. Peserta
-      { width: 16 }, // NIS
+      { width: 32 }, // Nama Peserta
+      { width: 12 }, // Kelas
     ];
 
     const headerRow = worksheet.getRow(headerRowIndex);
-    headerRow.values = ["No", "Nama Peserta", "No. Peserta", "NIS"];
+    headerRow.values = ["No", "No. Peserta", "Nama Peserta", "Kelas"];
     styleTableHeaderRow(headerRow);
 
     // Diurutkan pakai no_kursi (= no_peserta yang disimpan ke DB), BUKAN
@@ -119,11 +121,16 @@ export async function exportDaftarPesertaUjian({
 
     siswaTerurut.forEach((s, idx) => {
       const row = worksheet.getRow(headerRowIndex + 1 + idx);
-      row.values = [idx + 1, s.nama || "-", petaNoPeserta.get(String(s.id)) || "-", s.nis || "-"];
-      // centerCols: No (1), No. Peserta (3), NIS (4). Nama biarin rata kiri.
-      // textCols: No. Peserta (3) & NIS (4) dipaksa text -- NIS sering punya
-      // nol di depan yang bakal ilang kalau kebaca sebagai number.
-      styleTableDataRow(row, idx, [1, 3, 4], [3, 4]);
+      row.values = [
+        idx + 1,
+        petaNoPeserta.get(String(s.id)) || "-",
+        s.nama || "-",
+        s.asal_kelas || "-",
+      ];
+      // centerCols: No (1), No. Peserta (2), Kelas (4). Nama biarin rata kiri.
+      // textCols: No. Peserta (2) dipaksa text -- formatnya "2627-07-001",
+      // bukan angka murni.
+      styleTableDataRow(row, idx, [1, 2, 4], [2]);
     });
 
     setupPrintOptions(worksheet, {

@@ -41,6 +41,7 @@ import {
   Trash2,
   Table2,
   Eye,
+  Armchair,
   FileSpreadsheet,
   FileText,
   Loader2,
@@ -96,12 +97,21 @@ const VIEW_TAB_LIST = [
   { id: "pembagian", label: "Pembagian Ruangan", icon: DoorOpen },
 ];
 
-// Definisi 3 tab di bagian bawah (dulu masing-masing ditulis manual jadi
-// 3 blok JSX yang identik kecuali label/ikon) -- sekarang cukup 1 array
+// Definisi 4 tab di bagian bawah (dulu masing-masing ditulis manual jadi
+// blok JSX yang identik kecuali label/ikon) -- sekarang cukup 1 array
 // yang di-map, biar kalau nambah/ubah tab nggak perlu copy-paste style-nya lagi.
+//
+// "denah" (Denah Duduk) DITARUH di antara "preview" dan "export" --
+// baca data yang PERSIS sama kayak "preview" (hasilLive + petaNoPeserta,
+// diurutkan no_kursi), cuma disusun jadi grid kursi (representasi visual
+// posisi duduk fisik) bukan tabel daftar. Read-only, sama kayak "preview",
+// jadi di semua tempat kode ini yang nge-cek `tabAktif !== "preview" &&
+// tabAktif !== "export"` buat nyembunyiin kontrol proses/simpan, "denah"
+// juga ikut disembunyiin (lihat kondisi-kondisi itu di bawah).
 const TAB_LIST = [
   { id: "edit", label: "Pembagian Ruangan", icon: Table2 },
   { id: "preview", label: "Preview Per Ruangan", icon: Eye },
+  { id: "denah", label: "Denah Duduk", icon: Armchair },
   { id: "export", label: "Export Daftar Peserta", icon: FileSpreadsheet },
 ];
 
@@ -352,6 +362,16 @@ const PembagianRuanganTab = ({
   // balik ke ruangan pertama lagi daripada nyangkut ke nomor yang sekarang
   // udah gak ada / udah beda isinya).
   const [ruanganPreviewAktif, setRuanganPreviewAktif] = useState(null);
+  // Tab "Denah Duduk": ruangan mana yang lagi ditampilin. State TERPISAH
+  // dari ruanganPreviewAktif (walau sama-sama "lagi liat ruangan yang
+  // mana") -- pola sama kayak ruanganExport, biar masing-masing tab inget
+  // pilihan ruangan terakhirnya sendiri kalau admin gonta-ganti tab.
+  const [ruanganDenahAktif, setRuanganDenahAktif] = useState(null);
+  // Jumlah kolom kursi buat grid di tab "Denah Duduk" -- MURNI pengaturan
+  // tampilan (gak disimpan ke DB, gak ngaruh ke algoritma pembagian),
+  // admin bebas nyesuaiin sama bentuk fisik ruangan aslinya. Default 4
+  // dipilih karena kebanyakan ruang kelas di sekolah ini muat sekitar situ.
+  const [jumlahKolomDenah, setJumlahKolomDenah] = useState(4);
   // Tab "Export Daftar": ruangan mana yang mau diexport. "semua" = semua
   // ruangan jadi 1 file (1 sheet per ruangan), selain itu isinya nomor ruangan.
   const [ruanganExport, setRuanganExport] = useState("semua");
@@ -652,6 +672,7 @@ const PembagianRuanganTab = ({
   const handleHapusRuangan = (nomorRuangan) => {
     setQuotaPerRuangan((prev) => prev.filter((r) => r.nomor_ruangan !== nomorRuangan));
     setRuanganPreviewAktif((prev) => (prev === nomorRuangan ? null : prev));
+    setRuanganDenahAktif((prev) => (prev === nomorRuangan ? null : prev));
   };
 
   // hasilLive = siswa SPESIFIK yang beneran masuk tiap ruangan sesuai quota
@@ -826,29 +847,32 @@ const PembagianRuanganTab = ({
         {/* Kapasitas cuma relevan waktu MENYUSUN ruangan. Di mode "peserta"
         (read-only dari DB) field ini disembunyiin biar nggak bikin ngira
         bisa diubah dari sini. Sama alasannya field ini disembunyiin pas
-        tabAktif === "preview" ATAU "export" -- dua-duanya cuma
+        tabAktif === "preview" ATAU "denah" ATAU "export" -- ketiganya cuma
         lihat/nyetak data yang UDAH diproses, kapasitas gak ngaruh apa-apa
         lagi di situ. */}
-        {!modePeserta && tabAktif !== "preview" && tabAktif !== "export" && (
-          <div>
-            <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
-              Kapasitas per Ruangan
-            </label>
-            <input
-              type="number"
-              min={1}
-              // value dikosongin (bukan "0") pas kapasitas lagi 0/kosong -- kalau
-              // dipaksa selalu jadi angka, field-nya nempelin "0" di depan tiap
-              // admin ngetik ulang abis clear (bug klasik controlled number input).
-              value={kapasitas === 0 ? "" : kapasitas}
-              onChange={(e) => {
-                const nilai = e.target.value;
-                setKapasitas(nilai === "" ? 0 : Number(nilai));
-              }}
-              className="w-full px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100"
-            />
-          </div>
-        )}
+        {!modePeserta &&
+          tabAktif !== "preview" &&
+          tabAktif !== "denah" &&
+          tabAktif !== "export" && (
+            <div>
+              <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+                Kapasitas per Ruangan
+              </label>
+              <input
+                type="number"
+                min={1}
+                // value dikosongin (bukan "0") pas kapasitas lagi 0/kosong -- kalau
+                // dipaksa selalu jadi angka, field-nya nempelin "0" di depan tiap
+                // admin ngetik ulang abis clear (bug klasik controlled number input).
+                value={kapasitas === 0 ? "" : kapasitas}
+                onChange={(e) => {
+                  const nilai = e.target.value;
+                  setKapasitas(nilai === "" ? 0 : Number(nilai));
+                }}
+                className="w-full px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100"
+              />
+            </div>
+          )}
       </div>
 
       {/* Tab level PALING ATAS: bandingin V1 vs V2 dulu di "Komposisi
@@ -971,84 +995,88 @@ const PembagianRuanganTab = ({
           muncul di mode "ruangan"/"full", dan CUMA di tab "edit" (halaman
           "Pembagian Ruangan" yang sebenernya nyusun/nyimpen). Di mode
           "peserta" data cuma dibaca dari DB, nggak diproses ulang -- dan
-          di tab "preview" ("Preview Per Ruangan") ATAU "export" (Export
-          Daftar Peserta) halamannya cuma nampilin/nyetak hasil yang UDAH
-          diproses, jadi kontrol milih versi/kapasitas/tombol proses di
-          sini gak relevan lagi & cuma bikin bingung. */}
-          {!modePeserta && tabAktif !== "preview" && tabAktif !== "export" && (
-            <>
-              {/* Versi algoritma -- terkunci begitu ujian ini punya record tersimpan
+          di tab "preview" ("Preview Per Ruangan"), "denah" (Denah Duduk),
+          ATAU "export" (Export Daftar Peserta) halamannya cuma
+          nampilin/nyetak hasil yang UDAH diproses, jadi kontrol milih
+          versi/kapasitas/tombol proses di sini gak relevan lagi & cuma
+          bikin bingung. */}
+          {!modePeserta &&
+            tabAktif !== "preview" &&
+            tabAktif !== "denah" &&
+            tabAktif !== "export" && (
+              <>
+                {/* Versi algoritma -- terkunci begitu ujian ini punya record tersimpan
               (lihat versiSkemaTerkunci), karena versi_skema cuma boleh dipilih
               sekali pas record ujian pertama kali dibikin. */}
-              <div className="mb-5">
-                <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
-                  Versi Algoritma Pembagian <span className="text-red-500">*</span>
-                </label>
-                <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
-                  Wajib dipilih -- nggak ada versi bawaan. Sesuaikan sama kebutuhan ujian ini;
-                  bandingkan dulu hasilnya di tab <strong>Komposisi Ruangan</strong> kalau ragu.
-                </p>
+                <div className="mb-5">
+                  <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+                    Versi Algoritma Pembagian <span className="text-red-500">*</span>
+                  </label>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
+                    Wajib dipilih -- nggak ada versi bawaan. Sesuaikan sama kebutuhan ujian ini;
+                    bandingkan dulu hasilnya di tab <strong>Komposisi Ruangan</strong> kalau ragu.
+                  </p>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                  {VERSI_SKEMA_LIST.map((opsi) => (
-                    <label
-                      key={opsi.value}
-                      className={`flex items-start gap-2.5 p-3 rounded-xl border transition-all ${
-                        versiSkema === opsi.value
-                          ? "border-indigo-400 dark:border-indigo-600 bg-indigo-50 dark:bg-indigo-900/20"
-                          : "border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800"
-                      } ${
-                        versiSkemaTerkunci
-                          ? "opacity-60 cursor-not-allowed"
-                          : "cursor-pointer hover:border-indigo-300 dark:hover:border-indigo-700"
-                      }`}
-                    >
-                      <input
-                        type="radio"
-                        name="versiSkema"
-                        value={opsi.value}
-                        checked={versiSkema === opsi.value}
-                        disabled={versiSkemaTerkunci}
-                        onChange={(e) => setVersiSkema(e.target.value)}
-                        className="mt-0.5"
-                      />
-                      <div>
-                        <p className="text-sm font-medium text-gray-800 dark:text-gray-100">
-                          {opsi.label}
-                        </p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                          {opsi.deskripsi}
-                        </p>
-                      </div>
-                    </label>
-                  ))}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                    {VERSI_SKEMA_LIST.map((opsi) => (
+                      <label
+                        key={opsi.value}
+                        className={`flex items-start gap-2.5 p-3 rounded-xl border transition-all ${
+                          versiSkema === opsi.value
+                            ? "border-indigo-400 dark:border-indigo-600 bg-indigo-50 dark:bg-indigo-900/20"
+                            : "border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800"
+                        } ${
+                          versiSkemaTerkunci
+                            ? "opacity-60 cursor-not-allowed"
+                            : "cursor-pointer hover:border-indigo-300 dark:hover:border-indigo-700"
+                        }`}
+                      >
+                        <input
+                          type="radio"
+                          name="versiSkema"
+                          value={opsi.value}
+                          checked={versiSkema === opsi.value}
+                          disabled={versiSkemaTerkunci}
+                          onChange={(e) => setVersiSkema(e.target.value)}
+                          className="mt-0.5"
+                        />
+                        <div>
+                          <p className="text-sm font-medium text-gray-800 dark:text-gray-100">
+                            {opsi.label}
+                          </p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                            {opsi.deskripsi}
+                          </p>
+                        </div>
+                      </label>
+                    ))}
+                  </div>
+                  {!versiSkemaTerkunci && !versiSkemaValid(versiSkema) && (
+                    <p className="mt-2 text-xs text-amber-600 dark:text-amber-400">
+                      Belum ada versi yang dipilih -- pilih salah satu di atas buat mengaktifkan
+                      tombol "Proses Pembagian".
+                    </p>
+                  )}
+                  {versiSkemaTerkunci && (
+                    <div className="mt-2">
+                      <p className="text-xs text-amber-600 dark:text-amber-400">
+                        Versi terkunci — ujian ini sudah pernah diproses/disimpan dengan versi{" "}
+                        <span className="font-semibold">{labelVersiSkema(versiSkema)}</span>.{" "}
+                        {tabAktif === "preview" || tabAktif === "denah"
+                          ? 'Ganti versi cuma bisa dilakukan lewat tombol "Proses Ulang dengan Versi Lain" di tab Pembagian Ruangan (sengaja gak ditampilin di sini biar gak salah klik pas cuma mau lihat-lihat), karena itu bakal menghapus data ruangan yang udah tersimpan.'
+                          : 'Ganti versi cuma bisa dilakukan lewat tombol "Proses Ulang dengan Versi Lain" di bawah, karena itu bakal menghapus data ruangan yang udah tersimpan.'}
+                      </p>
+                    </div>
+                  )}
                 </div>
-                {!versiSkemaTerkunci && !versiSkemaValid(versiSkema) && (
-                  <p className="mt-2 text-xs text-amber-600 dark:text-amber-400">
-                    Belum ada versi yang dipilih -- pilih salah satu di atas buat mengaktifkan
-                    tombol "Proses Pembagian".
+
+                {memuatTersimpan && (
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
+                    Memuat data tersimpan...
                   </p>
                 )}
-                {versiSkemaTerkunci && (
-                  <div className="mt-2">
-                    <p className="text-xs text-amber-600 dark:text-amber-400">
-                      Versi terkunci — ujian ini sudah pernah diproses/disimpan dengan versi{" "}
-                      <span className="font-semibold">{labelVersiSkema(versiSkema)}</span>.{" "}
-                      {tabAktif === "preview"
-                        ? 'Ganti versi cuma bisa dilakukan lewat tombol "Proses Ulang dengan Versi Lain" di tab Pembagian Ruangan (sengaja gak ditampilin di sini biar gak salah klik pas cuma mau lihat-lihat), karena itu bakal menghapus data ruangan yang udah tersimpan.'
-                        : 'Ganti versi cuma bisa dilakukan lewat tombol "Proses Ulang dengan Versi Lain" di bawah, karena itu bakal menghapus data ruangan yang udah tersimpan.'}
-                    </p>
-                  </div>
-                )}
-              </div>
 
-              {memuatTersimpan && (
-                <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
-                  Memuat data tersimpan...
-                </p>
-              )}
-
-              {/* 2 tombol aksi utama disejajarkan biar sama-sama kelihatan --
+                {/* 2 tombol aksi utama disejajarkan biar sama-sama kelihatan --
               dulu "Proses Ulang dengan Versi Lain" cuma link teks kecil
               nyempil di dalam kotak peringatan amber di atas, gampang
               kelewat. Sekarang ukurannya disamain sama "Proses Pembagian",
@@ -1057,37 +1085,40 @@ const PembagianRuanganTab = ({
               bukan cuma beda ukuran).
 
               Tombol MERAH sengaja DISEMBUNYIIN pas tabAktif === "preview"
-              (halaman "Preview Per Ruangan" yang diakses lewat tabPaksa dari
-              JadwalRuanganTab.js) -- di situ gak ada tab switcher buat pindah
-              balik ke tab "Pembagian Ruangan" (disembunyiin selama tabPaksa
-              kepasang), jadi kalau tombol reset-destruktif ini nongol di
-              sana, admin yang cuma mau LIAT daftar peserta per ruangan bisa
-              gak sengaja mencet tombol yang bakal ngehapus data tersimpan. */}
-              <div className="flex flex-wrap gap-3">
-                <button
-                  onClick={handleProses}
-                  disabled={memproses || memuatTersimpan || !versiSkemaValid(versiSkema)}
-                  title={
-                    versiSkemaValid(versiSkema) ? undefined : "Pilih versi algoritma pembagian dulu"
-                  }
-                  className="flex items-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 text-white text-sm font-medium rounded-xl transition-all active:scale-95"
-                >
-                  <RefreshCw size={16} className={memproses ? "animate-spin" : ""} />
-                  {memproses ? "Memproses..." : "Proses Pembagian (Preview)"}
-                </button>
-
-                {versiSkemaTerkunci && tabAktif !== "preview" && (
+              ATAU "denah" (halaman "Preview Per Ruangan" / "Denah Duduk"
+              yang diakses lewat tabPaksa dari JadwalRuanganTab.js) -- di
+              situ gak ada tab switcher buat pindah balik ke tab "Pembagian
+              Ruangan" (disembunyiin selama tabPaksa kepasang), jadi kalau
+              tombol reset-destruktif ini nongol di sana, admin yang cuma
+              mau LIAT daftar/denah peserta per ruangan bisa gak sengaja
+              mencet tombol yang bakal ngehapus data tersimpan. */}
+                <div className="flex flex-wrap gap-3">
                   <button
-                    onClick={handleBukaProsesUlangModal}
-                    className="flex items-center gap-2 px-4 py-2.5 bg-red-600 hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-600 text-white text-sm font-medium rounded-xl transition-all active:scale-95"
+                    onClick={handleProses}
+                    disabled={memproses || memuatTersimpan || !versiSkemaValid(versiSkema)}
+                    title={
+                      versiSkemaValid(versiSkema)
+                        ? undefined
+                        : "Pilih versi algoritma pembagian dulu"
+                    }
+                    className="flex items-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 text-white text-sm font-medium rounded-xl transition-all active:scale-95"
                   >
-                    <Unlock size={16} />
-                    Proses Ulang dengan Versi Lain
+                    <RefreshCw size={16} className={memproses ? "animate-spin" : ""} />
+                    {memproses ? "Memproses..." : "Proses Pembagian (Preview)"}
                   </button>
-                )}
-              </div>
-            </>
-          )}
+
+                  {versiSkemaTerkunci && tabAktif !== "preview" && tabAktif !== "denah" && (
+                    <button
+                      onClick={handleBukaProsesUlangModal}
+                      className="flex items-center gap-2 px-4 py-2.5 bg-red-600 hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-600 text-white text-sm font-medium rounded-xl transition-all active:scale-95"
+                    >
+                      <Unlock size={16} />
+                      Proses Ulang dengan Versi Lain
+                    </button>
+                  )}
+                </div>
+              </>
+            )}
 
           {/* Mode "peserta": nggak ada tombol proses, jadi kasih tau statusnya
           langsung -- lagi narik data, atau emang belum pernah disimpan. */}
@@ -1388,6 +1419,138 @@ const PembagianRuanganTab = ({
                 </div>
               )}
 
+              {/* Tab "Denah Duduk" -- read-only, sama sumber data kayak tab
+              "Preview" (hasilLive + petaNoPeserta, diurutkan no_kursi),
+              cuma disusun jadi GRID kursi (representasi visual posisi
+              duduk fisik) bukan tabel daftar. "Jumlah Kolom" murni
+              pengaturan tampilan (lihat komentar di state
+              jumlahKolomDenah) -- admin nyesuaiin sendiri sama bentuk
+              ruangan aslinya. Kursi No. 1 = pojok kiri atas grid = paling
+              deket "DEPAN / PAPAN TULIS", lanjut row-major (baris demi
+              baris) ngikutin urutan no_kursi hasil algoritma pembagian. */}
+              {tabAktif === "denah" && (
+                <div className="mb-5">
+                  {quotaPerRuangan.length === 0 ? (
+                    <p className="text-sm text-gray-500 dark:text-gray-400 italic">
+                      Belum ada ruangan.
+                    </p>
+                  ) : (
+                    (() => {
+                      const ruangDipilih =
+                        quotaPerRuangan.find((r) => r.nomor_ruangan === ruanganDenahAktif) ||
+                        quotaPerRuangan[0];
+                      const siswaRuanganIni =
+                        hasilLive.find((h) => h.nomor_ruangan === ruangDipilih.nomor_ruangan)
+                          ?.siswa || [];
+                      const siswaTerurut = [...siswaRuanganIni].sort(
+                        (a, b) => (a.no_kursi || 0) - (b.no_kursi || 0)
+                      );
+                      const kolom = Math.max(1, jumlahKolomDenah || 1);
+
+                      return (
+                        <>
+                          <div className="flex flex-wrap items-end gap-4 mb-4">
+                            <div>
+                              <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1.5">
+                                Pilih Ruangan
+                              </label>
+                              <select
+                                value={ruangDipilih.nomor_ruangan}
+                                onChange={(e) => setRuanganDenahAktif(Number(e.target.value))}
+                                className="w-full sm:w-64 px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100"
+                              >
+                                {quotaPerRuangan.map((r) => (
+                                  <option key={r.nomor_ruangan} value={r.nomor_ruangan}>
+                                    Ruang {String(r.nomor_ruangan).padStart(2, "0")}
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+
+                            <div>
+                              <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1.5">
+                                Jumlah Kolom
+                              </label>
+                              <input
+                                type="number"
+                                min={1}
+                                // sama pola kayak input Kapasitas -- value dikosongin
+                                // (bukan "0") pas lagi 0/kosong, biar admin bisa clear
+                                // & ngetik ulang tanpa nempelin "0" di depan.
+                                value={jumlahKolomDenah === 0 ? "" : jumlahKolomDenah}
+                                onChange={(e) => {
+                                  const nilai = e.target.value;
+                                  setJumlahKolomDenah(nilai === "" ? 0 : Number(nilai));
+                                }}
+                                className="w-24 px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100"
+                              />
+                            </div>
+                          </div>
+
+                          <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-5">
+                            <div className="text-center mb-4 pb-3 border-b border-gray-100 dark:border-gray-700">
+                              <p className="text-sm font-semibold text-gray-800 dark:text-gray-100">
+                                DENAH DUDUK — RUANG{" "}
+                                {String(ruangDipilih.nomor_ruangan).padStart(2, "0")}
+                              </p>
+                              {labelTahunAjaranAktif && (
+                                <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
+                                  {(JENIS_UJIAN_LABEL[jenisUjian] || jenisUjian).toUpperCase()} —
+                                  TAHUN AJARAN {labelTahunAjaranAktif}
+                                </p>
+                              )}
+                            </div>
+
+                            {siswaTerurut.length === 0 ? (
+                              <p className="text-sm text-gray-400 italic">
+                                Belum ada siswa di ruangan ini.
+                              </p>
+                            ) : (
+                              <>
+                                <p className="text-center text-xs font-semibold tracking-widest text-gray-400 dark:text-gray-500 mb-3">
+                                  — DEPAN / PAPAN TULIS —
+                                </p>
+
+                                <div
+                                  className="grid gap-2.5"
+                                  style={{
+                                    gridTemplateColumns: `repeat(${kolom}, minmax(0, 1fr))`,
+                                  }}
+                                >
+                                  {siswaTerurut.map((s, idx) => (
+                                    <div
+                                      key={s.id}
+                                      className="rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800/60 p-2.5 text-center"
+                                    >
+                                      <p className="text-[10px] font-medium text-gray-400 dark:text-gray-500">
+                                        Kursi {idx + 1}
+                                      </p>
+                                      <p className="text-sm font-bold text-gray-900 dark:text-white">
+                                        {petaNoPeserta.get(String(s.id)) || "-"}
+                                      </p>
+                                      <p className="text-xs font-semibold text-gray-800 dark:text-gray-100 truncate mt-0.5">
+                                        {s.nama || "-"}
+                                      </p>
+                                      <p className="text-[10px] text-gray-500 dark:text-gray-400">
+                                        {s.asal_kelas || "-"}
+                                      </p>
+                                    </div>
+                                  ))}
+                                </div>
+
+                                <p className="text-right text-sm text-gray-500 dark:text-gray-400 mt-3">
+                                  {siswaRuanganIni.length} siswa
+                                </p>
+                              </>
+                            )}
+                          </div>
+                        </>
+                      );
+                    })()
+                  )}
+                </div>
+              )}
+
               {tabAktif === "export" && (
                 <div className="mb-5">
                   <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">
@@ -1455,23 +1618,29 @@ const PembagianRuanganTab = ({
                         {JENIS_UJIAN_LABEL[jenisUjian]?.split(" - ")[1] || jenisUjian}
                       </span>
                       , Tahun Ajaran {labelTahunAjaranAktif || "-"}, nomor ruangan, lalu tabel: No,
-                      Nama Peserta, No. Peserta, NIS.
+                      No. Peserta, Nama Peserta, Kelas -- sama persis kayak tab Preview Per Ruangan.
                     </p>
                   </div>
                 </div>
               )}
 
-              {!modePeserta && !quotaValid && (
+              {/* Warning "belum pas" & tombol Simpan SENGAJA cuma muncul di
+              tab "edit" (Pembagian Ruangan) -- itu satu-satunya tempat baris
+              "Target" ada & satu-satunya tempat quota beneran diubah. Di tab
+              "preview"/"export" datanya cuma dibaca (read-only/cetak), jadi
+              kalau 2 elemen ini ikut nongol di situ cuma bikin bingung: warning
+              nunjuk ke baris Target yang gak ada di layar, dan tombol Simpan
+              serasa ada yang perlu disimpan padahal enggak. Sama alasannya
+              kayak tombol merah "Proses Ulang dengan Versi Lain" di atas yang
+              udah lebih dulu disembunyiin pas preview/export. */}
+              {!modePeserta && tabAktif === "edit" && !quotaValid && (
                 <p className="text-xs text-red-600 dark:text-red-400 mb-3">
                   Total per kelas belum pas dengan jumlah siswa aktif -- cek baris "Target" di atas
                   (kolom yang merah berarti belum sesuai).
                 </p>
               )}
 
-              {/* Tombol simpan sengaja cuma ada di mode penyusunan. Di kartu
-              "Daftar & Jadwal Pengawas" yang tampil adalah data yang SUDAH
-              tersimpan, jadi nggak ada yang perlu disimpan lagi dari sana. */}
-              {!modePeserta && (
+              {!modePeserta && tabAktif === "edit" && (
                 <button
                   onClick={handleSimpan}
                   disabled={menyimpan || !quotaValid}
