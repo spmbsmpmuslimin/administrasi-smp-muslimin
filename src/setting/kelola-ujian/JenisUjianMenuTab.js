@@ -5,7 +5,7 @@
 // supaya query/filter siswa & kapasitas default otomatis sesuai (lihat
 // KONFIGURASI_JENIS_UJIAN di pembagianRuanganSupabase.js).
 //
-// Skema kartu (lihat dokumentasi "dokumentasi-kelola-ujian.md"):
+// Skema Kartu (lihat dokumentasi "dokumentasi-kelola-ujian.md"):
 // 1. Jadwal, Peserta & Pembagian Ruangan (aktif, sebelumnya bernama "Jadwal
 //    & Pembagian Ruangan" -- diganti karena Export Daftar Peserta udah
 //    pindah ke kartu ini) -- 5 tab: Jadwal Sesi, Komposisi Ruangan,
