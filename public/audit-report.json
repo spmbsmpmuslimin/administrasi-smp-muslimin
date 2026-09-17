@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-09-16T14:25:51.358Z",
-  "executionTimeMs": 3545,
-  "filesScanned": 301,
+  "generatedAt": "2026-09-17T14:20:38.974Z",
+  "executionTimeMs": 1903,
+  "filesScanned": 303,
   "summary": {
     "status": "warning",
     "criticalCount": 0,
@@ -39,17 +39,18 @@
       "issues": [
         {
           "severity": "info",
-          "title": "5903 class warna (di 204 file) kemungkinan belum dark-mode-aware",
+          "title": "5962 class warna (di 204 file) kemungkinan belum dark-mode-aware",
           "description": "Ini backlog, bukan berarti semua salah — bisa aja file itu emang belum kena giliran migrasi theme-*, atau sengaja gak butuh dark mode (misal komponen buat print/PDF). Diurutin dari file paling banyak class polos-nya, biar keliatan mana yang paling worth dibenerin duluan. Heuristik regex, review manual tetep perlu.",
           "details": [
             "src/setting/school-management/TeacherAssignmentTab.js — 167 class belum ada dark: variant",
             "src/components/AdminDashboard.js — 149 class belum ada dark: variant",
+            "src/setting/kelola-ujian/pembagian-ruangan/PembagianRuanganTab.js — 134 class belum ada dark: variant",
             "src/spmb/ClassDivision.js — 124 class belum ada dark: variant",
             "src/spmb/StudentForm.js — 120 class belum ada dark: variant",
             "src/pages/CatatanSiswa.js — 118 class belum ada dark: variant",
             "src/system/StrukturSistem.js — 111 class belum ada dark: variant",
-            "src/setting/kelola-ujian/pembagian-ruangan/PembagianRuanganTab.js — 109 class belum ada dark: variant",
             "src/pages/grades/Grades.js — 108 class belum ada dark: variant",
+            "src/setting/kelola-ujian/jadwal-pengawas/JadwalPengawasTab.js — 106 class belum ada dark: variant",
             "src/pages/grades/GradesKatrol.js — 88 class belum ada dark: variant",
             "src/spmb/StudentList.js — 87 class belum ada dark: variant",
             "src/setting/UserManagementTab.js — 86 class belum ada dark: variant",
@@ -58,7 +59,6 @@
             "src/pages/attendance/AttendanceManagement.js — 81 class belum ada dark: variant",
             "src/pages/datasiswa-induk/DataSiswaIndukListTab.js — 76 class belum ada dark: variant",
             "src/pages/datasiswa-induk/DataSiswaIndukDetailPanel.js — 75 class belum ada dark: variant",
-            "src/setting/kelola-ujian/jadwal-pengawas/JadwalPengawasTab.js — 75 class belum ada dark: variant",
             "src/components/TeacherDashboard.js — 71 class belum ada dark: variant",
             "src/reports/modals/BKReportModal.js — 71 class belum ada dark: variant",
             "src/attendance-teacher/reports/ITMReport.js — 67 class belum ada dark: variant",
@@ -117,7 +117,7 @@
             "src/reports/ReportHelpers.js:302 → select(\"*, classes(grade)\")",
             "src/setting/academic/YearTransition.js:392 → select(\"id, full_name, nis, nisn, class_id, student_profile_details ( jenis_kelamin, tempat_lahir,\")",
             "src/setting/kelola-ujian/dokumen-cetak/kartuUjianSupabase.js:25 → select(\"no_peserta, asal_kelas, students(full_name, nis)\")",
-            "src/setting/kelola-ujian/pembagian-ruangan/pembagianRuanganSupabase.js:252 → select(\"nomor_ruangan, no_peserta, asal_kelas, siswa_id, students(id, full_name, nis)\")",
+            "src/setting/kelola-ujian/pembagian-ruangan/pembagianRuanganSupabase.js:284 → select(\"nomor_ruangan, no_peserta, asal_kelas, siswa_id, students(id, full_name, nis)\")",
             "src/setting/school-management/SiswaLulusTab.js:549 → select(\"id, tahun_lulus, kelas_terakhir, academic_year_id, academic_years(id, year, semester, star\")",
             "src/setting/school-management/SiswaLulusTab.js:596 → select(\"*, academic_years(id, year, semester, start_date)\")",
             "src/setting/school-management/SiswaLulusTab.js:659 → select(\"*, academic_years(id, year, semester, start_date)\")"
@@ -163,7 +163,7 @@
             "src/setting/academic/AcademicYearTab.js:167 → select(\"id, nis, full_name, gender, class_id, is_active, academic_year_id, classes:class_id ( id, \")",
             "src/setting/academic/AcademicYearTab.js:211 → select(\"id, nis, full_name, gender, class_id, is_active, classes:class_id ( id, grade )\")",
             "src/setting/feedback/FeedbackGuruTab.js:23 → select(\"*, guru:users!feedback_guru_guru_id_fkey ( full_name, username )\")",
-            "src/setting/kelola-ujian/jadwal-pengawas/jadwalPengawasSupabase.js:118 → select(\"id, jadwal_id, nomor_ruangan, guru_id, users:guru_id (full_name)\")",
+            "src/setting/kelola-ujian/jadwal-pengawas/jadwalPengawasSupabase.js:146 → select(\"id, jadwal_id, nomor_ruangan, guru_id, users:guru_id (full_name)\")",
             "src/system/ActiveUsersTab.js:96 → select(\"id, username, is_active, last_login, students:student_id(full_name, nis, nisn, class_id, a\")",
             "src/system/checkers/BusinessLogicChecker.js:241 → select(\"id, date, students!inner(is_active, full_name)\")",
             "src/system/checkers/BusinessLogicChecker.js:302 → select(\"id, created_at, students!inner(is_active, full_name)\")",
@@ -222,16 +222,14 @@
       "issues": [
         {
           "severity": "warning",
-          "title": "8 tabel di Supabase gak pernah dipanggil lewat .from() di frontend",
+          "title": "6 tabel di Supabase gak pernah dipanggil lewat .from() di frontend",
           "description": "Ditarik langsung dari skema live Supabase (bukan strukturfile.txt), lalu dicocokin ke SEMUA file src/. Kandidat tabel 'mati' -- fitur yang udah dihapus/dipindah, atau tabel yang emang cuma diakses lewat Supabase Edge Function/RPC/database function (gak kelihatan dari static analysis kode frontend ini, jadi cek dulu manual sebelum drop tabelnya).",
           "details": [
             "academic_events",
             "attendance_eraport",
-            "attendances_view",
             "event_categories",
             "kaldik_documents",
             "spp_receipt_counters",
-            "teacher_attendance_view",
             "tindaklanjut_homevisits"
           ]
         },

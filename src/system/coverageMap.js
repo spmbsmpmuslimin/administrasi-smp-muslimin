@@ -58,15 +58,6 @@ export const tableCoverage = {
     delete: true,
     notes: "",
   },
-  attendances_view: {
-    page: "pages/attendance/AttendanceTable.js",
-    create: false,
-    read: false,
-    update: false,
-    delete: false,
-    notes:
-      "HASIL SCAN: VIEW ini tidak pernah di-query manapun. Attendance.js query tabel 'attendances' langsung, AttendanceTable.js cuma presentational. Kemungkinan view mati/gak kepake.",
-  },
   catatan_eraport: {
     page: "e-raport/InputCatatan.js",
     create: true,
@@ -256,15 +247,6 @@ export const tableCoverage = {
     update: true,
     delete: false,
     notes: "",
-  },
-  teacher_attendance_view: {
-    page: "attendance-teacher/AdminAttendanceView.js",
-    create: false,
-    read: false,
-    update: false,
-    delete: false,
-    notes:
-      "HASIL SCAN: VIEW ini tidak pernah di-query manapun. Report anak AdminAttendanceView.js (DailySummary/MonthlyView/ITMReport) query tabel 'teacher_attendance' langsung. Kemungkinan view mati/gak kepake.",
   },
   teacher_schedules: {
     page: "pages/TeacherSchedule.js",

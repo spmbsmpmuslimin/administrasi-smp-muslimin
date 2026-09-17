@@ -1,9 +1,9 @@
 STRUKTUR SISTEM
-Di-download dari UI: 16 Sep 2026, 21.27
+Di-download dari UI: 17 Sep 2026, 21.21
 
 ======================================================================
 STRUKTUR PROJECT (src/)
-Terakhir di-generate: 16 Sep 2026, 21.25
+Terakhir di-generate: 17 Sep 2026, 21.20
 ======================================================================
 |-- src
 |   |-- assets
@@ -260,6 +260,7 @@ Terakhir di-generate: 16 Sep 2026, 21.25
 |   |   |   |   |-- PembagianRuanganTab.js
 |   |   |   |   |-- bagiRuangan.js
 |   |   |   |   |-- bagiRuanganPerJenjang.js
+|   |   |   |   |-- bagiRuanganSilangJenjang.js
 |   |   |   |   |-- daftarPesertaExcelExport.js
 |   |   |   |   |-- daftarPesertaPdfExport.js
 |   |   |   |   |-- noPeserta.js
@@ -340,6 +341,7 @@ Terakhir di-generate: 16 Sep 2026, 21.25
 |   |   `-- debugLog.js
 |   |-- utils
 |   |   |-- deviceInfo.js
+|   |   |-- escapeHtml.js
 |   |   |-- excelExportKit.js
 |   |   |-- offlineHelper.js
 |   |   |-- pdfExportKit.js
@@ -356,7 +358,7 @@ Terakhir di-generate: 16 Sep 2026, 21.25
 
 ======================================================================
 STRUKTUR DATABASE
-Terakhir di-generate: 16 Sep 2026, 21.25
+Terakhir di-generate: 17 Sep 2026, 21.20
 ======================================================================
 ## Daftar Tabel Database Supabase
 academic_events : id,title,category_id,start_date,end_date,description,academic_year,semester,created_by,created_at,updated_at
@@ -367,7 +369,6 @@ announcement_reads : id,announcement_id,user_id,read_at,created_at
 app_config : id,is_maintenance,maintenance_message,updated_at
 attendance_eraport : id,student_id,class_id,academic_year_id,semester,sakit,izin,alpa,catatan,is_locked,created_at,updated_at,created_by,updated_by
 attendances : id,student_id,teacher_id,date,subject,status,created_at,notes,class_id,type,academic_year_id,semester
-attendances_view : date,class_id,subject,status,notes,type
 audit_logs : id,user_id,action,target_user_id,target_user_name,details,created_at
 buku : id,judul,penulis,penerbit,tahun,isbn,kategori,rak,total_eksemplar,created_at,updated_at
 buku_dengan_stok : id,judul,penulis,penerbit,tahun,isbn,kategori,rak,total_eksemplar,created_at,updated_at,dipinjam,tersedia
@@ -425,14 +426,13 @@ students : id,full_name,nis,gender,class_id,academic_year,is_active,created_at,u
 system_health_logs : id,checked_at,checked_by,total_issues,critical_count,warning_count,info_count,issues_detail,execution_time,status,created_at
 teacher_assignments : id,teacher_id,class_id,subject,academic_year,semester,created_at,academic_year_id,updated_at
 teacher_attendance : id,teacher_id,attendance_date,status,clock_in,check_in_method,notes,created_at,updated_at,gps_location,is_suspicious,full_name,admin_info,academic_year_id
-teacher_attendance_view : teacher_id,full_name,status,attendance_date,clock_in,check_in_method
 teacher_codes : id,academic_year,code,teacher_name,subject,note,created_at,updated_at,teacher_id,weekly_hours
 teacher_profiles : id,teacher_id,nuptk,jenis_kelamin,tempat_lahir,tanggal_lahir,alamat,pendidikan_terakhir,foto_url,created_at,updated_at
 teacher_schedules : id,teacher_id,day,start_time,end_time,class_id,room_number,created_at,updated_at,academic_year_id,subject,source
 tindaklanjut_homevisits : id,home_visit_id,jenis,status,catatan,created_at,updated_at
 tujuan_pembelajaran : id,mata_pelajaran,tingkat,fase,deskripsi_tp,urutan,academic_year_id,semester,created_at,updated_at,is_active
 ujian : id,jenis,academic_year_id,status,kapasitas_ruangan,created_at,updated_at,versi_skema
-ujian_jadwal : id,ujian_id,tanggal,sesi_ke,waktu_mulai,waktu_selesai,mata_pelajaran,created_at
+ujian_jadwal : id,ujian_id,tanggal,sesi_ke,waktu_mulai,waktu_selesai,mata_pelajaran,created_at,mata_pelajaran_kelas9,mata_pelajaran_kelas8
 ujian_pengawas : id,jadwal_id,nomor_ruangan,guru_id,created_at
 user_devices : id,user_id,device_id,brand,model,platform,browser,last_login_at,created_at
 users : id,username,password,full_name,teacher_id,role,homeroom_class_id,is_active,created_at,updated_at,no_hp,last_login,last_activity,login_count,jabatan_struktural,is_blocked,kode_pengawas
