@@ -17,12 +17,15 @@ import {
  * Ambil peserta 1 ruangan tertentu lengkap dengan data siswa (nama, NIS),
  * diurutkan berdasarkan no_peserta -- urutan ini yang dipakai buat susunan
  * kartu di halaman PDF.
- * @returns {Promise<Array>} [{ no_peserta, nama, nis, kelas }]
+ * @returns {Promise<Array>} [{ no_peserta, nama, nis, nisn, kelas, jenisKelamin }]
  */
 async function ambilPesertaRuangan(supabase, ujianId, nomorRuangan) {
   const { data, error } = await supabase
     .from("peserta_ujian")
-    .select("no_peserta, asal_kelas, students(full_name, nis)")
+    // nisn & gender diambil dari `students` (sumber resmi terbaru -- BUKAN
+    // dari student_profile_details.nisn yang legacy, lihat catatan di
+    // DataSiswaIndukConfig.js).
+    .select("no_peserta, asal_kelas, students(full_name, nis, nisn, gender)")
     .eq("ujian_id", ujianId)
     .eq("nomor_ruangan", nomorRuangan)
     .order("no_peserta", { ascending: true });
@@ -33,7 +36,12 @@ async function ambilPesertaRuangan(supabase, ujianId, nomorRuangan) {
     no_peserta: row.no_peserta,
     nama: row.students?.full_name || "-",
     nis: row.students?.nis || "-",
+    nisn: row.students?.nisn || "-",
     kelas: row.asal_kelas || "-",
+    // gender di tabel students isinya "L"/"P" (bukan kata penuh) --
+    // konversi di sini biar pemanggil (kartuUjianPdf.js) tinggal pakai
+    // langsung, samain pola sama jenis_kelamin di StudentList.js.
+    jenisKelamin: row.students?.gender === "L" ? "Laki-laki" : row.students?.gender === "P" ? "Perempuan" : "-",
   }));
 }
 

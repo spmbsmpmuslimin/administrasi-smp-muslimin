@@ -147,7 +147,11 @@ function gambarSatuKartu(
   };
   const labelOptsPenuh = {
     x: innerLeft,
-    labelWidth: 15,
+    // 22 (SEBELUMNYA 15) -- dinaikin pas nambahin baris "Jenis Kelamin"
+    // (Sep 2026), label terpanjang di baris penuh. labelWidth 15 cukup
+    // buat "Kelas"/"NIS"/"NISN" tapi bikin titik dua nabrak/numpuk di atas
+    // teks "Jenis Kelamin" yang lebih panjang.
+    labelWidth: 22,
     maxWidth: innerRight - innerLeft,
     lineHeight: 3.2,
   };
@@ -158,6 +162,8 @@ function gambarSatuKartu(
   const barisPenuh = [
     ["Kelas", peserta.kelas],
     ["NIS", peserta.nis],
+    ["NISN", peserta.nisn],
+    ["Jenis Kelamin", peserta.jenisKelamin],
   ];
   cy += 1.5;
   barisSempit.forEach(([label, value]) => {
@@ -192,7 +198,7 @@ function gambarSatuKartu(
  * Generate & langsung download PDF kartu ujian untuk 1 ruangan.
  *
  * @param {Object} opts
- * @param {Array} opts.daftarPeserta - dari ambilPesertaRuangan(): [{no_peserta, nama, nis, kelas}]
+ * @param {Array} opts.daftarPeserta - dari ambilPesertaRuangan(): [{no_peserta, nama, nis, nisn, kelas, jenisKelamin}]
  * @param {string} opts.jenisUjian - "PSAS" | "PSAT" | "PSAJ"
  * @param {string} opts.tahunAjaran - format "2026/2027"
  * @param {number} opts.nomorRuangan
