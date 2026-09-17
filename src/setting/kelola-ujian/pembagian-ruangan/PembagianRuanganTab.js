@@ -817,8 +817,11 @@ const PembagianRuanganTab = ({
 
         {/* Kapasitas cuma relevan waktu MENYUSUN ruangan. Di mode "peserta"
         (kartu Peserta & Pengawas) datanya read-only dari DB, jadi field ini
-        disembunyiin biar nggak bikin ngira bisa diubah dari sini. */}
-        {!modePeserta && (
+        disembunyiin biar nggak bikin ngira bisa diubah dari sini. Sama
+        alasannya field ini disembunyiin pas tabAktif === "preview" --
+        "Preview Per Ruangan" itu preview data yang UDAH diproses & disimpan
+        sebelumnya, kapasitas gak ngaruh apa-apa lagi di situ. */}
+        {!modePeserta && tabAktif !== "preview" && (
           <div>
             <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
               Kapasitas per Ruangan
@@ -957,9 +960,14 @@ const PembagianRuanganTab = ({
       {viewAktif === "pembagian" && (
         <>
           {/* Semua kontrol PENYUSUNAN (versi algoritma + tombol proses) cuma
-          muncul di mode "ruangan"/"full". Di kartu "Peserta & Pengawas"
-          (mode "peserta") data cuma dibaca dari DB, nggak diproses ulang. */}
-          {!modePeserta && (
+          muncul di mode "ruangan"/"full", dan CUMA di tab "edit" (halaman
+          "Pembagian Ruangan" yang sebenernya nyusun/nyimpen). Di kartu
+          "Peserta & Pengawas" (mode "peserta") data cuma dibaca dari DB,
+          nggak diproses ulang -- dan di tab "preview" ("Preview Per
+          Ruangan") halamannya cuma nampilin hasil yang UDAH diproses &
+          disimpan sebelumnya, jadi kontrol milih versi/kapasitas/tombol
+          proses di sini gak relevan lagi & cuma bikin bingung. */}
+          {!modePeserta && tabAktif !== "preview" && (
             <>
               {/* Versi algoritma -- terkunci begitu ujian ini punya record tersimpan
               (lihat versiSkemaTerkunci), karena versi_skema cuma boleh dipilih

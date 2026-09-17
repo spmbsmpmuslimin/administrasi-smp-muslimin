@@ -2,14 +2,14 @@
 // Sub-fitur "Anggaran & Biaya" -- catat rencana anggaran & realisasi biaya
 // per pos (ATK, konsumsi, honor pengawas, dst) untuk 1 ujian.
 //
-// Pola alur (pilih tahun ajaran -> getOrCreateUjian) disamakan dengan
+// Pola alur (pilih tahun ajaran -> cariUjian) disamakan dengan
 // sub-fitur lain (PembagianRuanganTab.js, KartuUjianTab.js, dst) supaya
 // UX-nya konsisten di seluruh Manajemen Ujian.
 
 import React, { useState, useEffect, useCallback } from "react";
 import { ChevronLeft, Plus, Trash2, Pencil, Loader2, Wallet, X, Check } from "lucide-react";
 import { supabase } from "../../../supabaseClient";
-import { ambilDaftarTahunAjaran, getOrCreateUjian } from "../pembagian-ruangan/pembagianRuanganSupabase";
+import { ambilDaftarTahunAjaran, cariUjian } from "../pembagian-ruangan/pembagianRuanganSupabase";
 import {
   ambilAnggaran,
   tambahAnggaran,
@@ -88,7 +88,7 @@ const AnggaranBiayaTab = ({ jenisUjian, showToast, onBack }) => {
     (async () => {
       setLoadingUjian(true);
       try {
-        const rec = await getOrCreateUjian(supabase, jenisUjian, tahunAjaranId);
+        const rec = await cariUjian(supabase, jenisUjian, tahunAjaranId);
         if (!cancelled) setUjian(rec);
       } catch (err) {
         console.error(err);
@@ -237,6 +237,13 @@ const AnggaranBiayaTab = ({ jenisUjian, showToast, onBack }) => {
         <p className="text-xs text-gray-400 flex items-center gap-1.5 mb-4">
           <Loader2 size={14} className="animate-spin" /> Memuat data...
         </p>
+      )}
+
+      {!ujian && !loadingUjian && tahunAjaranId && (
+        <div className="p-3 mb-5 text-xs bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl text-amber-700 dark:text-amber-300">
+          Data ujian untuk tahun ajaran ini belum diproses. Proses dulu{" "}
+          <strong>Pembagian Ruangan</strong> (pilih versi skema & simpan) sebelum lanjut ke sini.
+        </div>
       )}
 
       {ujian && !loadingPos && (

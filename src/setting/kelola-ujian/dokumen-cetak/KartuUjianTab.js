@@ -12,7 +12,7 @@ import {
   getOrCreateUjian,
   KONFIGURASI_JENIS_UJIAN,
 } from "../pembagian-ruangan/pembagianRuanganSupabase";
-import { ambilRuanganUjian } from "../jadwal-pengawas/jadwalPengawasSupabase";
+import { ambilRuanganUjian, ambilJadwalSesi } from "../jadwal-pengawas/jadwalPengawasSupabase";
 import {
   ambilPesertaRuangan,
   ambilJadwalPengawasPerGuru,
@@ -137,14 +137,24 @@ const KartuUjianTab = ({ jenisUjian, showToast, onBack }) => {
 
     setMencetakRuangan(nomorRuangan);
     try {
-      const [daftarPeserta, kepsek] = await Promise.all([
+      const [daftarPeserta, kepsek, daftarJadwal] = await Promise.all([
         ambilPesertaRuangan(supabase, ujian.id, nomorRuangan),
         ambilMetadataKepsek(supabase),
+        ambilJadwalSesi(supabase, ujian.id),
       ]);
 
       if (kepsek.nama === "-") {
         showToast?.(
           "Nama kepala sekolah belum diisi di Setting > Profil Sekolah -- kartu tetap dicetak, tapi kolom nama kepsek kosong",
+          "error"
+        );
+      }
+      // daftarJadwal boleh kosong (tab "Jadwal Sesi" belum diisi) -- kartu
+      // tetap kecetak, cuma sisi belakang (jadwal + paraf pengawas) gak
+      // ditambahin (lihat generateKartuPesertaPdf()).
+      if (!daftarJadwal || daftarJadwal.length === 0) {
+        showToast?.(
+          "Jadwal ujian belum diisi di tab \"Jadwal Sesi\" -- kartu tetap dicetak 1 sisi (tanpa halaman jadwal di belakang)",
           "error"
         );
       }
@@ -155,6 +165,7 @@ const KartuUjianTab = ({ jenisUjian, showToast, onBack }) => {
         tahunAjaran: labelTahunAjaran(ta),
         nomorRuangan,
         kepsek,
+        daftarJadwal,
       });
       showToast?.(`Kartu peserta ruangan ${nomorRuangan} berhasil dicetak`, "success");
     } catch (err) {

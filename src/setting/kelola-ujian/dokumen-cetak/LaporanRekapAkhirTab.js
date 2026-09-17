@@ -40,7 +40,7 @@ import {
 import { supabase } from "../../../supabaseClient";
 import {
   ambilDaftarTahunAjaran,
-  getOrCreateUjian,
+  cariUjian,
   KONFIGURASI_JENIS_UJIAN,
 } from "../pembagian-ruangan/pembagianRuanganSupabase";
 import {
@@ -183,8 +183,7 @@ const LaporanRekapAkhirTab = ({ jenisUjian, showToast, onBack }) => {
     (async () => {
       setLoadingUjian(true);
       try {
-        const kapasitasDefault = KONFIGURASI_JENIS_UJIAN[jenisUjian]?.defaultKapasitas || 40;
-        const rec = await getOrCreateUjian(supabase, jenisUjian, tahunAjaranId, kapasitasDefault);
+        const rec = await cariUjian(supabase, jenisUjian, tahunAjaranId);
         if (!cancelled) setUjian(rec);
       } catch (err) {
         console.error(err);
@@ -399,6 +398,13 @@ const LaporanRekapAkhirTab = ({ jenisUjian, showToast, onBack }) => {
         <p className="text-xs text-gray-400 flex items-center gap-1.5 mb-4">
           <Loader2 size={14} className="animate-spin" /> Memuat rekap...
         </p>
+      )}
+
+      {!ujian && !loadingUjian && tahunAjaranId && (
+        <div className="p-3 mb-5 text-xs bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl text-amber-700 dark:text-amber-300">
+          Data ujian untuk tahun ajaran ini belum diproses. Proses dulu{" "}
+          <strong>Pembagian Ruangan</strong> (pilih versi skema & simpan) sebelum lanjut ke sini.
+        </div>
       )}
 
       {ujian && !loadingRekap && !activeItem && (

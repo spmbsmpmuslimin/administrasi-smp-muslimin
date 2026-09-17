@@ -34,7 +34,7 @@ import {
 import { supabase } from "../../../supabaseClient";
 import {
   ambilDaftarTahunAjaran,
-  getOrCreateUjian,
+  cariUjian,
   KONFIGURASI_JENIS_UJIAN,
 } from "../pembagian-ruangan/pembagianRuanganSupabase";
 import {
@@ -201,9 +201,14 @@ const JadwalPengawasTab = ({ jenisUjian, showToast, onBack, tabPaksa = null }) =
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [daftarTahunAjaran]);
 
-  // Begitu tahun ajaran fix, ambil/bikin record `ujian` (idempotent, sama
-  // seperti Peserta & Pengawas -- kapasitas default cuma dipakai kalau
-  // admin buka Jadwal & Pembagian Ruangan duluan sebelum Peserta & Pengawas).
+  // Begitu tahun ajaran fix, CARI record `ujian` yang udah ada (bukan bikin
+  // baru -- tab ini cuma konsumen data pembagian ruangan, bukan yang
+  // nentuin versi_skema). Record `ujian` mestinya udah dibikin lewat tab
+  // "Pembagian Ruangan" (yang minta admin pilih versi skema secara
+  // eksplisit sebelum simpan). Kalau belum ada, `ujian` tetap null dan UI
+  // di bawah ngasih tau admin buat proses Pembagian Ruangan dulu -- BUKAN
+  // diam-diam bikin record kosong tanpa versi (itu yang dulu nyebabin
+  // error "Versi skema pembagian belum dipilih").
   useEffect(() => {
     if (!tahunAjaranId) {
       setUjian(null);
@@ -213,8 +218,7 @@ const JadwalPengawasTab = ({ jenisUjian, showToast, onBack, tabPaksa = null }) =
     (async () => {
       setLoadingUjian(true);
       try {
-        const kapasitasDefault = KONFIGURASI_JENIS_UJIAN[jenisUjian]?.defaultKapasitas || 40;
-        const rec = await getOrCreateUjian(supabase, jenisUjian, tahunAjaranId, kapasitasDefault);
+        const rec = await cariUjian(supabase, jenisUjian, tahunAjaranId);
         if (!cancelled) setUjian(rec);
       } catch (err) {
         console.error(err);
@@ -620,6 +624,13 @@ const JadwalPengawasTab = ({ jenisUjian, showToast, onBack, tabPaksa = null }) =
         </p>
       )}
 
+      {!ujian && !loadingUjian && tahunAjaranId && (
+        <div className="p-3 mb-5 text-xs bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl text-amber-700 dark:text-amber-300">
+          Data ujian untuk tahun ajaran ini belum diproses. Proses dulu{" "}
+          <strong>Pembagian Ruangan</strong> (pilih versi skema & simpan) sebelum lanjut ke sini.
+        </div>
+      )}
+
       {ujian && !loadingData && (
         <>
           {daftarRuangan.length === 0 && (
@@ -687,52 +698,83 @@ const JadwalPengawasTab = ({ jenisUjian, showToast, onBack, tabPaksa = null }) =
                 <p className="text-xs text-gray-400 italic">Belum ada jadwal sesi.</p>
               ) : (
                 <div className="overflow-x-auto -mx-4 sm:mx-0 px-4 sm:px-0">
-                  <table className="w-full text-xs sm:text-sm border-collapse">
+                  <table className="w-full text-xs sm:text-sm border-collapse border border-gray-300 dark:border-gray-600">
                     <thead>
-                      <tr className="text-left text-gray-600 dark:text-gray-400">
-                        <th className="py-2 pr-3 font-medium">Hari/Tanggal</th>
-                        <th className="py-2 pr-3 font-medium">Jam Ke</th>
-                        <th className="py-2 pr-3 font-medium">Waktu</th>
-                        <th className="py-2 pr-3 font-medium">Mata Pelajaran</th>
-                        <th></th>
+                      <tr className="bg-gray-100 dark:bg-gray-800">
+                        <th
+                          rowSpan={2}
+                          className="border border-gray-300 dark:border-gray-600 py-3 px-3 font-bold text-sm sm:text-base text-center align-middle text-gray-800 dark:text-gray-100 whitespace-nowrap"
+                        >
+                          Hari/Tanggal
+                        </th>
+                        <th
+                          rowSpan={2}
+                          className="border border-gray-300 dark:border-gray-600 py-3 px-3 font-bold text-sm sm:text-base text-center align-middle text-gray-800 dark:text-gray-100 whitespace-nowrap"
+                        >
+                          Jam Ke
+                        </th>
+                        <th
+                          rowSpan={2}
+                          className="border border-gray-300 dark:border-gray-600 py-3 px-3 font-bold text-sm sm:text-base text-center align-middle text-gray-800 dark:text-gray-100 whitespace-nowrap"
+                        >
+                          Waktu
+                        </th>
+                        <th
+                          colSpan={gradesUjianIni.length}
+                          className="border border-gray-300 dark:border-gray-600 py-3 px-3 font-bold text-sm sm:text-base text-center align-middle text-gray-800 dark:text-gray-100 whitespace-nowrap"
+                        >
+                          Mata Pelajaran
+                        </th>
+                        <th
+                          rowSpan={2}
+                          className="border border-gray-300 dark:border-gray-600 py-3 px-3 font-bold text-sm sm:text-base text-center align-middle text-gray-800 dark:text-gray-100 whitespace-nowrap"
+                        >
+                          Aksi
+                        </th>
+                      </tr>
+                      <tr className="bg-gray-100 dark:bg-gray-800">
+                        {gradesUjianIni.map((g) => (
+                          <th
+                            key={g}
+                            className="border border-gray-300 dark:border-gray-600 py-2 px-3 font-bold text-sm sm:text-base text-center align-middle text-gray-800 dark:text-gray-100 whitespace-nowrap"
+                          >
+                            Kelas {g}
+                          </th>
+                        ))}
                       </tr>
                     </thead>
                     <tbody>
                       {jadwalTerurut.map((j, idx) => {
-                        const tanggalSama = idx > 0 && jadwalTerurut[idx - 1].tanggal === j.tanggal;
+                        const tanggalSama =
+                          idx > 0 && jadwalTerurut[idx - 1].tanggal === j.tanggal;
                         return (
-                          <tr key={j.id} className="border-t border-gray-100 dark:border-gray-700">
-                            <td className="py-2 pr-3 whitespace-nowrap text-gray-700 dark:text-gray-300">
+                          <tr
+                            key={j.id}
+                            className="odd:bg-white even:bg-gray-50 dark:odd:bg-gray-900 dark:even:bg-gray-800/40 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors"
+                          >
+                            <td className="border border-gray-200 dark:border-gray-700 py-2.5 px-3 align-top whitespace-nowrap text-gray-700 dark:text-gray-300">
                               {tanggalSama ? "" : formatHariTanggal(j.tanggal)}
                             </td>
-                            <td className="py-2 pr-3 text-gray-700 dark:text-gray-300">
+                            <td className="border border-gray-200 dark:border-gray-700 py-2.5 px-3 align-top text-center text-gray-700 dark:text-gray-300">
                               {j.sesi_ke}
                             </td>
-                            <td className="py-2 pr-3 whitespace-nowrap text-gray-700 dark:text-gray-300">
+                            <td className="border border-gray-200 dark:border-gray-700 py-2.5 px-3 align-top text-center whitespace-nowrap text-gray-700 dark:text-gray-300">
                               {j.waktu_mulai && j.waktu_selesai
                                 ? `${j.waktu_mulai}–${j.waktu_selesai}`
                                 : "-"}
                             </td>
-                            <td className="py-2 pr-3 font-medium text-gray-800 dark:text-gray-100">
-                              {j.mata_pelajaran_kelas8 || j.mata_pelajaran_kelas9 ? (
-                                <div className="space-y-0.5">
-                                  <div>Kelas 7: {j.mata_pelajaran}</div>
-                                  {gradesUjianIni.includes("8") && (
-                                    <div>
-                                      Kelas 8: {j.mata_pelajaran_kelas8 || j.mata_pelajaran}
-                                    </div>
-                                  )}
-                                  {gradesUjianIni.includes("9") && (
-                                    <div>
-                                      Kelas 9: {j.mata_pelajaran_kelas9 || j.mata_pelajaran}
-                                    </div>
-                                  )}
-                                </div>
-                              ) : (
-                                j.mata_pelajaran
-                              )}
-                            </td>
-                            <td className="py-2 text-right whitespace-nowrap">
+                            {gradesUjianIni.map((g) => {
+                              const mapel = mataPelajaranUntukJenjang(j, g);
+                              return (
+                                <td
+                                  key={g}
+                                  className="border border-gray-200 dark:border-gray-700 py-2.5 px-3 align-top text-center font-medium text-gray-800 dark:text-gray-100"
+                                >
+                                  {mapel}
+                                </td>
+                              );
+                            })}
+                            <td className="border border-gray-200 dark:border-gray-700 py-2.5 px-3 align-top text-center whitespace-nowrap">
                               <button
                                 onClick={() => openEditJadwal(j)}
                                 className="text-indigo-600 dark:text-indigo-400 hover:underline mr-3"

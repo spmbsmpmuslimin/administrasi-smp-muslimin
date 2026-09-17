@@ -1,8 +1,18 @@
 // setting/kelola-ujian/kartuUjianPdf.js
 // Generator PDF Kartu Peserta Ujian -- 8 kartu per halaman A4 (2 kolom x
 // 4 baris). Layout per kartu: header (nama sekolah + jenis ujian + tahun
-// ajaran) di atas, identitas peserta di bawahnya (lebar penuh), lalu blok
-// tanda tangan kepala sekolah di pojok kanan-bawah kartu.
+// ajaran) di atas, identitas peserta di bawahnya (lebar penuh) dengan
+// badge nomor ruangan di pojok kanan-atas, lalu blok tanda tangan kepala
+// sekolah di pojok kanan-bawah kartu.
+//
+// CATATAN (kartu 2 sisi): kalau `daftarJadwal` diisi, generateKartuPesertaPdf()
+// nambahin halaman JADWAL UJIAN + kolom Paraf Pengawas di belakang tiap
+// kartu, acuan dari kartu ujian kertas lama sekolah ini -- 1 kartu = 1 sisi
+// depan (identitas) + 1 sisi belakang (jadwal, buat pengawas paraf tiap
+// sesi selesai). Halaman belakang disusun PERSIS SAMA (grid & urutan
+// peserta) kayak halaman depan, jadi kalau dicetak duplex/gandeng-cetak
+// posisinya nyambung. Kalau daftarJadwal kosong/nggak dikasih, kartu tetap
+// kecetak 1 sisi kayak sebelumnya (fitur ini backward-compatible).
 
 import {
   createPdfDocument,
@@ -11,12 +21,26 @@ import {
   PDF_FONT_FAMILY,
   savePdf,
 } from "../../../utils/pdfExportKit";
+import { mataPelajaranUntukJenjang } from "../jadwal-pengawas/jadwalPengawasSupabase";
 
 const JUDUL_UJIAN = {
   PSAS: "PENILAIAN SUMATIF AKHIR SEMESTER GANJIL",
   PSAT: "PENILAIAN SUMATIF AKHIR TAHUN",
   PSAJ: "PENILAIAN SUMATIF AKHIR JENJANG",
 };
+
+/** "9B" -> "9". Dipakai buat nentuin mata pelajaran mana yang berlaku
+ * buat peserta ini di tiap sesi (lihat mataPelajaranUntukJenjang()). */
+function jenjangDariKelas(kelas) {
+  return String(kelas || "").match(/^\d+/)?.[0] || null;
+}
+
+/** 2 -> "02", 18 -> "18". Dipakai di badge nomor ruangan -- SELALU 2
+ * digit (bukan cuma buat rentang 01-18, tapi angka berapa pun) supaya
+ * lebar badge konsisten kalau nanti jumlah ruangan beda-beda per ujian. */
+function formatNomorRuangan(n) {
+  return String(n ?? "-").padStart(2, "0");
+}
 
 const KARTU_PER_HALAMAN = 8;
 const KOLOM = 2;
@@ -88,25 +112,62 @@ function gambarSatuKartu(
   doc.line(innerLeft, cy, innerRight, cy);
   cy += 4;
 
-  // ---- Identitas peserta -- lebar PENUH kartu, bukan cuma separuh, biar
-  // nama panjang (2-3 kata) nggak gampang harus wrap ke baris baru.
+  // ---- Badge nomor ruangan -- pojok kanan-atas identitas (sejajar baris
+  // "No. Peserta" & "Nama"), niru posisi kotak "R. 2" di kartu kertas lama
+  // sekolah ini tapi diprint (bukan ditulis tangan) & lebih gede biar
+  // gampang dibaca pengawas dari jarak agak jauh pas ngecek ruangan.
+  const badgeWidth = width * 0.24;
+  const badgeHeight = 15;
+  const badgeX = innerRight - badgeWidth;
+  const badgeY = cy;
+  doc.setDrawColor(...PDF_COLORS.border);
+  doc.setLineWidth(0.35);
+  doc.rect(badgeX, badgeY, badgeWidth, badgeHeight);
+  doc.setFont(PDF_FONT_FAMILY, "normal");
+  doc.setFontSize(5.5);
+  doc.text("RUANGAN", badgeX + badgeWidth / 2, badgeY + 4, { align: "center" });
+  doc.setFont(PDF_FONT_FAMILY, "bold");
+  doc.setFontSize(16);
+  doc.text(formatNomorRuangan(nomorRuangan), badgeX + badgeWidth / 2, badgeY + badgeHeight - 3, {
+    align: "center",
+  });
+
+  // ---- Identitas peserta. 2 baris pertama (No. Peserta, Nama) dipersempit
+  // biar nggak numpuk sama badge ruangan di atas -- baris sisanya (Kelas,
+  // NIS) balik lebar PENUH karena udah di bawah batas bawah badge.
+  // Kelas ditampilin PERSIS kayak tersimpan di database (mis. "9B"),
+  // SENGAJA gak dikonversi ke angka Romawi ala kartu kertas lama.
   doc.setFontSize(7);
-  const labelOpts = {
+  const gapBadge = 2;
+  const labelOptsSempit = {
+    x: innerLeft,
+    labelWidth: 15,
+    maxWidth: badgeX - gapBadge - innerLeft,
+    lineHeight: 3.2,
+  };
+  const labelOptsPenuh = {
     x: innerLeft,
     labelWidth: 15,
     maxWidth: innerRight - innerLeft,
     lineHeight: 3.2,
   };
-  const baris = [
+  const barisSempit = [
     ["No. Peserta", peserta.no_peserta],
-    ["Ruangan", nomorRuangan],
     ["Nama", peserta.nama],
+  ];
+  const barisPenuh = [
     ["Kelas", peserta.kelas],
     ["NIS", peserta.nis],
   ];
   cy += 1.5;
-  baris.forEach(([label, value]) => {
-    cy = tulisLabelValue(doc, { ...labelOpts, y: cy }, label, value) + 1.2;
+  barisSempit.forEach(([label, value]) => {
+    cy = tulisLabelValue(doc, { ...labelOptsSempit, y: cy }, label, value) + 1.2;
+  });
+  // Turun ke bawah batas badge dulu (kalau 2 baris sempit tadi ternyata
+  // lebih pendek dari tinggi badge), biar baris "Kelas" nggak nabrak badge.
+  cy = Math.max(cy, badgeY + badgeHeight + 1.2);
+  barisPenuh.forEach(([label, value]) => {
+    cy = tulisLabelValue(doc, { ...labelOptsPenuh, y: cy }, label, value) + 1.2;
   });
 
   // ---- Tanda tangan kepala sekolah -- kolom kanan kartu, teks rata KIRI
@@ -137,7 +198,166 @@ function gambarSatuKartu(
  * @param {number} opts.nomorRuangan
  * @param {{nama: string, tempat: string}} opts.kepsek - dari ambilMetadataKepsek()
  */
-function generateKartuPesertaPdf({ daftarPeserta, jenisUjian, tahunAjaran, nomorRuangan, kepsek }) {
+/**
+ * Format tanggal "YYYY-MM-DD" jadi "Senin, 11-05-2026" (nama hari PANJANG)
+ * -- niru format di kartu kertas lama. Beda sama formatHariTanggalSingkat()
+ * di bawah (punya Kartu Pengawas) yang makai nama hari singkat "Sen" --
+ * kartu ini punya lebih banyak ruang jadi nama hari lengkap masih muat.
+ */
+function formatHariTanggalPanjang(tanggal) {
+  if (!tanggal) return "-";
+  const [tahun, bulan, hari] = tanggal.split("-").map(Number);
+  const tgl = new Date(tahun, bulan - 1, hari);
+  const namaHari = tgl.toLocaleDateString("id-ID", { weekday: "long" });
+  return `${namaHari}, ${String(hari).padStart(2, "0")}-${String(bulan).padStart(2, "0")}-${tahun}`;
+}
+
+/**
+ * Sisi BELAKANG kartu peserta -- tabel jadwal ujian + kolom Paraf Pengawas
+ * kosong (diisi tangan tiap sesi selesai), niru persis kartu kertas lama
+ * sekolah ini. Beda dari sisi depan: gak ada identitas peserta diulang di
+ * sini (kartu kertas lama juga gak ngulang), cuma judul + tabel.
+ *
+ * Mapel per sesi diambil PER PESERTA (lewat mataPelajaranUntukJenjang(),
+ * dari jenjang KELAS PESERTA INI -- bukan jenjang ruangan) -- soalnya versi
+ * Silang Jenjang bisa nyampur beberapa jenjang dalam 1 ruangan, jadi mapel
+ * yang bener buat kelas 8 & kelas 9 di ruangan yang sama bisa BEDA
+ * meskipun jamnya bareng. Kalau ditentuin dari ruangan (ambil jenjang
+ * asal-asalan dari 1 siswa aja), peserta jenjang lain bisa kecetak mapel
+ * yang salah.
+ */
+function gambarHalamanJadwalKartu(
+  doc,
+  { x, y, width, height },
+  { peserta, jenisUjian, tahunAjaran, daftarJadwal }
+) {
+  doc.setDrawColor(...PDF_COLORS.border);
+  doc.setLineWidth(0.2);
+  doc.rect(x, y, width, height);
+
+  const padding = 3;
+  let cy = y + padding + 3;
+  const centerX = x + width / 2;
+  const innerLeft = x + padding;
+  const innerRight = x + width - padding;
+  const innerWidth = innerRight - innerLeft;
+
+  // ---- Header ----
+  doc.setTextColor(0, 0, 0);
+  doc.setFont(PDF_FONT_FAMILY, "bold");
+  doc.setFontSize(7);
+  doc.text(`JADWAL ${JUDUL_UJIAN[jenisUjian] || jenisUjian}`, centerX, cy, {
+    align: "center",
+    maxWidth: innerWidth,
+  });
+  cy += 3.2;
+  doc.setFont(PDF_FONT_FAMILY, "normal");
+  doc.setFontSize(6.5);
+  doc.text(`TAHUN AJARAN ${tahunAjaran}`, centerX, cy, { align: "center" });
+  cy += 2.5;
+
+  doc.setDrawColor(...PDF_COLORS.border);
+  doc.setLineWidth(0.15);
+  doc.line(innerLeft, cy, innerRight, cy);
+  cy += 3;
+
+  const jenjang = jenjangDariKelas(peserta.kelas);
+  const sesiList = (daftarJadwal || [])
+    .slice()
+    .sort((a, b) =>
+      a.tanggal === b.tanggal ? a.sesi_ke - b.sesi_ke : a.tanggal.localeCompare(b.tanggal)
+    );
+
+  if (sesiList.length === 0) {
+    doc.setFont(PDF_FONT_FAMILY, "normal");
+    doc.setFontSize(6.5);
+    doc.text("Jadwal ujian belum diisi.", centerX, cy + 4, { align: "center" });
+    return;
+  }
+
+  // ---- Kolom tabel. Lebar Mapel = sisa dari 4 kolom lain -- kalau ada
+  // mapel yang namanya panjang ("Ilmu Pengetahuan Sosial") bisa wrap ke 2
+  // baris, makanya tinggi baris dihitung DINAMIS (bukan tetap) di bawah.
+  const kolom = { hari: 24, jamKe: 8, waktu: 16, paraf: 12 };
+  kolom.mapel = innerWidth - kolom.hari - kolom.jamKe - kolom.waktu - kolom.paraf;
+  const colX = {
+    hari: innerLeft,
+    jamKe: innerLeft + kolom.hari,
+    waktu: innerLeft + kolom.hari + kolom.jamKe,
+    mapel: innerLeft + kolom.hari + kolom.jamKe + kolom.waktu,
+    paraf: innerLeft + kolom.hari + kolom.jamKe + kolom.waktu + kolom.mapel,
+  };
+
+  const tinggiHeaderTabel = 5;
+  const sisaTinggi = y + height - padding - cy - tinggiHeaderTabel;
+  // Tinggi baris fleksibel kayak di gambarSatuKartuPengawas(): dibagi rata
+  // ke semua sesi, dibatasi minimum 3.6mm (masih kebaca di font 5.3pt).
+  const tinggiBaris = Math.max(3.6, sisaTinggi / sesiList.length);
+  const fontSizeIsi = tinggiBaris < 4.2 ? 5 : 5.5;
+
+  // ---- Header tabel ----
+  doc.setFillColor(...PDF_COLORS.border);
+  doc.setDrawColor(...PDF_COLORS.border);
+  doc.setLineWidth(0.15);
+  doc.rect(innerLeft, cy, innerWidth, tinggiHeaderTabel, "S");
+  doc.setFont(PDF_FONT_FAMILY, "bold");
+  doc.setFontSize(5.3);
+  doc.setTextColor(0, 0, 0);
+  const cyLabelHeader = cy + tinggiHeaderTabel - 1.5;
+  doc.text("Hari", colX.hari + 1, cyLabelHeader);
+  doc.text("Jam", colX.jamKe + kolom.jamKe / 2, cyLabelHeader, { align: "center" });
+  doc.text("Waktu", colX.waktu + 1, cyLabelHeader);
+  doc.text("Mapel", colX.mapel + 1, cyLabelHeader);
+  doc.text("Paraf", colX.paraf + kolom.paraf / 2, cyLabelHeader, { align: "center" });
+  [colX.jamKe, colX.waktu, colX.mapel, colX.paraf].forEach((garisX) => {
+    doc.line(garisX, cy, garisX, cy + tinggiHeaderTabel);
+  });
+  cy += tinggiHeaderTabel;
+
+  // ---- Baris data. "Hari" cuma dicetak di baris PERTAMA tiap tanggal
+  // ganti (niru sel gabungan di kartu kertas lama), baris sesi ke-2 dst di
+  // hari yang sama dikosongin -- tanpa itu garis border udah cukup bikin
+  // keliatan itu masih 1 hari yang sama.
+  let tanggalSebelumnya = null;
+  doc.setFont(PDF_FONT_FAMILY, "normal");
+  doc.setFontSize(fontSizeIsi);
+  sesiList.forEach((sesi) => {
+    doc.setDrawColor(...PDF_COLORS.border);
+    doc.setLineWidth(0.12);
+    doc.rect(innerLeft, cy, innerWidth, tinggiBaris, "S");
+    [colX.jamKe, colX.waktu, colX.mapel, colX.paraf].forEach((garisX) => {
+      doc.line(garisX, cy, garisX, cy + tinggiBaris);
+    });
+
+    const cyIsi = cy + tinggiBaris / 2 + 1.3;
+    if (sesi.tanggal !== tanggalSebelumnya) {
+      const labelHari = doc.splitTextToSize(formatHariTanggalPanjang(sesi.tanggal), kolom.hari - 2);
+      doc.text(labelHari[0] || "-", colX.hari + 1, cyIsi);
+      tanggalSebelumnya = sesi.tanggal;
+    }
+    doc.text(String(sesi.sesi_ke ?? "-"), colX.jamKe + kolom.jamKe / 2, cyIsi, {
+      align: "center",
+    });
+    const waktu =
+      sesi.waktu_mulai && sesi.waktu_selesai ? `${sesi.waktu_mulai}-${sesi.waktu_selesai}` : "-";
+    doc.text(waktu, colX.waktu + 1, cyIsi, { maxWidth: kolom.waktu - 1 });
+    const mapel = mataPelajaranUntukJenjang(sesi, jenjang) || "-";
+    const barisMapel = doc.splitTextToSize(mapel, kolom.mapel - 2);
+    doc.text(barisMapel[0] || "-", colX.mapel + 1, cyIsi);
+    // Kolom Paraf SENGAJA dibiarin kosong -- diisi tangan sama pengawas.
+
+    cy += tinggiBaris;
+  });
+}
+
+function generateKartuPesertaPdf({
+  daftarPeserta,
+  jenisUjian,
+  tahunAjaran,
+  nomorRuangan,
+  kepsek,
+  daftarJadwal = [],
+}) {
   if (!daftarPeserta || daftarPeserta.length === 0) {
     throw new Error("Tidak ada peserta untuk ruangan ini");
   }
@@ -155,14 +375,23 @@ function generateKartuPesertaPdf({ daftarPeserta, jenisUjian, tahunAjaran, nomor
     year: "numeric",
   });
 
-  daftarPeserta.forEach((peserta, idx) => {
+  // Posisi kartu ke-idx di grid -- dipakai BARENG buat sisi depan & sisi
+  // belakang, biar keduanya persis nyambung kalau dicetak duplex.
+  const posisiKartu = (idx) => {
     const posisiDiHalaman = idx % KARTU_PER_HALAMAN;
-    if (idx > 0 && posisiDiHalaman === 0) doc.addPage();
-
     const kolom = posisiDiHalaman % KOLOM;
     const baris = Math.floor(posisiDiHalaman / KOLOM);
-    const x = MARGIN + kolom * (cardWidth + GUTTER);
-    const y = MARGIN + baris * (cardHeight + GUTTER);
+    return {
+      posisiDiHalaman,
+      x: MARGIN + kolom * (cardWidth + GUTTER),
+      y: MARGIN + baris * (cardHeight + GUTTER),
+    };
+  };
+
+  // ---- Sisi depan: identitas + badge ruangan (semua peserta) ----
+  daftarPeserta.forEach((peserta, idx) => {
+    const { posisiDiHalaman, x, y } = posisiKartu(idx);
+    if (idx > 0 && posisiDiHalaman === 0) doc.addPage();
 
     gambarSatuKartu(
       doc,
@@ -170,6 +399,23 @@ function generateKartuPesertaPdf({ daftarPeserta, jenisUjian, tahunAjaran, nomor
       { peserta, jenisUjian, tahunAjaran, nomorRuangan, kepsek, tanggalCetak }
     );
   });
+
+  // ---- Sisi belakang: jadwal ujian + kolom Paraf Pengawas -- CUMA kalau
+  // jadwalnya udah diisi (tab "Jadwal Sesi"). idx===0 di sini SELALU
+  // addPage (beda dari sisi depan) karena nyambung dari halaman depan
+  // terakhir, bukan mulai dari halaman kosong.
+  if (daftarJadwal && daftarJadwal.length > 0) {
+    daftarPeserta.forEach((peserta, idx) => {
+      const { posisiDiHalaman, x, y } = posisiKartu(idx);
+      if (posisiDiHalaman === 0) doc.addPage();
+
+      gambarHalamanJadwalKartu(
+        doc,
+        { x, y, width: cardWidth, height: cardHeight },
+        { peserta, jenisUjian, tahunAjaran, daftarJadwal }
+      );
+    });
+  }
 
   const namaFile = `Kartu-Ujian-${jenisUjian}-Ruangan-${nomorRuangan}.pdf`;
   savePdf(doc, namaFile);
