@@ -151,10 +151,10 @@ function gambarSatuKartu(
   const ry0 = y + height - padding - 13;
 
   const badgeWidth = width * 0.24;
-  const badgeHeight = 15;
+  const badgeHeight = 13; // SEBELUMNYA 15 -- dikecilin dikit biar box gak ngelewatin batas bawah kartu pas disejajarin
   const badgeGapKiri = 5; // jarak dari innerLeft -- jangan mepet ke tepi kiri
   const badgeX = innerLeft + badgeGapKiri;
-  const badgeY = ry0 - 5; // dinaikin dari batas bawah kartu (SEBELUMNYA ry0 - 1, kegeser mepet garis bawah)
+  const badgeY = ry0 - 1; // atas box ~sejajar baris pertama teks ttd ("Cililin, ..."), bawah box ~sejajar baris nama kepsek
   doc.setDrawColor(...PDF_COLORS.border);
   doc.setLineWidth(0.35);
   doc.rect(badgeX, badgeY, badgeWidth, badgeHeight);
