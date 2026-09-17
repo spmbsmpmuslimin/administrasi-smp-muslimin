@@ -112,14 +112,48 @@ function gambarSatuKartu(
   doc.line(innerLeft, cy, innerRight, cy);
   cy += 4;
 
-  // ---- Badge nomor ruangan -- pojok kanan-atas identitas (sejajar baris
-  // "No. Peserta" & "Nama"), niru posisi kotak "R. 2" di kartu kertas lama
-  // sekolah ini tapi diprint (bukan ditulis tangan) & lebih gede biar
-  // gampang dibaca pengawas dari jarak agak jauh pas ngecek ruangan.
+  // ---- Identitas peserta -- SEMUA baris pakai labelWidth yang SAMA
+  // (22, cukup buat label terpanjang "Jenis Kelamin") biar titik dua
+  // ("No. Peserta :", "Nama :", dst) rata & sejajar dari atas ke bawah.
+  // Dulu 2 baris pertama dipersempit + labelWidth beda (15 vs 22) buat
+  // ngindarin badge ruangan yang ada di pojok kanan-atas -- sekarang
+  // badge udah dipindah ke bawah (lihat komentar di bawah), jadi semua
+  // baris bisa lebar PENUH & pakai label option yang sama (revisi Sep
+  // 2026). Kelas ditampilin PERSIS kayak tersimpan di database (mis.
+  // "9B"), SENGAJA gak dikonversi ke angka Romawi ala kartu kertas lama.
+  doc.setFontSize(7);
+  const labelOptsIdentitas = {
+    x: innerLeft,
+    labelWidth: 22,
+    maxWidth: innerRight - innerLeft,
+    lineHeight: 3.2,
+  };
+  const barisIdentitas = [
+    ["No. Peserta", peserta.no_peserta],
+    ["Nama", peserta.nama],
+    ["Kelas", peserta.kelas],
+    ["NIS", peserta.nis],
+    ["NISN", peserta.nisn],
+    ["Jenis Kelamin", peserta.jenisKelamin],
+  ];
+  cy += 1.5;
+  barisIdentitas.forEach(([label, value]) => {
+    cy = tulisLabelValue(doc, { ...labelOptsIdentitas, y: cy }, label, value) + 1.2;
+  });
+
+  // ---- Baris bawah kartu: badge nomor ruangan (kiri) & tanda tangan
+  // kepala sekolah (kanan), SEJAJAR satu baris (revisi Sep 2026 -- badge
+  // sebelumnya di pojok kanan-atas identitas, sekarang dipindah ke sini
+  // biar sejajar sama blok kepala sekolah). Angka offset tanda tangan
+  // (36mm dari innerRight, 13mm dari batas bawah) hasil ubahan manual --
+  // kalau kartu lain butuh geser lagi, ini yang diubah.
+  const sigX = innerRight - 36;
+  const ry0 = y + height - padding - 13;
+
   const badgeWidth = width * 0.24;
   const badgeHeight = 15;
-  const badgeX = innerRight - badgeWidth;
-  const badgeY = cy;
+  const badgeX = innerLeft;
+  const badgeY = ry0 - 1; // atas badge ~sejajar atas blok kepala sekolah
   doc.setDrawColor(...PDF_COLORS.border);
   doc.setLineWidth(0.35);
   doc.rect(badgeX, badgeY, badgeWidth, badgeHeight);
@@ -132,60 +166,6 @@ function gambarSatuKartu(
     align: "center",
   });
 
-  // ---- Identitas peserta. 2 baris pertama (No. Peserta, Nama) dipersempit
-  // biar nggak numpuk sama badge ruangan di atas -- baris sisanya (Kelas,
-  // NIS) balik lebar PENUH karena udah di bawah batas bawah badge.
-  // Kelas ditampilin PERSIS kayak tersimpan di database (mis. "9B"),
-  // SENGAJA gak dikonversi ke angka Romawi ala kartu kertas lama.
-  doc.setFontSize(7);
-  const gapBadge = 2;
-  const labelOptsSempit = {
-    x: innerLeft,
-    labelWidth: 15,
-    maxWidth: badgeX - gapBadge - innerLeft,
-    lineHeight: 3.2,
-  };
-  const labelOptsPenuh = {
-    x: innerLeft,
-    // 22 (SEBELUMNYA 15) -- dinaikin pas nambahin baris "Jenis Kelamin"
-    // (Sep 2026), label terpanjang di baris penuh. labelWidth 15 cukup
-    // buat "Kelas"/"NIS"/"NISN" tapi bikin titik dua nabrak/numpuk di atas
-    // teks "Jenis Kelamin" yang lebih panjang.
-    labelWidth: 22,
-    maxWidth: innerRight - innerLeft,
-    lineHeight: 3.2,
-  };
-  const barisSempit = [
-    ["No. Peserta", peserta.no_peserta],
-    ["Nama", peserta.nama],
-  ];
-  const barisPenuh = [
-    ["Kelas", peserta.kelas],
-    ["NIS", peserta.nis],
-    ["NISN", peserta.nisn],
-    ["Jenis Kelamin", peserta.jenisKelamin],
-  ];
-  cy += 1.5;
-  barisSempit.forEach(([label, value]) => {
-    cy = tulisLabelValue(doc, { ...labelOptsSempit, y: cy }, label, value) + 1.2;
-  });
-  // CATATAN: sebelumnya di sini ada Math.max yang maksa cy turun sampai
-  // ke bawah badge ruangan -- niatnya biar baris "Kelas" dst nggak nabrak
-  // badge. Tapi ternyata nggak perlu: baris-baris ini (Kelas/NIS/NISN/
-  // Jenis Kelamin) teksnya pendek & rata kiri, badge-nya di ujung kanan,
-  // jadi secara horizontal nggak pernah ketemu -- paksaan itu cuma bikin
-  // jarak kosong renggang antara "Nama" & "Kelas" pas nama cuma 1 baris.
-  barisPenuh.forEach(([label, value]) => {
-    cy = tulisLabelValue(doc, { ...labelOptsPenuh, y: cy }, label, value) + 1.2;
-  });
-
-  // ---- Tanda tangan kepala sekolah -- kolom kanan kartu, teks rata KIRI
-  // mulai dari sigX (bukan rata kanan nempel innerRight, supaya nggak
-  // mepet ke tepi kanan). Angka offset (36mm dari innerRight, 13mm dari
-  // batas bawah) hasil ubahan manual -- kalau kartu lain butuh geser
-  // lagi, ini yang diubah.
-  const sigX = innerRight - 36;
-  const ry0 = y + height - padding - 13;
   doc.setFont(PDF_FONT_FAMILY, "normal");
   doc.setFontSize(6.3);
   doc.text(`${kepsek.tempat}, ${tanggalCetak}`, sigX, ry0);
