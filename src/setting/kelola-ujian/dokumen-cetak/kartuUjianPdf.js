@@ -152,14 +152,15 @@ function gambarSatuKartu(
 
   const badgeWidth = width * 0.24;
   const badgeHeight = 15;
-  const badgeX = innerLeft;
-  const badgeY = ry0 - 1; // atas badge ~sejajar atas blok kepala sekolah
+  const badgeGapKiri = 5; // jarak dari innerLeft -- jangan mepet ke tepi kiri
+  const badgeX = innerLeft + badgeGapKiri;
+  const badgeY = ry0 - 5; // dinaikin dari batas bawah kartu (SEBELUMNYA ry0 - 1, kegeser mepet garis bawah)
   doc.setDrawColor(...PDF_COLORS.border);
   doc.setLineWidth(0.35);
   doc.rect(badgeX, badgeY, badgeWidth, badgeHeight);
   doc.setFont(PDF_FONT_FAMILY, "normal");
   doc.setFontSize(5.5);
-  doc.text("RUANGAN", badgeX + badgeWidth / 2, badgeY + 4, { align: "center" });
+  doc.text("RUANG", badgeX + badgeWidth / 2, badgeY + 4, { align: "center" });
   doc.setFont(PDF_FONT_FAMILY, "bold");
   doc.setFontSize(16);
   doc.text(formatNomorRuangan(nomorRuangan), badgeX + badgeWidth / 2, badgeY + badgeHeight - 3, {
