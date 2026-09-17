@@ -1,7 +1,7 @@
 // setting/kelola-ujian/KartuUjianTab.js
 // Sub-fitur "Kartu Ujian" -- 2 template lewat tab: Peserta & Pengawas.
 // Pola alur & pemilihan tahun ajaran SENGAJA disamakan persis dengan
-// JadwalPengawasTab.js (ambilDaftarTahunAjaran -> getOrCreateUjian),
+// tab lain di Manajemen Ujian (ambilDaftarTahunAjaran -> cariUjian),
 // supaya UX-nya konsisten di seluruh sub-fitur Manajemen Ujian.
 
 import React, { useState, useEffect, useCallback } from "react";
@@ -9,7 +9,7 @@ import { ChevronLeft, Printer, DoorOpen, Users, Loader2, IdCard } from "lucide-r
 import { supabase } from "../../../supabaseClient";
 import {
   ambilDaftarTahunAjaran,
-  getOrCreateUjian,
+  cariUjian,
   KONFIGURASI_JENIS_UJIAN,
 } from "../pembagian-ruangan/pembagianRuanganSupabase";
 import { ambilRuanganUjian, ambilJadwalSesi } from "../jadwal-pengawas/jadwalPengawasSupabase";
@@ -81,8 +81,15 @@ const KartuUjianTab = ({ jenisUjian, showToast, onBack }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [daftarTahunAjaran]);
 
-  // Begitu tahun ajaran fix, ambil/bikin record `ujian` (idempotent, sama
-  // seperti Pembagian Ruangan & Jadwal Pengawas).
+  // Begitu tahun ajaran fix, CARI record `ujian` yang udah ada (bukan bikin
+  // baru -- tab ini cuma konsumen data pembagian ruangan, bukan yang
+  // nentuin versi_skema, sama kayak Jadwal Sesi/Laporan Rekap/dst). Record
+  // `ujian` mestinya udah dibikin lewat tab "Pembagian Ruangan" (yang minta
+  // admin pilih versi skema secara eksplisit sebelum simpan). Kalau belum
+  // ada, `ujian` tetap null dan UI di bawah ngasih tau admin buat proses
+  // Pembagian Ruangan dulu -- BUKAN diam-diam bikin record kosong tanpa
+  // versi (itu yang dulu nyebabin error "Versi skema pembagian belum
+  // dipilih" pas tab ini dibuka).
   useEffect(() => {
     if (!tahunAjaranId) {
       setUjian(null);
@@ -92,8 +99,7 @@ const KartuUjianTab = ({ jenisUjian, showToast, onBack }) => {
     (async () => {
       setLoadingUjian(true);
       try {
-        const kapasitasDefault = KONFIGURASI_JENIS_UJIAN[jenisUjian]?.defaultKapasitas || 40;
-        const rec = await getOrCreateUjian(supabase, jenisUjian, tahunAjaranId, kapasitasDefault);
+        const rec = await cariUjian(supabase, jenisUjian, tahunAjaranId);
         if (!cancelled) setUjian(rec);
       } catch (err) {
         console.error(err);
@@ -248,6 +254,13 @@ const KartuUjianTab = ({ jenisUjian, showToast, onBack }) => {
         <p className="text-xs text-gray-400 flex items-center gap-1.5 mb-4">
           <Loader2 size={14} className="animate-spin" /> Memuat data...
         </p>
+      )}
+
+      {!ujian && !loadingUjian && tahunAjaranId && (
+        <div className="p-3 mb-5 text-xs bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl text-amber-700 dark:text-amber-300">
+          Data ujian untuk tahun ajaran ini belum diproses. Proses dulu{" "}
+          <strong>Pembagian Ruangan</strong> (pilih versi skema & simpan) sebelum lanjut ke sini.
+        </div>
       )}
 
       {ujian && !loadingData && (
