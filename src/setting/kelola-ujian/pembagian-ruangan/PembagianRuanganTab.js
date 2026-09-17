@@ -63,8 +63,9 @@ import {
   bagiRuanganPerJenjang,
   bangunMatrixKomposisi,
   VERSI_SKEMA_LIST,
-  VERSI_DEFAULT,
+  versiSkemaValid,
   normalisasiVersiSkema,
+  normalisasiVersiSkemaTersimpan,
   labelVersiSkema,
 } from "./bagiRuanganPerJenjang";
 import { terapkanQuotaManual, hitungTotalPerKelas } from "./bagiRuangan";
@@ -268,7 +269,11 @@ const PembagianRuanganTab = ({
   const [kapasitas, setKapasitas] = useState(
     KONFIGURASI_JENIS_UJIAN[jenisUjian]?.defaultKapasitas || 40
   );
-  const [versiSkema, setVersiSkema] = useState(VERSI_DEFAULT);
+  // "" = admin BELUM milih versi. Sengaja gak dikasih nilai awal: gak ada
+  // versi default di sistem ini, panitia yang mesti milih sesuai kebutuhan
+  // ujian (lihat catatan di bagiRuanganPerJenjang.js). Tombol "Proses
+  // Pembagian" dikunci selama ini masih kosong.
+  const [versiSkema, setVersiSkema] = useState("");
   // true kalau ujian utk kombinasi jenisUjian+tahunAjaranId ini SUDAH ada
   // record-nya di DB (udah pernah diproses & disimpan) -- versi_skema
   // record itu gak bisa diganti lagi lewat sub-fitur ini, jadi radio-nya
@@ -285,7 +290,11 @@ const PembagianRuanganTab = ({
   const [prosesUlangModalOpen, setProsesUlangModalOpen] = useState(false);
   const [konfirmasiProsesUlang, setKonfirmasiProsesUlang] = useState(false);
   const [memProsesUlang, setMemProsesUlang] = useState(false);
-  const [versiBaruDipilih, setVersiBaruDipilih] = useState(VERSI_DEFAULT);
+  // "" = belum milih. Diisi pas modal dibuka dengan versi PERTAMA yang
+  // BUKAN versi yang lagi kepake -- bukan "default versi", tapi karena
+  // aksi modal ini emang "ganti ke versi lain", jadi nyodorin versi yang
+  // sama persis kayak sekarang gak ada gunanya. Admin bebas milih lainnya.
+  const [versiBaruDipilih, setVersiBaruDipilih] = useState("");
 
   // Tab level PALING ATAS: "komposisi" (bandingin V1 vs V2, preview doang)
   // atau "pembagian" (alur proses -> quota manual -> simpan, default).
@@ -302,7 +311,11 @@ const PembagianRuanganTab = ({
   // terpisah; render tinggal bandingin ini sama tahunAjaranId yang aktif.
   const [komposisiUntukTahunAjaran, setKomposisiUntukTahunAjaran] = useState(null);
   // Sub-tab DI DALAM tab Komposisi Ruangan: lagi liatin versi yang mana.
-  const [komposisiVersiAktif, setKomposisiVersiAktif] = useState(VERSI_DEFAULT);
+  // Sub-tab mana yang kebuka duluan di tab Komposisi. Ini MURNI pilihan
+  // tampilan (tab preview harus nampilin sesuatu), BUKAN versi yang bakal
+  // kepake -- milih versi beneran tetap lewat radio di tab Pembagian atau
+  // tombol "Pakai ... untuk Pembagian Ruangan" di bawah matrix.
+  const [komposisiVersiAktif, setKomposisiVersiAktif] = useState(VERSI_SKEMA_LIST[0].value);
 
   const [loadingTahunAjaran, setLoadingTahunAjaran] = useState(true);
   const [memproses, setMemproses] = useState(false);
@@ -328,7 +341,12 @@ const PembagianRuanganTab = ({
   const [tabInternal, setTabInternal] = useState(modePeserta ? "export" : "edit");
   const tabAktif = tabPaksa || tabInternal;
   const setTabAktif = setTabInternal;
-  // Ruangan yang lagi dipilih di dropdown tab Preview
+  // Ruangan yang lagi dipilih di dropdown tab Preview. null = belum pernah
+  // dipilih admin (biasanya pas pertama kali tab ini dibuka) -- fallback ke
+  // ruangan pertama di render, TANPA nyimpen fallback itu balik ke state
+  // (biar kalau daftar ruangan berubah, misal abis reprocessing, otomatis
+  // balik ke ruangan pertama lagi daripada nyangkut ke nomor yang sekarang
+  // udah gak ada / udah beda isinya).
   const [ruanganPreviewAktif, setRuanganPreviewAktif] = useState(null);
   // Tab "Export Daftar": ruangan mana yang mau diexport. "semua" = semua
   // ruangan jadi 1 file (1 sheet per ruangan), selain itu isinya nomor ruangan.
@@ -398,7 +416,10 @@ const PembagianRuanganTab = ({
         if (!ujian) return; // belum pernah diproses buat kombinasi ini
         // normalisasi: record lama nyimpen "v1"/"v2" yang artinya Rotasi
         // Penuh / Rantai Muter -- sekarang V2/V3, kodenya "rotasi"/"rantai"
-        setVersiSkema(normalisasiVersiSkema(ujian.versi_skema));
+        // pakai ...Tersimpan(): kolom yang KOSONG di record lama artinya
+        // "warisan sebelum versi_skema kepakai" (= campur merata), bukan
+        // "belum dipilih" -- beda arti sama input kosong dari admin.
+        setVersiSkema(normalisasiVersiSkemaTersimpan(ujian.versi_skema) || "");
         setVersiSkemaTerkunci(true);
         const tersimpan = await ambilPembagianTersimpan(supabase, ujian.id);
         if (dibatalkan || tersimpan.length === 0) return;
@@ -492,6 +513,13 @@ const PembagianRuanganTab = ({
       showToast?.("Kapasitas per ruangan harus angka positif", "error");
       return;
     }
+    // Gak ada versi default -- kalau admin belum milih, berhenti di sini
+    // dan minta dipilih dulu (prosesPembagianRuangan juga bakal nge-throw,
+    // tapi mendingan ketemu pesan yang jelas daripada error mentah).
+    if (!versiSkemaValid(versiSkema)) {
+      showToast?.("Pilih versi algoritma pembagian dulu", "error");
+      return;
+    }
     setMemproses(true);
     setHasilAsli(null);
     setQuotaPerRuangan(null);
@@ -536,7 +564,7 @@ const PembagianRuanganTab = ({
     setKonfirmasiProsesUlang(false);
     const versiSaatIni = normalisasiVersiSkema(versiSkema);
     const opsiLain = VERSI_SKEMA_LIST.find((o) => o.value !== versiSaatIni);
-    setVersiBaruDipilih(opsiLain?.value || VERSI_DEFAULT);
+    setVersiBaruDipilih(opsiLain?.value || "");
     setProsesUlangModalOpen(true);
   };
 
@@ -556,7 +584,7 @@ const PembagianRuanganTab = ({
     setMemProsesUlang(true);
     try {
       await resetUntukProsesUlang(supabase, jenisUjian, tahunAjaranId, versiBaruDipilih);
-      setVersiSkema(normalisasiVersiSkema(versiBaruDipilih));
+      setVersiSkema(normalisasiVersiSkema(versiBaruDipilih) || "");
       setHasilAsli(null);
       setQuotaPerRuangan(null);
       setTargetPerKelas({});
@@ -937,9 +965,13 @@ const PembagianRuanganTab = ({
               (lihat versiSkemaTerkunci), karena versi_skema cuma boleh dipilih
               sekali pas record ujian pertama kali dibikin. */}
               <div className="mb-5">
-                <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">
-                  Versi Algoritma Pembagian
+                <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+                  Versi Algoritma Pembagian <span className="text-red-500">*</span>
                 </label>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
+                  Wajib dipilih -- nggak ada versi bawaan. Sesuaikan sama kebutuhan ujian ini;
+                  bandingkan dulu hasilnya di tab <strong>Komposisi Ruangan</strong> kalau ragu.
+                </p>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                   {VERSI_SKEMA_LIST.map((opsi) => (
@@ -975,21 +1007,21 @@ const PembagianRuanganTab = ({
                     </label>
                   ))}
                 </div>
+                {!versiSkemaTerkunci && !versiSkemaValid(versiSkema) && (
+                  <p className="mt-2 text-xs text-amber-600 dark:text-amber-400">
+                    Belum ada versi yang dipilih -- pilih salah satu di atas buat mengaktifkan
+                    tombol "Proses Pembagian".
+                  </p>
+                )}
                 {versiSkemaTerkunci && (
                   <div className="mt-2">
                     <p className="text-xs text-amber-600 dark:text-amber-400">
                       Versi terkunci — ujian ini sudah pernah diproses/disimpan dengan versi{" "}
-                      <span className="font-semibold">{labelVersiSkema(versiSkema)}</span>. Ganti
-                      versi cuma bisa dilakukan lewat "Proses Ulang dengan Versi Lain" di bawah,
-                      karena itu bakal menghapus data ruangan yang udah tersimpan.
+                      <span className="font-semibold">{labelVersiSkema(versiSkema)}</span>.{" "}
+                      {tabAktif === "preview"
+                        ? 'Ganti versi cuma bisa dilakukan lewat tombol "Proses Ulang dengan Versi Lain" di tab Pembagian Ruangan (sengaja gak ditampilin di sini biar gak salah klik pas cuma mau lihat-lihat), karena itu bakal menghapus data ruangan yang udah tersimpan.'
+                        : 'Ganti versi cuma bisa dilakukan lewat tombol "Proses Ulang dengan Versi Lain" di bawah, karena itu bakal menghapus data ruangan yang udah tersimpan.'}
                     </p>
-                    <button
-                      onClick={handleBukaProsesUlangModal}
-                      className="flex items-center gap-1.5 mt-2 text-xs font-medium text-amber-700 dark:text-amber-400 hover:underline"
-                    >
-                      <Unlock size={13} />
-                      Proses Ulang dengan Versi Lain
-                    </button>
                   </div>
                 )}
               </div>
@@ -1000,14 +1032,44 @@ const PembagianRuanganTab = ({
                 </p>
               )}
 
-              <button
-                onClick={handleProses}
-                disabled={memproses || memuatTersimpan}
-                className="flex items-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 text-white text-sm font-medium rounded-xl transition-all active:scale-95"
-              >
-                <RefreshCw size={16} className={memproses ? "animate-spin" : ""} />
-                {memproses ? "Memproses..." : "Proses Pembagian (Preview)"}
-              </button>
+              {/* 2 tombol aksi utama disejajarkan biar sama-sama kelihatan --
+              dulu "Proses Ulang dengan Versi Lain" cuma link teks kecil
+              nyempil di dalam kotak peringatan amber di atas, gampang
+              kelewat. Sekarang ukurannya disamain sama "Proses Pembagian",
+              warnanya merah biar kontras jelas dari indigo (aksi ini
+              destruktif -- hapus data lama -- jadi sengaja beda warna,
+              bukan cuma beda ukuran).
+
+              Tombol MERAH sengaja DISEMBUNYIIN pas tabAktif === "preview"
+              (halaman "Preview Per Ruangan" yang diakses lewat tabPaksa dari
+              JadwalRuanganTab.js) -- di situ gak ada tab switcher buat pindah
+              balik ke tab "Pembagian Ruangan" (disembunyiin selama tabPaksa
+              kepasang), jadi kalau tombol reset-destruktif ini nongol di
+              sana, admin yang cuma mau LIAT daftar peserta per ruangan bisa
+              gak sengaja mencet tombol yang bakal ngehapus data tersimpan. */}
+              <div className="flex flex-wrap gap-3">
+                <button
+                  onClick={handleProses}
+                  disabled={memproses || memuatTersimpan || !versiSkemaValid(versiSkema)}
+                  title={
+                    versiSkemaValid(versiSkema) ? undefined : "Pilih versi algoritma pembagian dulu"
+                  }
+                  className="flex items-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 text-white text-sm font-medium rounded-xl transition-all active:scale-95"
+                >
+                  <RefreshCw size={16} className={memproses ? "animate-spin" : ""} />
+                  {memproses ? "Memproses..." : "Proses Pembagian (Preview)"}
+                </button>
+
+                {versiSkemaTerkunci && tabAktif !== "preview" && (
+                  <button
+                    onClick={handleBukaProsesUlangModal}
+                    className="flex items-center gap-2 px-4 py-2.5 bg-red-600 hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-600 text-white text-sm font-medium rounded-xl transition-all active:scale-95"
+                  >
+                    <Unlock size={16} />
+                    Proses Ulang dengan Versi Lain
+                  </button>
+                )}
+              </div>
             </>
           )}
 
@@ -1185,31 +1247,50 @@ const PembagianRuanganTab = ({
 
               {tabAktif === "preview" && (
                 <div className="mb-5">
-                  {/* Dulu ada dropdown "Pilih Ruangan" buat liat 1 ruangan per
-                  waktu -- sekarang semua ruangan ditumpuk & ditampilin
-                  sekaligus di 1 layar, gak perlu geser/ganti pilihan lagi. */}
                   {quotaPerRuangan.length === 0 ? (
                     <p className="text-sm text-gray-500 dark:text-gray-400 italic">
                       Belum ada ruangan.
                     </p>
                   ) : (
-                    <div className="space-y-5">
-                      {quotaPerRuangan.map((r) => {
-                        const siswaRuanganIni =
-                          hasilLive.find((h) => h.nomor_ruangan === r.nomor_ruangan)?.siswa || [];
+                    (() => {
+                      // Fallback ke ruangan pertama kalau belum pernah dipilih
+                      // ATAU ruangan yang kepilih sebelumnya udah gak ada lagi
+                      // di daftar (mis. jumlah ruangan berkurang abis diproses
+                      // ulang) -- lihat catatan di deklarasi state di atas.
+                      const ruangDipilih =
+                        quotaPerRuangan.find((r) => r.nomor_ruangan === ruanganPreviewAktif) ||
+                        quotaPerRuangan[0];
+                      const siswaRuanganIni =
+                        hasilLive.find((h) => h.nomor_ruangan === ruangDipilih.nomor_ruangan)
+                          ?.siswa || [];
 
-                        // Urut pakai no_kursi (= no_peserta yang disimpan ke DB) --
-                        // sama persis dengan urutan di daftarPesertaExcelExport.js,
-                        // biar preview ini benar-benar cerminan hasil Excel-nya.
-                        const siswaTerurut = [...siswaRuanganIni].sort(
-                          (a, b) => (a.no_kursi || 0) - (b.no_kursi || 0)
-                        );
+                      // Urut pakai no_kursi (= no_peserta yang disimpan ke DB) --
+                      // sama persis dengan urutan di daftarPesertaExcelExport.js,
+                      // biar preview ini benar-benar cerminan hasil Excel-nya.
+                      const siswaTerurut = [...siswaRuanganIni].sort(
+                        (a, b) => (a.no_kursi || 0) - (b.no_kursi || 0)
+                      );
 
-                        return (
-                          <div
-                            key={r.nomor_ruangan}
-                            className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-5"
-                          >
+                      return (
+                        <>
+                          <div className="mb-4">
+                            <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1.5">
+                              Pilih Ruangan
+                            </label>
+                            <select
+                              value={ruangDipilih.nomor_ruangan}
+                              onChange={(e) => setRuanganPreviewAktif(Number(e.target.value))}
+                              className="w-full sm:w-64 px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100"
+                            >
+                              {quotaPerRuangan.map((r) => (
+                                <option key={r.nomor_ruangan} value={r.nomor_ruangan}>
+                                  Ruang {String(r.nomor_ruangan).padStart(2, "0")}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+
+                          <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-5">
                             {/* Kop dokumen -- meniru letterhead di file Excel */}
                             <div className="text-center mb-4 pb-3 border-b border-gray-100 dark:border-gray-700">
                               <p className="text-sm font-semibold text-gray-800 dark:text-gray-100">
@@ -1222,7 +1303,7 @@ const PembagianRuanganTab = ({
                                 </p>
                               )}
                               <p className="text-sm font-bold text-gray-800 dark:text-gray-100 mt-0.5">
-                                RUANG {String(r.nomor_ruangan).padStart(2, "0")}
+                                RUANG {String(ruangDipilih.nomor_ruangan).padStart(2, "0")}
                               </p>
                             </div>
 
@@ -1239,14 +1320,14 @@ const PembagianRuanganTab = ({
                                         <th className="py-2 pl-3 pr-3 w-10 text-left font-bold text-gray-900 dark:text-white border-b border-gray-300 dark:border-gray-600">
                                           No
                                         </th>
+                                        <th className="py-2 pr-3 text-center font-bold text-gray-900 dark:text-white border-b border-gray-300 dark:border-gray-600">
+                                          No. Peserta
+                                        </th>
                                         <th className="py-2 pr-3 text-left font-bold text-gray-900 dark:text-white border-b border-gray-300 dark:border-gray-600">
                                           Nama Peserta
                                         </th>
                                         <th className="py-2 pr-3 text-center font-bold text-gray-900 dark:text-white border-b border-gray-300 dark:border-gray-600">
-                                          No. Peserta
-                                        </th>
-                                        <th className="py-2 pr-3 text-center font-bold text-gray-900 dark:text-white border-b border-gray-300 dark:border-gray-600">
-                                          NIS
+                                          Kelas
                                         </th>
                                       </tr>
                                     </thead>
@@ -1263,14 +1344,14 @@ const PembagianRuanganTab = ({
                                           <td className="py-1.5 pl-3 pr-3 font-medium text-gray-900 dark:text-white">
                                             {idx + 1}
                                           </td>
+                                          <td className="py-1.5 pr-3 text-center font-medium text-gray-900 dark:text-white">
+                                            {petaNoPeserta.get(String(s.id)) || "-"}
+                                          </td>
                                           <td className="py-1.5 pr-3 font-semibold text-gray-900 dark:text-white truncate">
                                             {s.nama || "-"}
                                           </td>
                                           <td className="py-1.5 pr-3 text-center font-medium text-gray-900 dark:text-white">
-                                            {petaNoPeserta.get(String(s.id)) || "-"}
-                                          </td>
-                                          <td className="py-1.5 pr-3 text-center font-medium text-gray-900 dark:text-white">
-                                            {s.nis || "-"}
+                                            {s.asal_kelas || "-"}
                                           </td>
                                         </tr>
                                       ))}
@@ -1284,9 +1365,9 @@ const PembagianRuanganTab = ({
                               </>
                             )}
                           </div>
-                        );
-                      })}
-                    </div>
+                        </>
+                      );
+                    })()
                   )}
                 </div>
               )}
@@ -1477,7 +1558,9 @@ const PembagianRuanganTab = ({
             <div className="flex flex-col sm:flex-row gap-3">
               <button
                 onClick={handleKonfirmasiProsesUlang}
-                disabled={!konfirmasiProsesUlang || memProsesUlang}
+                disabled={
+                  !konfirmasiProsesUlang || memProsesUlang || !versiSkemaValid(versiBaruDipilih)
+                }
                 className="flex-1 flex items-center justify-center gap-2 px-5 py-3 bg-red-600 hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-600 text-white rounded-lg disabled:opacity-40 disabled:cursor-not-allowed font-bold transition min-h-[44px]"
               >
                 {memProsesUlang ? (

@@ -1,10 +1,32 @@
 import {
   bagiRuanganPerJenjang,
-  VERSI_DEFAULT,
+  VERSI_SKEMA_LIST,
   normalisasiVersiSkema,
 } from "./bagiRuanganPerJenjang";
 import { getAllAcademicYears } from "../../../services/academicYearService";
 import { bangunPetaNoPeserta } from "./noPeserta";
+
+/**
+ * Gerbang validasi versi skema buat SEMUA fungsi di file ini yang nulis
+ * atau make versi_skema. Sengaja nge-throw, bukan diem-diem mundur ke
+ * versi tertentu: gak ada default di sistem ini, versi itu keputusan
+ * admin (lihat catatan "SENGAJA GAK ADA VERSI_DEFAULT" di
+ * bagiRuanganPerJenjang.js). Kalau sampai fungsi-fungsi ini kepanggil
+ * tanpa versi, itu bug di pemanggilnya -- mendingan kelihatan sekarang
+ * daripada nyangkut jadi data ruangan yang skemanya gak pernah dipilih
+ * siapa pun.
+ *
+ * @returns {string} kode versi yang udah dinormalisasi (siap ditulis ke DB)
+ */
+function pastikanVersiDipilih(versiSkema) {
+  const versi = normalisasiVersiSkema(versiSkema);
+  if (!versi) {
+    throw new Error(
+      `Versi skema pembagian belum dipilih. Pilihan: ${VERSI_SKEMA_LIST.map((o) => o.value).join(", ")}.`
+    );
+  }
+  return versi;
+}
 
 /**
  * Konfigurasi per jenis ujian: jenjang (grade) mana yang ikut, dan
@@ -81,8 +103,9 @@ async function ambilSiswaPerKelas(supabase, academicYearId, allowedGrades = null
  * "Proses Pembagian" bisa dipanggil berkali-kali tanpa bikin duplikat
  * record ujian.
  *
- * @param {"silang"|"rotasi"|"rantai"} versiSkema - versi algoritma yang
+ * @param {"rotasi"|"rantai"|"silang"} versiSkema - versi algoritma yang
  *   dipilih admin (lihat VERSI_SKEMA_LIST di bagiRuanganPerJenjang.js).
+ *   WAJIB diisi -- gak ada default, admin yang mesti milih.
  *   CUMA dipakai pas BIKIN record baru -- kalau record `jenis` +
  *   `academicYearId` ini udah ada, versi_skema-nya TETAP yang lama
  *   (gak ke-update diam-diam walau admin ganti pilihan versi di UI).
@@ -90,13 +113,9 @@ async function ambilSiswaPerKelas(supabase, academicYearId, allowedGrades = null
  *   keputusan eksplisit lewat "Proses Ulang", bukan efek samping dari
  *   fungsi ini dipanggil ulang.
  */
-async function getOrCreateUjian(
-  supabase,
-  jenis,
-  academicYearId,
-  kapasitas = 40,
-  versiSkema = VERSI_DEFAULT
-) {
+async function getOrCreateUjian(supabase, jenis, academicYearId, kapasitas = 40, versiSkema) {
+  const versi = pastikanVersiDipilih(versiSkema);
+
   const { data: existing, error: errSelect } = await supabase
     .from("ujian")
     .select("*")
@@ -113,7 +132,7 @@ async function getOrCreateUjian(
       jenis,
       academic_year_id: academicYearId,
       kapasitas_ruangan: kapasitas,
-      versi_skema: normalisasiVersiSkema(versiSkema),
+      versi_skema: versi,
     })
     .select()
     .single();
@@ -152,8 +171,10 @@ async function prosesPembagianRuangan(
   academicYearId,
   jenisUjian,
   kapasitas = 40,
-  versiSkema = VERSI_DEFAULT
+  versiSkema
 ) {
+  pastikanVersiDipilih(versiSkema);
+
   const allowedGrades = KONFIGURASI_JENIS_UJIAN[jenisUjian]?.grades || null;
   const dataSiswaPerKelas = await ambilSiswaPerKelas(supabase, academicYearId, allowedGrades);
   const hasilRuangan = bagiRuanganPerJenjang(dataSiswaPerKelas, versiSkema);
@@ -333,7 +354,7 @@ async function resetUntukProsesUlang(supabase, jenis, academicYearId, versiSkema
 
   const { error: errUpdateVersi } = await supabase
     .from("ujian")
-    .update({ versi_skema: normalisasiVersiSkema(versiSkemaBaru) })
+    .update({ versi_skema: pastikanVersiDipilih(versiSkemaBaru) })
     .eq("id", ujian.id);
   if (errUpdateVersi) throw errUpdateVersi;
 

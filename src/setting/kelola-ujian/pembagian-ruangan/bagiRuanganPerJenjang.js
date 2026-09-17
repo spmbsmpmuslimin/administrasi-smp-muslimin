@@ -82,7 +82,18 @@ const VERSI_SKEMA_LIST = [
   },
 ];
 
-const VERSI_DEFAULT = "silang";
+// SENGAJA GAK ADA VERSI_DEFAULT.
+// Dulu ada konstanta VERSI_DEFAULT yang dipakai sebagai fallback di mana-
+// mana (radio kepilih duluan, parameter fungsi, nilai balik normalisasi
+// kalau inputnya gak dikenal). Itu dicabut karena 2 alasan:
+//   1. Pemilihan versi itu KEPUTUSAN PANITIA, bukan technical default --
+//      tiap sekolah/tiap jenis ujian bisa beda kebutuhan, jadi admin yang
+//      mesti milih sadar-sadar, bukan ikut apa pun yang kebetulan kepilih.
+//   2. Fallback diam-diam bikin bug versi nyasar jadi gak keliatan: kalau
+//      ada kode yang lupa ngoper versi, dulu dia jalan mulus pakai versi
+//      default; sekarang dia LANGSUNG error, jadi ketahuan pas dites.
+// Konsekuensinya: bagiRuanganPerJenjang() WAJIB dioper versi yang valid,
+// dan UI gak boleh manggil "Proses Pembagian" sebelum admin milih.
 
 /**
  * Peta nilai `versi_skema` LAMA yang udah terlanjur tersimpan di DB ke
@@ -97,18 +108,58 @@ const PETA_VERSI_LEGACY = {
 };
 
 /**
- * Terjemahkan nilai versi apa pun (kode baru, nilai legacy, null/undefined
- * dari record lama yang kolomnya masih kosong) jadi kode yang valid.
+ * Arti `versi_skema` yang KOSONG (null/"") pada record ujian yang UDAH ADA
+ * di DB. Record kayak gitu dibikin sebelum kolom versi_skema kepakai, dan
+ * waktu itu satu-satunya perilaku yang ada = campur merata dalam 1 jenjang
+ * (sekarang kodenya "rotasi"). Jadi ini FAKTA SEJARAH, bukan "default" --
+ * makanya nilainya di-hardcode di sini dan TIDAK ikut bergeser kalau
+ * urutan/isi VERSI_SKEMA_LIST diubah lagi nanti.
  */
-function normalisasiVersiSkema(versi) {
-  if (!versi) return VERSI_DEFAULT;
-  if (VERSI_SKEMA_LIST.some((o) => o.value === versi)) return versi;
-  return PETA_VERSI_LEGACY[versi] || VERSI_DEFAULT;
+const VERSI_RECORD_LAMA_KOSONG = "rotasi";
+
+/** true kalau `versi` adalah kode versi yang dikenal saat ini. */
+function versiSkemaValid(versi) {
+  return VERSI_SKEMA_LIST.some((o) => o.value === versi);
 }
 
-/** Label tampilan buat sebuah kode versi, mis. "V2 - Rotasi Penuh". */
+/**
+ * Terjemahkan sebuah nilai versi jadi kode yang dikenal.
+ * Nilai legacy ("v1"/"v2") dipetakan; nilai kosong / gak dikenal
+ * mengembalikan null -- SENGAJA null, bukan fallback ke versi mana pun,
+ * biar pemanggilnya yang mutusin mau diapain (UI: minta admin milih,
+ * pembacaan record lama: pakai normalisasiVersiSkemaTersimpan()).
+ *
+ * @returns {string|null}
+ */
+function normalisasiVersiSkema(versi) {
+  if (!versi) return null;
+  if (versiSkemaValid(versi)) return versi;
+  return PETA_VERSI_LEGACY[versi] || null;
+}
+
+/**
+ * Versi khusus buat baca kolom `versi_skema` dari record ujian yang UDAH
+ * TERSIMPAN. Bedanya sama normalisasiVersiSkema(): nilai kosong di sini
+ * BUKAN "belum milih", tapi record warisan -> diartikan sebagai
+ * VERSI_RECORD_LAMA_KOSONG. Jangan dipakai buat nilai yang datang dari
+ * input admin.
+ *
+ * @returns {string|null} null cuma kalau isinya kode yang bener-bener asing
+ *   (mis. hasil edit manual lewat SQL yang salah ketik).
+ */
+function normalisasiVersiSkemaTersimpan(versi) {
+  if (!versi) return VERSI_RECORD_LAMA_KOSONG;
+  return normalisasiVersiSkema(versi);
+}
+
+/**
+ * Label tampilan buat sebuah kode versi, mis. "V1 - Campur Merata
+ * (1 Jenjang)". Dikasih teks penanda kalau versinya belum dipilih atau
+ * kodenya gak dikenal, biar gak pernah nampilin string kosong di UI.
+ */
 function labelVersiSkema(versi) {
   const kode = normalisasiVersiSkema(versi);
+  if (!kode) return versi ? `(versi tidak dikenal: ${versi})` : "(belum dipilih)";
   return VERSI_SKEMA_LIST.find((o) => o.value === kode)?.label || kode;
 }
 
@@ -245,21 +296,31 @@ function bagiSatuJenjangV2(dataSiswaPerKelasJenjang) {
  *
  * @param {object} dataSiswaPerKelas - SEMUA kelas yang ikut ujian ini (lintas jenjang),
  *   format sama seperti input bagiRuangan() lama: { "7A": [...], "8B": [...], ... }
- * @param {"silang"|"rotasi"|"rantai"} versiSkema - versi algoritma yang dipilih
- *   admin. Nilai legacy "v1"/"v2" (dari record ujian lama di DB) otomatis
- *   dipetakan ke "rotasi"/"rantai" lewat normalisasiVersiSkema().
+ * @param {"rotasi"|"rantai"|"silang"} versiSkema - versi algoritma yang dipilih
+ *   admin. WAJIB diisi -- gak ada nilai default, lihat catatan
+ *   "SENGAJA GAK ADA VERSI_DEFAULT" di atas. Nilai legacy "v1"/"v2" (dari
+ *   record ujian lama di DB) otomatis dipetakan ke "rotasi"/"rantai".
  *   "silang" dilempar ke bagiRuanganSilangJenjang() karena skema itu
  *   mencampur jenjang, jadi gak lewat jalur per-jenjang di bawah.
+ * @throws {Error} kalau versiSkema kosong atau bukan kode yang dikenal --
+ *   sengaja error keras, biar salah oper versi ketahuan langsung dan gak
+ *   diem-diem ngasilin pembagian pakai skema yang gak diminta siapa pun.
  * @returns {Array} [{ nomor_ruangan, jenjang, siswa: [{ id, nama, nis, asal_kelas, no_kursi }] }]
  *   nomor_ruangan JALAN TERUS lintas jenjang (jenjang kecil duluan: 7,
  *   lalu 8, lalu 9). Field `jenjang` ditambahin per ruang biar gampang
  *   di-group di UI (tab Komposisi Ruangan / Preview) tanpa perlu
  *   nebak-nebak dari asal_kelas siswa pertamanya.
  */
-function bagiRuanganPerJenjang(dataSiswaPerKelas, versiSkema = VERSI_DEFAULT) {
+function bagiRuanganPerJenjang(dataSiswaPerKelas, versiSkema) {
   const versi = normalisasiVersiSkema(versiSkema);
+  if (!versi) {
+    throw new Error(
+      `Versi skema pembagian belum dipilih atau tidak dikenal: ${JSON.stringify(versiSkema)}. ` +
+        `Pilihan yang tersedia: ${VERSI_SKEMA_LIST.map((o) => o.value).join(", ")}.`
+    );
+  }
 
-  // V1 Silang Jenjang punya alur sendiri (ruang dicampur lintas jenjang),
+  // Silang Jenjang punya alur sendiri (ruang dicampur lintas jenjang),
   // jadi langsung dilempar ke modulnya dan gak ikut loop per-jenjang.
   if (versi === "silang") {
     return bagiRuanganSilangJenjang(dataSiswaPerKelas);
@@ -354,7 +415,8 @@ export {
   bagiRuanganPerJenjang,
   bangunMatrixKomposisi,
   VERSI_SKEMA_LIST,
-  VERSI_DEFAULT,
+  versiSkemaValid,
   normalisasiVersiSkema,
+  normalisasiVersiSkemaTersimpan,
   labelVersiSkema,
 };
