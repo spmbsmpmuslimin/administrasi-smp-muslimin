@@ -2,7 +2,7 @@
 // Layer data untuk sub-fitur "Kartu Ujian" (2 template: Peserta & Pengawas).
 //
 // Data mengalir dari 2 sub-fitur lain yang sudah jalan:
-// - Kartu Peserta  <- Pembagian Ruangan (tabel peserta_ujian)
+// - Kartu Peserta  <- Pembagian Ruangan (Tabel peserta_ujian)
 // - Kartu Pengawas <- Jadwal & Pembagian Ruangan (tabel jadwal_ujian + pengawas_ujian,
 //   lewat jadwalPengawasSupabase.js -- SENGAJA reuse fungsi yang sama biar
 //   nggak ada 2 cara beda buat ambil data yang identik)
