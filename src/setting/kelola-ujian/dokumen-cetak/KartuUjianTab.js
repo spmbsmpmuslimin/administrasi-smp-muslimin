@@ -5,7 +5,15 @@
 // supaya UX-nya konsisten di seluruh sub-fitur Manajemen Ujian.
 
 import React, { useState, useEffect, useCallback } from "react";
-import { ChevronLeft, Printer, DoorOpen, Users, Loader2, IdCard } from "lucide-react";
+import {
+  ChevronLeft,
+  Printer,
+  DoorOpen,
+  Users,
+  Loader2,
+  IdCard,
+  GraduationCap,
+} from "lucide-react";
 import { supabase } from "../../../supabaseClient";
 import {
   ambilDaftarTahunAjaran,
@@ -15,6 +23,8 @@ import {
 import { ambilRuanganUjian, ambilJadwalSesi } from "../jadwal-pengawas/jadwalPengawasSupabase";
 import {
   ambilPesertaRuangan,
+  ambilDaftarKelasUjian,
+  ambilPesertaKelas,
   ambilJadwalPengawasPerGuru,
   ambilMetadataKepsek,
 } from "./kartuUjianSupabase";
@@ -39,12 +49,18 @@ const KartuUjianTab = ({ jenisUjian, showToast, onBack }) => {
   const [loadingUjian, setLoadingUjian] = useState(false);
 
   const [tabAktif, setTabAktif] = useState("peserta"); // "peserta" | "pengawas"
+  // Mode cetak Kartu Peserta -- "ruangan" (lama) atau "kelas" (baru, Sep
+  // 2026, buat mudahin distribusi ke siswa: siswa lebih familiar cari
+  // kartunya sendiri berdasarkan kelas daripada nomor ruangan ujian).
+  const [modeCetakPeserta, setModeCetakPeserta] = useState("ruangan");
 
   const [daftarRuangan, setDaftarRuangan] = useState([]);
+  const [daftarKelas, setDaftarKelas] = useState([]);
   const [daftarGuruJadwal, setDaftarGuruJadwal] = useState([]);
   const [loadingData, setLoadingData] = useState(false);
 
   const [mencetakRuangan, setMencetakRuangan] = useState(null);
+  const [mencetakKelas, setMencetakKelas] = useState(null);
   const [mencetakSemuaPengawas, setMencetakSemuaPengawas] = useState(false);
 
   const semesterDibutuhkan = KONFIGURASI_JENIS_UJIAN[jenisUjian]?.semester;
@@ -117,11 +133,13 @@ const KartuUjianTab = ({ jenisUjian, showToast, onBack }) => {
     if (!ujian?.id) return;
     setLoadingData(true);
     try {
-      const [ruangan, guruJadwal] = await Promise.all([
+      const [ruangan, kelas, guruJadwal] = await Promise.all([
         ambilRuanganUjian(supabase, ujian.id),
+        ambilDaftarKelasUjian(supabase, ujian.id),
         ambilJadwalPengawasPerGuru(supabase, ujian.id),
       ]);
       setDaftarRuangan(ruangan);
+      setDaftarKelas(kelas);
       setDaftarGuruJadwal(guruJadwal);
     } catch (err) {
       console.error(err);
@@ -160,7 +178,7 @@ const KartuUjianTab = ({ jenisUjian, showToast, onBack }) => {
       // ditambahin (lihat generateKartuPesertaPdf()).
       if (!daftarJadwal || daftarJadwal.length === 0) {
         showToast?.(
-          "Jadwal ujian belum diisi di tab \"Jadwal Sesi\" -- kartu tetap dicetak 1 sisi (tanpa halaman jadwal di belakang)",
+          'Jadwal ujian belum diisi di tab "Jadwal Sesi" -- kartu tetap dicetak 1 sisi (tanpa halaman jadwal di belakang)',
           "error"
         );
       }
@@ -179,6 +197,51 @@ const KartuUjianTab = ({ jenisUjian, showToast, onBack }) => {
       showToast?.("Gagal mencetak kartu peserta: " + err.message, "error");
     } finally {
       setMencetakRuangan(null);
+    }
+  };
+
+  const handleCetakKelas = async (kelas) => {
+    const ta = ambilTahunAjaranTerpilih();
+    if (!ta || !ujian) return;
+
+    setMencetakKelas(kelas);
+    try {
+      const [daftarPeserta, kepsek, daftarJadwal] = await Promise.all([
+        ambilPesertaKelas(supabase, ujian.id, kelas),
+        ambilMetadataKepsek(supabase),
+        ambilJadwalSesi(supabase, ujian.id),
+      ]);
+
+      if (kepsek.nama === "-") {
+        showToast?.(
+          "Nama kepala sekolah belum diisi di Setting > Profil Sekolah -- kartu tetap dicetak, tapi kolom nama kepsek kosong",
+          "error"
+        );
+      }
+      if (!daftarJadwal || daftarJadwal.length === 0) {
+        showToast?.(
+          'Jadwal ujian belum diisi di tab "Jadwal Sesi" -- kartu tetap dicetak 1 sisi (tanpa halaman jadwal di belakang)',
+          "error"
+        );
+      }
+
+      // nomorRuangan global SENGAJA gak dikasih -- tiap peserta dari
+      // ambilPesertaKelas() udah bawa nomorRuangan sendiri-sendiri (kelas
+      // ini bisa kesebar di beberapa ruangan kalau silang jenjang), badge
+      // ruangan per kartu dihitung dari situ oleh generateKartuPesertaPdf().
+      generateKartuPesertaPdf({
+        daftarPeserta,
+        jenisUjian,
+        tahunAjaran: labelTahunAjaran(ta),
+        kepsek,
+        daftarJadwal,
+      });
+      showToast?.(`Kartu peserta kelas ${kelas} berhasil dicetak`, "success");
+    } catch (err) {
+      console.error(err);
+      showToast?.("Gagal mencetak kartu peserta: " + err.message, "error");
+    } finally {
+      setMencetakKelas(null);
     }
   };
 
@@ -297,41 +360,113 @@ const KartuUjianTab = ({ jenisUjian, showToast, onBack }) => {
                 </div>
               ) : (
                 <>
-                  <p className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">
-                    Pilih ruangan untuk dicetak kartu pesertanya:
-                  </p>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-                    {daftarRuangan.map((r) => (
-                      <div
-                        key={r.nomor_ruangan}
-                        className="flex items-center justify-between p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800"
-                      >
-                        <div className="flex items-center gap-2">
-                          <DoorOpen className="w-4 h-4 text-indigo-500" />
-                          <div>
-                            <p className="text-sm font-semibold text-gray-800 dark:text-gray-100">
-                              Ruangan {r.nomor_ruangan}
-                            </p>
-                            <p className="text-xs text-gray-500 dark:text-gray-400">
-                              {r.jumlah_siswa} siswa
-                            </p>
-                          </div>
-                        </div>
-                        <button
-                          onClick={() => handleCetakPeserta(r.nomor_ruangan)}
-                          disabled={mencetakRuangan === r.nomor_ruangan}
-                          className="flex items-center gap-1 text-xs font-medium px-2.5 py-1.5 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50"
-                        >
-                          {mencetakRuangan === r.nomor_ruangan ? (
-                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                          ) : (
-                            <Printer className="w-3.5 h-3.5" />
-                          )}
-                          Cetak
-                        </button>
-                      </div>
-                    ))}
+                  <div className="flex items-center gap-2 mb-3">
+                    <button
+                      onClick={() => setModeCetakPeserta("ruangan")}
+                      className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors ${
+                        modeCetakPeserta === "ruangan"
+                          ? "bg-indigo-600 border-indigo-600 text-white"
+                          : "border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
+                      }`}
+                    >
+                      <DoorOpen size={13} /> Per Ruangan
+                    </button>
+                    <button
+                      onClick={() => setModeCetakPeserta("kelas")}
+                      className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors ${
+                        modeCetakPeserta === "kelas"
+                          ? "bg-indigo-600 border-indigo-600 text-white"
+                          : "border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
+                      }`}
+                    >
+                      <GraduationCap size={13} /> Per Kelas
+                    </button>
                   </div>
+
+                  {modeCetakPeserta === "ruangan" ? (
+                    <>
+                      <p className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">
+                        Pilih ruangan untuk dicetak kartu pesertanya:
+                      </p>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                        {daftarRuangan.map((r) => (
+                          <div
+                            key={r.nomor_ruangan}
+                            className="flex items-center justify-between p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800"
+                          >
+                            <div className="flex items-center gap-2">
+                              <DoorOpen className="w-4 h-4 text-indigo-500" />
+                              <div>
+                                <p className="text-sm font-semibold text-gray-800 dark:text-gray-100">
+                                  Ruangan {r.nomor_ruangan}
+                                </p>
+                                <p className="text-xs text-gray-500 dark:text-gray-400">
+                                  {r.jumlah_siswa} siswa
+                                </p>
+                              </div>
+                            </div>
+                            <button
+                              onClick={() => handleCetakPeserta(r.nomor_ruangan)}
+                              disabled={mencetakRuangan === r.nomor_ruangan}
+                              className="flex items-center gap-1 text-xs font-medium px-2.5 py-1.5 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50"
+                            >
+                              {mencetakRuangan === r.nomor_ruangan ? (
+                                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                              ) : (
+                                <Printer className="w-3.5 h-3.5" />
+                              )}
+                              Cetak
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <p className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">
+                        Pilih kelas untuk dicetak kartu pesertanya (badge ruangan tiap kartu
+                        otomatis nyesuain ruangan masing-masing anak):
+                      </p>
+                      {daftarKelas.length === 0 ? (
+                        <div className="p-3 text-xs bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl text-amber-700 dark:text-amber-300">
+                          Belum ada data kelas untuk tahun ajaran ini.
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                          {daftarKelas.map((k) => (
+                            <div
+                              key={k.kelas}
+                              className="flex items-center justify-between p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800"
+                            >
+                              <div className="flex items-center gap-2">
+                                <GraduationCap className="w-4 h-4 text-indigo-500" />
+                                <div>
+                                  <p className="text-sm font-semibold text-gray-800 dark:text-gray-100">
+                                    Kelas {k.kelas}
+                                  </p>
+                                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                                    {k.jumlah_siswa} siswa
+                                  </p>
+                                </div>
+                              </div>
+                              <button
+                                onClick={() => handleCetakKelas(k.kelas)}
+                                disabled={mencetakKelas === k.kelas}
+                                className="flex items-center gap-1 text-xs font-medium px-2.5 py-1.5 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50"
+                              >
+                                {mencetakKelas === k.kelas ? (
+                                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                ) : (
+                                  <Printer className="w-3.5 h-3.5" />
+                                )}
+                                Cetak
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </>
+                  )}
                 </>
               )}
             </div>

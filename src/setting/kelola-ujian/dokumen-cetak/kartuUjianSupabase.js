@@ -41,7 +41,8 @@ async function ambilPesertaRuangan(supabase, ujianId, nomorRuangan) {
     // gender di tabel students isinya "L"/"P" (bukan kata penuh) --
     // konversi di sini biar pemanggil (kartuUjianPdf.js) tinggal pakai
     // langsung, samain pola sama jenis_kelamin di StudentList.js.
-    jenisKelamin: row.students?.gender === "L" ? "Laki-laki" : row.students?.gender === "P" ? "Perempuan" : "-",
+    jenisKelamin:
+      row.students?.gender === "L" ? "Laki-laki" : row.students?.gender === "P" ? "Perempuan" : "-",
   }));
 }
 
@@ -127,4 +128,75 @@ async function ambilMetadataKepsek(supabase) {
   };
 }
 
-export { ambilPesertaRuangan, ambilJadwalPengawasPerGuru, ambilMetadataKepsek };
+/**
+ * Ambil daftar kelas yang ikut ujian ini + jumlah siswanya -- buat dropdown
+ * pilihan di mode cetak "Per Kelas" (setara ambilRuanganUjian() di
+ * jadwalPengawasSupabase.js, tapi dikelompokkan per asal_kelas bukan per
+ * nomor_ruangan). Diurutkan pakai numeric collation ("7A" < "7B" < ... <
+ * "9F") biar tampil rapi, bukan urutan string biasa yang bisa "10A" <
+ * "9A".
+ * @returns {Promise<Array>} [{ kelas, jumlah_siswa }]
+ */
+async function ambilDaftarKelasUjian(supabase, ujianId) {
+  const { data, error } = await supabase
+    .from("peserta_ujian")
+    .select("asal_kelas")
+    .eq("ujian_id", ujianId);
+
+  if (error) throw error;
+
+  const hitung = {};
+  (data || []).forEach((row) => {
+    const kelas = row.asal_kelas || "-";
+    hitung[kelas] = (hitung[kelas] || 0) + 1;
+  });
+
+  return Object.entries(hitung)
+    .map(([kelas, jumlah_siswa]) => ({ kelas, jumlah_siswa }))
+    .sort((a, b) => a.kelas.localeCompare(b.kelas, undefined, { numeric: true }));
+}
+
+/**
+ * Ambil semua peserta 1 kelas tertentu (bisa kesebar di beberapa ruangan
+ * kalau ujiannya silang kelas) -- buat mode cetak "Per Kelas" di
+ * KartuUjianTab.js, biar guru/TU gampang cari kartu berdasarkan kelas anak
+ * didiknya tanpa perlu tau dulu anak itu masuk ruangan berapa. Beda dari
+ * ambilPesertaRuangan() di atas: filter-nya asal_kelas (bukan
+ * nomor_ruangan), dan tiap baris hasilnya bawa `nomorRuangan` MASING-MASING
+ * (dikonsumsi generateKartuPesertaPdf() di kartuUjianPdf.js buat nentuin
+ * badge ruangan per kartu, karena beda anak di kelas yang sama bisa beda
+ * ruangan). Diurutkan per ruangan dulu baru no_peserta, biar kartu yang
+ * seruangan ngumpul jadi satu blok pas dicetak -- lebih mudah pas
+ * distribusi & pas ngecek dibanding acak.
+ * @returns {Promise<Array>} [{ no_peserta, nama, nis, nisn, kelas, jenisKelamin, nomorRuangan }]
+ */
+async function ambilPesertaKelas(supabase, ujianId, kelas) {
+  const { data, error } = await supabase
+    .from("peserta_ujian")
+    .select("no_peserta, asal_kelas, nomor_ruangan, students(full_name, nis, nisn, gender)")
+    .eq("ujian_id", ujianId)
+    .eq("asal_kelas", kelas)
+    .order("nomor_ruangan", { ascending: true })
+    .order("no_peserta", { ascending: true });
+
+  if (error) throw error;
+
+  return (data || []).map((row) => ({
+    no_peserta: row.no_peserta,
+    nama: row.students?.full_name || "-",
+    nis: row.students?.nis || "-",
+    nisn: row.students?.nisn || "-",
+    kelas: row.asal_kelas || "-",
+    jenisKelamin:
+      row.students?.gender === "L" ? "Laki-laki" : row.students?.gender === "P" ? "Perempuan" : "-",
+    nomorRuangan: row.nomor_ruangan,
+  }));
+}
+
+export {
+  ambilPesertaRuangan,
+  ambilDaftarKelasUjian,
+  ambilPesertaKelas,
+  ambilJadwalPengawasPerGuru,
+  ambilMetadataKepsek,
+};

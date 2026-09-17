@@ -340,6 +340,18 @@ function gambarHalamanJadwalKartu(
   });
 }
 
+/**
+ * Generate PDF kartu peserta. Dua mode pemanggilan (revisi Sep 2026):
+ * 1. PER RUANGAN (lama) -- daftarPeserta semuanya dari 1 ruangan yang sama,
+ *    nomor ruangan dikasih lewat `nomorRuangan` (satu nilai buat semua kartu).
+ * 2. PER KELAS (baru) -- buat mudahin distribusi kartu ke siswa (siswa lebih
+ *    familiar cari kartu berdasarkan kelasnya sendiri daripada nomor ruangan
+ *    ujian yang campur-campur jenjang). daftarPeserta 1 kelas tapi bisa
+ *    kesebar di BEBERAPA ruangan (kalau ujiannya silang kelas) -- di mode ini
+ *    tiap objek peserta WAJIB punya `peserta.nomorRuangan` sendiri (badge di
+ *    kartu bakal nampilin ruangan masing-masing anak, bukan satu nomor buat
+ *    semua). `nomorRuangan` global boleh dikosongin di mode ini.
+ */
 function generateKartuPesertaPdf({
   daftarPeserta,
   jenisUjian,
@@ -349,7 +361,7 @@ function generateKartuPesertaPdf({
   daftarJadwal = [],
 }) {
   if (!daftarPeserta || daftarPeserta.length === 0) {
-    throw new Error("Tidak ada peserta untuk ruangan ini");
+    throw new Error("Tidak ada peserta buat dicetak");
   }
 
   const doc = createPdfDocument({ orientation: "portrait" });
@@ -378,7 +390,11 @@ function generateKartuPesertaPdf({
     };
   };
 
-  // ---- Sisi depan: identitas + badge ruangan (semua peserta) ----
+  // ---- Sisi depan: identitas + badge ruangan (semua peserta). Nomor
+  // ruangan diambil PER PESERTA (peserta.nomorRuangan) kalau ada -- perlu
+  // buat mode cetak per kelas di mana 1 kelas bisa kesebar ke beberapa
+  // ruangan -- fallback ke `nomorRuangan` global buat mode cetak per
+  // ruangan (lama, semua peserta 1 ruangan yang sama).
   daftarPeserta.forEach((peserta, idx) => {
     const { posisiDiHalaman, x, y } = posisiKartu(idx);
     if (idx > 0 && posisiDiHalaman === 0) doc.addPage();
@@ -386,7 +402,14 @@ function generateKartuPesertaPdf({
     gambarSatuKartu(
       doc,
       { x, y, width: cardWidth, height: cardHeight },
-      { peserta, jenisUjian, tahunAjaran, nomorRuangan, kepsek, tanggalCetak }
+      {
+        peserta,
+        jenisUjian,
+        tahunAjaran,
+        nomorRuangan: peserta.nomorRuangan ?? nomorRuangan,
+        kepsek,
+        tanggalCetak,
+      }
     );
   });
 
@@ -407,7 +430,22 @@ function generateKartuPesertaPdf({
     });
   }
 
-  const namaFile = `Kartu-Ujian-${jenisUjian}-Ruangan-${nomorRuangan}.pdf`;
+  // ---- Nama file: deteksi otomatis mode cetak dari isi daftarPeserta.
+  // Kalau semua kartu ujung-ujungnya pakai nomor ruangan yang sama (mode
+  // per ruangan, atau kebetulan 1 kelas cuma di 1 ruangan), nama file
+  // tetep "Ruangan-X" kayak sebelumnya. Kalau beda-beda (mode per kelas,
+  // 1 kelas kesebar ke beberapa ruangan), nama file pakai "Kelas-X".
+  const ruanganTiapPeserta = daftarPeserta.map((p) => p.nomorRuangan ?? nomorRuangan);
+  const semuaRuanganSama = ruanganTiapPeserta.every((r) => r === ruanganTiapPeserta[0]);
+
+  let namaFile;
+  if (semuaRuanganSama) {
+    namaFile = `Kartu-Ujian-${jenisUjian}-Ruangan-${ruanganTiapPeserta[0]}.pdf`;
+  } else {
+    const kelasUnik = [...new Set(daftarPeserta.map((p) => p.kelas))];
+    const labelKelas = kelasUnik.length === 1 ? kelasUnik[0] : "Gabungan";
+    namaFile = `Kartu-Ujian-${jenisUjian}-Kelas-${labelKelas}.pdf`;
+  }
   savePdf(doc, namaFile);
 }
 
