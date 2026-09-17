@@ -1,26 +1,44 @@
 // setting/kelola-ujian/JadwalRuanganTab.js
-// Kartu 1 dari Manajemen Ujian: "Jadwal & Pembagian Ruangan".
+// Kartu 1 dari Manajemen Ujian: "Jadwal, Peserta & Pembagian Ruangan"
+// (nama baru, sebelumnya "Jadwal & Pembagian Ruangan" -- diganti karena
+// Export Daftar Peserta pindah ke sini, lihat tab 5 di bawah).
 //
 // Kartu ini cuma WADAH (container) -- isinya nggak ditulis ulang di sini,
 // tapi diambil dari 2 komponen yang udah ada, masing-masing dikunci ke
 // bagian yang relevan sama judul kartu:
-//   1. "Jadwal Sesi"         -> JadwalPengawasTab (tabPaksa="jadwal")
-//   2. "Komposisi Ruangan"   -> PembagianRuanganTab (mode="ruangan", view "komposisi")
-//   3. "Pembagian Ruangan"   -> PembagianRuanganTab (mode="ruangan", tab "edit")
-//   4. "Preview Per Ruangan" -> PembagianRuanganTab (mode="ruangan", tab "preview")
+//   1. "Jadwal Sesi"           -> JadwalPengawasTab (tabPaksa="jadwal")
+//   2. "Komposisi Ruangan"     -> PembagianRuanganTab (mode="ruangan", view "komposisi")
+//   3. "Pembagian Ruangan"     -> PembagianRuanganTab (mode="ruangan", tab "edit")
+//   4. "Preview Per Ruangan"   -> PembagianRuanganTab (mode="ruangan", tab "preview")
+//   5. "Export Daftar Peserta" -> PembagianRuanganTab (mode="ruangan", tab "export")
+//
+// Tab 5 (Export) PINDAH dari kartu "Daftar & Jadwal Pengawas" (sebelumnya
+// "Peserta & Pengawas") ke sini, sengaja diletakkan PALING TERAKHIR, setelah
+// Preview -- alurnya jadi: susun -> lihat preview per ruangan -> langsung
+// export/cetak, tanpa pindah kartu. Karena masih 1 instance
+// PembagianRuanganTab yang sama (mode="ruangan"), Export ini WYSIWYG:
+// isinya ngikutin quota yang lagi tampil di layar, TERMASUK yang belum
+// diklik "Simpan ke Database" -- beda dari behavior lama di kartu sebelah
+// yang cuma baca data tersimpan.
 //
 // Sisa tab yang dulu ada di sini (Daftar Pengawas, Jadwal Ngawas, Rekap)
-// PINDAH ke kartu "Peserta & Pengawas" (PesertaPengawasTab.js), biar isi
-// tiap kartu nyambung sama judulnya.
+// tetap di kartu "Daftar & Jadwal Pengawas" (PesertaPengawasTab.js).
 //
 // CATATAN: pindah dari tab "Jadwal Sesi" ke tab ruangan (atau sebaliknya)
 // bikin komponen yang ditinggal ke-unmount, jadi quota yang BELUM disimpan
-// bakal hilang. Pindah antar 3 tab ruangan (Komposisi <-> Pembagian <->
-// Preview) aman, karena ketiganya komponen yang sama -- cuma ganti prop.
-// Makanya Preview di sini nunjukin editan quota yang belum disimpan juga.
+// bakal hilang. Pindah antar 4 tab ruangan (Komposisi <-> Pembagian <->
+// Preview <-> Export) aman, karena keempatnya komponen yang sama -- cuma
+// ganti prop.
 
 import React, { useState } from "react";
-import { ChevronLeft, CalendarClock, LayoutGrid, DoorOpen, Eye } from "lucide-react";
+import {
+  ChevronLeft,
+  CalendarClock,
+  LayoutGrid,
+  DoorOpen,
+  Eye,
+  FileSpreadsheet,
+} from "lucide-react";
 import JadwalPengawasTab from "./jadwal-pengawas/JadwalPengawasTab";
 import PembagianRuanganTab from "./pembagian-ruangan/PembagianRuanganTab";
 
@@ -35,6 +53,7 @@ const TAB_LIST = [
   { id: "komposisi", label: "Komposisi Ruangan", icon: LayoutGrid },
   { id: "pembagian", label: "Pembagian Ruangan", icon: DoorOpen },
   { id: "preview", label: "Preview Per Ruangan", icon: Eye },
+  { id: "export", label: "Export Daftar Peserta", icon: FileSpreadsheet },
 ];
 
 const JadwalRuanganTab = ({ jenisUjian, showToast, onBack }) => {
@@ -56,7 +75,7 @@ const JadwalRuanganTab = ({ jenisUjian, showToast, onBack }) => {
         </p>
       </div>
 
-      {/* flex-wrap supaya 4 tab ini nggak kepotong di layar HP sempit */}
+      {/* flex-wrap supaya 5 tab ini nggak kepotong di layar HP sempit */}
       <div className="flex flex-wrap gap-1 mb-5 border-b border-gray-200 dark:border-gray-700">
         {TAB_LIST.map((tab) => {
           const Icon = tab.icon;
@@ -84,7 +103,7 @@ const JadwalRuanganTab = ({ jenisUjian, showToast, onBack }) => {
           showToast={showToast}
           mode="ruangan"
           viewPaksa={tabAktif === "komposisi" ? "komposisi" : "pembagian"}
-          tabPaksa={tabAktif === "preview" ? "preview" : "edit"}
+          tabPaksa={tabAktif === "preview" ? "preview" : tabAktif === "export" ? "export" : "edit"}
         />
       )}
     </div>

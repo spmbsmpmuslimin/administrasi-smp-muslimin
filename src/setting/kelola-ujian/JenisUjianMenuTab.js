@@ -6,15 +6,16 @@
 // KONFIGURASI_JENIS_UJIAN di pembagianRuanganSupabase.js).
 //
 // Skema kartu (lihat dokumentasi "dokumentasi-kelola-ujian.md"):
-// 1. Jadwal & Pembagian Ruangan (aktif) -- 4 tab: Jadwal Sesi, Komposisi
-//    Ruangan, Pembagian Ruangan (quota + simpan), dan Preview Per Ruangan.
-//    Wadahnya JadwalRuanganTab.js, isinya di-embed dari JadwalPengawasTab.js &
-//    PembagianRuanganTab.js.
-// 2. Peserta & Pengawas (aktif) -- 4 tab: Export Daftar Peserta, Daftar
-//    Pengawas, Jadwal Ngawas, Rekap. Wadahnya
-//    PesertaPengawasTab.js. Isi tiap kartu sengaja disusun ulang biar
-//    nyambung sama judul kartunya (dulu semua urusan peserta nempel di
-//    kartu 1, semua urusan pengawas nempel di kartu 2).
+// 1. Jadwal, Peserta & Pembagian Ruangan (aktif, sebelumnya bernama "Jadwal
+//    & Pembagian Ruangan" -- diganti karena Export Daftar Peserta udah
+//    pindah ke kartu ini) -- 5 tab: Jadwal Sesi, Komposisi Ruangan,
+//    Pembagian Ruangan (quota + simpan), Preview Per Ruangan, dan Export
+//    Daftar Peserta. Wadahnya JadwalRuanganTab.js, isinya di-embed dari
+//    JadwalPengawasTab.js & PembagianRuanganTab.js.
+// 2. Daftar & Jadwal Pengawas (aktif, sebelumnya bernama "Peserta &
+//    Pengawas" -- diganti karena Export Daftar Peserta udah pindah ke
+//    kartu 1) -- 3 tab: Daftar Pengawas, Jadwal Ngawas, Rekap. Wadahnya
+//    PesertaPengawasTab.js.
 // 3. Kartu Ujian (aktif)
 // 4. Presensi & Berita Acara (aktif) -- bagian "Laporan" (rekap akhir)
 //    BELUM dibangun, cuma Daftar Hadir + Berita Acara (keduanya PDF form
@@ -70,18 +71,17 @@ const JENIS_UJIAN_LABEL = {
 const SUB_FITUR = [
   {
     id: "jadwal-pengawas",
-    title: "Jadwal & Pembagian Ruangan",
+    title: "Jadwal, Peserta & Pembagian Ruangan",
     description:
-      "Atur jadwal sesi ujian per mapel, bandingkan komposisi ruangan, susun & simpan pembagian siswa ke tiap ruangan, lalu cek previewnya",
+      "Atur jadwal sesi ujian per mapel, bandingkan komposisi ruangan, susun & simpan pembagian siswa ke tiap ruangan, cek previewnya, lalu export daftar pesertanya",
     icon: CalendarClock,
     status: "done",
     clickable: true,
   },
   {
     id: "pembagian-ruangan",
-    title: "Peserta & Pengawas",
-    description:
-      "Export daftar peserta per ruangan, kelola daftar pengawas, jadwal ngawas per hari, dan rekapnya",
+    title: "Daftar & Jadwal Pengawas",
+    description: "Kelola daftar pengawas, jadwal ngawas per hari, dan rekapnya",
     icon: DoorOpen,
     status: "done",
     clickable: true,
@@ -264,9 +264,10 @@ const JenisUjianMenuTab = ({ jenisUjian, showToast, onBack }) => {
             Modul dalam pengembangan
           </p>
           <p className="text-xs text-indigo-700 dark:text-indigo-400 mt-0.5">
-            Sub-fitur akan diaktifkan satu per satu. Jadwal & Pembagian Ruangan, Peserta & Pengawas,
-            Kartu Ujian, Presensi & Berita Acara, Anggaran & Biaya, Petunjuk & Penggunaan Aplikasi,
-            Program Kerja Pelaksanaan, dan Laporan Rekap Akhir sudah bisa dipakai.
+            Sub-fitur akan diaktifkan satu per satu. Jadwal, Peserta & Pembagian Ruangan, Daftar &
+            Jadwal Pengawas, Kartu Ujian, Presensi & Berita Acara, Anggaran & Biaya, Petunjuk &
+            Penggunaan Aplikasi, Program Kerja Pelaksanaan, dan Laporan Rekap Akhir sudah bisa
+            dipakai.
           </p>
         </div>
       </div>

@@ -6,18 +6,19 @@
 // dulu tiap simpan).
 //
 // PENTING: sejak kartu sub-fitur disusun ulang biar isinya nyambung sama
-// judulnya, komponen ini dipakai DUA KALI dengan porsi berbeda lewat prop `mode`:
-//   - JadwalRuanganTab.js   (kartu "Jadwal & Pembagian Ruangan")
+// judulnya, komponen ini dipakai lewat prop `mode`:
+//   - JadwalRuanganTab.js   (kartu "Jadwal, Peserta & Pembagian Ruangan")
 //       mode="ruangan" -> Komposisi Ruangan + tabel quota + Preview Per
-//       Ruangan + tombol Simpan. Preview sengaja ditaruh di sini, satu
-//       komponen sama tabel quota-nya, jadi hasil editan langsung kelihatan
-//       walaupun belum disimpan (persis kayak sebelum kartu dipisah).
-//   - PesertaPengawasTab.js (kartu "Peserta & Pengawas")
-//       mode="peserta" -> Export Daftar Peserta saja, READ-ONLY dari data
-//       yang sudah TERSIMPAN di DB (nggak ada tombol proses maupun simpan).
-// Konsekuensi yang perlu diingat: di mode "peserta", yang diexport adalah
-// data TERSIMPAN, bukan quota yang lagi diedit di kartu sebelah -- beda
-// kartu = beda state. Jadi simpan dulu, baru export.
+//       Ruangan + Export Daftar Peserta + tombol Simpan. Ketiga tab bawah
+//       (edit/preview/export) sengaja 1 komponen yang sama, jadi hasil
+//       editan quota langsung kelihatan di Preview MAUPUN keexport,
+//       WYSIWYG, walaupun belum diklik "Simpan ke Database" (lihat
+//       handleExportExcel/handleExportPdf).
+//   - mode="peserta" (READ-ONLY dari data yang sudah TERSIMPAN di DB, tanpa
+//       tombol proses/simpan) sengaja DIPERTAHANKAN di kode ini walau per
+//       sekarang belum ada kartu yang memakainya -- Export sudah pindah
+//       total ke mode "ruangan" di atas. Aman dihapus belakangan kalau
+//       beneran gak kepake lagi.
 //
 // Prop `viewPaksa`/`tabPaksa` bikin tab bar internal disembunyiin & tab aktif
 // ditentuin parent. Kalau `onBack` nggak dikirim, tombol balik & header jenis
@@ -252,10 +253,13 @@ const PembagianRuanganTab = ({
   onBack,
   // "full"    = semua tab (dipakai kalau komponen ini dibuka sebagai layar sendiri)
   // "ruangan" = cuma bagian PENYUSUNAN ruangan: Komposisi + Pembagian (quota)
-  //             + tombol Simpan. Dipakai di kartu "Jadwal & Pembagian Ruangan".
+  //             + tombol Simpan. Dipakai di kartu "Jadwal, Peserta & Pembagian Ruangan".
   // "peserta" = cuma bagian PESERTA: Preview Per Ruangan + Export Daftar
   //             Peserta, read-only dari data yang SUDAH tersimpan di DB.
-  //             Dipakai di kartu "Peserta & Pengawas".
+  //             Sengaja DIPERTAHANKAN buat kompatibilitas, tapi per
+  //             sekarang gak ada kartu yang pakai mode ini lagi (Export
+  //             udah pindah ke mode "ruangan" di kartu "Jadwal &
+  //             Pembagian Ruangan").
   mode = "full",
   // Kalau parent ngirim viewPaksa/tabPaksa, tab bar internal disembunyiin dan
   // tab aktif ditentuin parent -- biar nggak ada 2-3 baris tab numpuk waktu
@@ -754,14 +758,18 @@ const PembagianRuanganTab = ({
   const totalSiswaQuota = Object.values(totalPerKelasSaatIni).reduce((sum, v) => sum + v, 0);
 
   // Sub-tab mana aja yang boleh tampil, tergantung `mode`:
-  // - "ruangan" butuh tabel quota ("edit") + "preview" -- preview sengaja
-  //   ditaruh sebaris sama quota-nya, karena dua-duanya komponen yang sama:
-  //   apa yang diedit di tab quota langsung kelihatan di preview, TERMASUK
-  //   perubahan yang belum disimpan.
+  // - "ruangan" butuh ketiga-tiganya: tabel quota ("edit") + "preview" +
+  //   "export" -- ketiganya sengaja 1 komponen yang sama: apa yang diedit
+  //   di tab quota langsung kelihatan di preview MAUPUN keexport, TERMASUK
+  //   perubahan yang belum disimpan (WYSIWYG -- lihat komentar di
+  //   handleExportExcel/handleExportPdf).
   // - "peserta" cuma butuh "export" (baca data yang sudah tersimpan di DB)
+  //   -- dipertahankan buat kompatibilitas kalau nanti ada yang butuh versi
+  //   read-only-nya lagi, tapi per sekarang gak ada kartu yang pakai mode
+  //   ini (Export udah pindah ke kartu "Jadwal, Peserta & Pembagian Ruangan").
   // - "full" tetap ketiga-tiganya, kayak sebelum kartu dipisah.
   const tabTampil = TAB_LIST.filter((tab) => {
-    if (mode === "ruangan") return tab.id !== "export";
+    if (mode === "ruangan") return true;
     if (modePeserta) return tab.id === "export";
     return true;
   });
@@ -816,12 +824,12 @@ const PembagianRuanganTab = ({
         </div>
 
         {/* Kapasitas cuma relevan waktu MENYUSUN ruangan. Di mode "peserta"
-        (kartu Peserta & Pengawas) datanya read-only dari DB, jadi field ini
-        disembunyiin biar nggak bikin ngira bisa diubah dari sini. Sama
-        alasannya field ini disembunyiin pas tabAktif === "preview" --
-        "Preview Per Ruangan" itu preview data yang UDAH diproses & disimpan
-        sebelumnya, kapasitas gak ngaruh apa-apa lagi di situ. */}
-        {!modePeserta && tabAktif !== "preview" && (
+        (read-only dari DB) field ini disembunyiin biar nggak bikin ngira
+        bisa diubah dari sini. Sama alasannya field ini disembunyiin pas
+        tabAktif === "preview" ATAU "export" -- dua-duanya cuma
+        lihat/nyetak data yang UDAH diproses, kapasitas gak ngaruh apa-apa
+        lagi di situ. */}
+        {!modePeserta && tabAktif !== "preview" && tabAktif !== "export" && (
           <div>
             <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
               Kapasitas per Ruangan
@@ -961,13 +969,13 @@ const PembagianRuanganTab = ({
         <>
           {/* Semua kontrol PENYUSUNAN (versi algoritma + tombol proses) cuma
           muncul di mode "ruangan"/"full", dan CUMA di tab "edit" (halaman
-          "Pembagian Ruangan" yang sebenernya nyusun/nyimpen). Di kartu
-          "Peserta & Pengawas" (mode "peserta") data cuma dibaca dari DB,
-          nggak diproses ulang -- dan di tab "preview" ("Preview Per
-          Ruangan") halamannya cuma nampilin hasil yang UDAH diproses &
-          disimpan sebelumnya, jadi kontrol milih versi/kapasitas/tombol
-          proses di sini gak relevan lagi & cuma bikin bingung. */}
-          {!modePeserta && tabAktif !== "preview" && (
+          "Pembagian Ruangan" yang sebenernya nyusun/nyimpen). Di mode
+          "peserta" data cuma dibaca dari DB, nggak diproses ulang -- dan
+          di tab "preview" ("Preview Per Ruangan") ATAU "export" (Export
+          Daftar Peserta) halamannya cuma nampilin/nyetak hasil yang UDAH
+          diproses, jadi kontrol milih versi/kapasitas/tombol proses di
+          sini gak relevan lagi & cuma bikin bingung. */}
+          {!modePeserta && tabAktif !== "preview" && tabAktif !== "export" && (
             <>
               {/* Versi algoritma -- terkunci begitu ujian ini punya record tersimpan
               (lihat versiSkemaTerkunci), karena versi_skema cuma boleh dipilih
@@ -1386,7 +1394,7 @@ const PembagianRuanganTab = ({
                     Export daftar peserta ke Excel — buat ditempel di pintu ruangan & pegangan
                     pengawas.{" "}
                     {modePeserta
-                      ? "Isinya mengikuti pembagian ruangan yang TERSIMPAN di database. Kalau baru ngubah quota di sub-fitur Jadwal & Pembagian Ruangan, simpan dulu di sana, lalu buka ulang tab ini."
+                      ? "Isinya mengikuti pembagian ruangan yang TERSIMPAN di database. Kalau baru ngubah quota di sub-fitur Jadwal, Peserta & Pembagian Ruangan, simpan dulu di sana, lalu buka ulang tab ini."
                       : "Isinya mengikuti pembagian yang sedang tampil di layar, termasuk perubahan quota yang belum disimpan."}
                   </p>
 
@@ -1461,8 +1469,8 @@ const PembagianRuanganTab = ({
               )}
 
               {/* Tombol simpan sengaja cuma ada di mode penyusunan. Di kartu
-              "Peserta & Pengawas" yang tampil adalah data yang SUDAH tersimpan,
-              jadi nggak ada yang perlu disimpan lagi dari sana. */}
+              "Daftar & Jadwal Pengawas" yang tampil adalah data yang SUDAH
+              tersimpan, jadi nggak ada yang perlu disimpan lagi dari sana. */}
               {!modePeserta && (
                 <button
                   onClick={handleSimpan}

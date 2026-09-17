@@ -1,35 +1,22 @@
 // setting/kelola-ujian/PesertaPengawasTab.js
-// Kartu 2 dari Manajemen Ujian: "Peserta & Pengawas".
+// Kartu 2 dari Manajemen Ujian: "Daftar & Jadwal Pengawas" (nama baru,
+// sebelumnya "Peserta & Pengawas" -- diganti karena isinya sekarang murni
+// Pengawas, gak ada urusan Peserta lagi di kartu ini).
 //
-// Kartu ini cuma WADAH (container), isinya diambil dari komponen yang udah
-// ada, dikunci ke bagian yang nyambung sama judul kartu:
-//   PESERTA  -> PembagianRuanganTab (mode="peserta")
-//     1. "Export Daftar Peserta"
-//   PENGAWAS -> JadwalPengawasTab (tabPaksa=...)
-//     2. "Daftar Pengawas"
-//     3. "Jadwal Ngawas"
-//     4. "Rekap"
+// Kartu ini cuma WADAH (container) buat JadwalPengawasTab, dikunci ke 3
+// tab PENGAWAS lewat prop tabPaksa:
+//   1. "Daftar Pengawas"
+//   2. "Jadwal Ngawas"
+//   3. "Rekap"
 //
-// Penyusunan ruangan-nya (Komposisi + quota + Preview Per Ruangan + tombol
-// Simpan) ada di kartu "Jadwal & Pembagian Ruangan" (JadwalRuanganTab.js).
-//
-// PENTING -- beda sama sebelum dipisah: dulu Export baca `hasilLive` (hasil
-// di layar, termasuk quota yang belum disimpan) karena satu komponen sama
-// tabel quota-nya. Sekarang beda kartu = beda state, jadi di sini datanya
-// ditarik dari DB (cariUjian -> ambilPembagianTersimpan di dalam
-// PembagianRuanganTab). Artinya: habis ngubah quota, WAJIB "Simpan ke
-// Database" dulu di kartu sebelah, baru hasilnya ikut keexport dari sini.
+// "Export Daftar Peserta" yang dulu ada di sini SUDAH PINDAH ke kartu
+// "Jadwal, Peserta & Pembagian Ruangan" (JadwalRuanganTab.js), ditaruh sebagai tab
+// terakhir setelah "Preview Per Ruangan" -- biar 1 alur sama penyusunan
+// ruangannya (susun -> preview -> export), tanpa pindah kartu.
 
 import React, { useState } from "react";
-import {
-  ChevronLeft,
-  FileSpreadsheet,
-  ClipboardList,
-  Users,
-  Table2,
-} from "lucide-react";
+import { ChevronLeft, ClipboardList, Users, Table2 } from "lucide-react";
 import JadwalPengawasTab from "./jadwal-pengawas/JadwalPengawasTab";
-import PembagianRuanganTab from "./pembagian-ruangan/PembagianRuanganTab";
 
 const JENIS_UJIAN_LABEL = {
   PSAS: "PSAS - Penilaian Sumatif Akhir Semester",
@@ -37,20 +24,16 @@ const JENIS_UJIAN_LABEL = {
   PSAJ: "PSAJ - Penilaian Sumatif Akhir Jenjang",
 };
 
-// id "export" nyambung ke TAB_LIST di PembagianRuanganTab.js,
-// id "daftar"/"pengawas"/"rekap" nyambung ke tab internal JadwalPengawasTab.js
-// -- dikirim apa adanya lewat prop tabPaksa, jadi jangan diganti sepihak.
+// id di sini nyambung ke tab internal JadwalPengawasTab.js -- dikirim apa
+// adanya lewat prop tabPaksa, jadi jangan diganti sepihak.
 const TAB_LIST = [
-  { id: "export", label: "Export Daftar Peserta", icon: FileSpreadsheet, sumber: "peserta" },
-  { id: "daftar", label: "Daftar Pengawas", icon: ClipboardList, sumber: "pengawas" },
-  { id: "pengawas", label: "Jadwal Ngawas", icon: Users, sumber: "pengawas" },
-  { id: "rekap", label: "Rekap", icon: Table2, sumber: "pengawas" },
+  { id: "daftar", label: "Daftar Pengawas", icon: ClipboardList },
+  { id: "pengawas", label: "Jadwal Ngawas", icon: Users },
+  { id: "rekap", label: "Rekap", icon: Table2 },
 ];
 
 const PesertaPengawasTab = ({ jenisUjian, showToast, onBack }) => {
-  const [tabAktif, setTabAktif] = useState("export");
-
-  const sumberAktif = TAB_LIST.find((t) => t.id === tabAktif)?.sumber || "peserta";
+  const [tabAktif, setTabAktif] = useState("daftar");
 
   return (
     <div className="p-4 sm:p-6">
@@ -68,7 +51,7 @@ const PesertaPengawasTab = ({ jenisUjian, showToast, onBack }) => {
         </p>
       </div>
 
-      {/* 4 tab -- flex-wrap supaya turun ke baris berikutnya di layar HP,
+      {/* 3 tab -- flex-wrap supaya turun ke baris berikutnya di layar HP,
       bukan kepotong. */}
       <div className="flex flex-wrap gap-1 mb-5 border-b border-gray-200 dark:border-gray-700">
         {TAB_LIST.map((tab) => {
@@ -89,17 +72,7 @@ const PesertaPengawasTab = ({ jenisUjian, showToast, onBack }) => {
         })}
       </div>
 
-      {sumberAktif === "peserta" ? (
-        <PembagianRuanganTab
-          jenisUjian={jenisUjian}
-          showToast={showToast}
-          mode="peserta"
-          viewPaksa="pembagian"
-          tabPaksa={tabAktif}
-        />
-      ) : (
-        <JadwalPengawasTab jenisUjian={jenisUjian} showToast={showToast} tabPaksa={tabAktif} />
-      )}
+      <JadwalPengawasTab jenisUjian={jenisUjian} showToast={showToast} tabPaksa={tabAktif} />
     </div>
   );
 };

@@ -1,6 +1,10 @@
 import React, { useState, useCallback } from "react";
 import { exportAllStudents } from "./SpmbExcel";
 import html2pdf from "html2pdf.js";
+// Escape field data siswa sebelum di-inject ke formHTML -- lihat komentar
+// lengkap di file utility-nya soal kenapa ini perlu (cegah stored XSS
+// pas formulir di-download jadi PDF via html2pdf).
+import { escapeHtml } from "../utils/escapeHtml";
 
 const StudentList = ({
   students,
@@ -227,7 +231,7 @@ const StudentList = ({
                 <td class="label">No. Pendaftaran</td>
                 <td class="colon">:</td>
                 <td class="value"><strong>${
-                  student.no_pendaftaran || "....................................."
+                  escapeHtml(student.no_pendaftaran) || "....................................."
                 }</strong></td>
             </tr>
             <tr>
@@ -246,7 +250,7 @@ const StudentList = ({
                 <td class="label">Nama Lengkap</td>
                 <td class="colon">:</td>
                 <td class="value"><strong>${
-                  student.nama_lengkap || "....................................."
+                  escapeHtml(student.nama_lengkap) || "....................................."
                 }</strong></td>
             </tr>
             <tr>
@@ -254,7 +258,7 @@ const StudentList = ({
                 <td class="colon">:</td>
                 <td class="value">${
                   student.nisn && student.nisn !== "-"
-                    ? student.nisn
+                    ? escapeHtml(student.nisn)
                     : "....................................."
                 }</td>
             </tr>
@@ -266,7 +270,7 @@ const StudentList = ({
             <tr>
                 <td class="label">Tempat, Tanggal Lahir</td>
                 <td class="colon">:</td>
-                <td class="value">${student.tempat_lahir || ""}, ${
+                <td class="value">${escapeHtml(student.tempat_lahir) || ""}, ${
                   formatDateToDDMMYYYY(student.tanggal_lahir) || ""
                 }</td>
             </tr>
@@ -274,7 +278,7 @@ const StudentList = ({
                 <td class="label">Asal Sekolah (SD)</td>
                 <td class="colon">:</td>
                 <td class="value">${
-                  student.asal_sekolah || "....................................."
+                  escapeHtml(student.asal_sekolah) || "....................................."
                 }</td>
             </tr>
         </table>
@@ -286,21 +290,21 @@ const StudentList = ({
                 <td class="label">Nama Lengkap</td>
                 <td class="colon">:</td>
                 <td class="value">${
-                  student.nama_ayah || "....................................."
+                  escapeHtml(student.nama_ayah) || "....................................."
                 }</td>
             </tr>
             <tr>
                 <td class="label">Pekerjaan</td>
                 <td class="colon">:</td>
                 <td class="value">${
-                  student.pekerjaan_ayah || "....................................."
+                  escapeHtml(student.pekerjaan_ayah) || "....................................."
                 }</td>
             </tr>
             <tr>
                 <td class="label">Pendidikan Terakhir</td>
                 <td class="colon">:</td>
                 <td class="value">${
-                  student.pendidikan_ayah || "....................................."
+                  escapeHtml(student.pendidikan_ayah) || "....................................."
                 }</td>
             </tr>
             
@@ -309,21 +313,21 @@ const StudentList = ({
                 <td class="label">Nama Lengkap</td>
                 <td class="colon">:</td>
                 <td class="value">${
-                  student.nama_ibu || "....................................."
+                  escapeHtml(student.nama_ibu) || "....................................."
                 }</td>
             </tr>
             <tr>
                 <td class="label">Pekerjaan</td>
                 <td class="colon">:</td>
                 <td class="value">${
-                  student.pekerjaan_ibu || "....................................."
+                  escapeHtml(student.pekerjaan_ibu) || "....................................."
                 }</td>
             </tr>
             <tr>
                 <td class="label">Pendidikan Terakhir</td>
                 <td class="colon">:</td>
                 <td class="value">${
-                  student.pendidikan_ibu || "....................................."
+                  escapeHtml(student.pendidikan_ibu) || "....................................."
                 }</td>
             </tr>
         </table>
@@ -333,12 +337,12 @@ const StudentList = ({
             <tr>
                 <td class="label">No. HP / WhatsApp</td>
                 <td class="colon">:</td>
-                <td class="value">${student.no_hp || "....................................."}</td>
+                <td class="value">${escapeHtml(student.no_hp) || "....................................."}</td>
             </tr>
             <tr>
                 <td class="label">Alamat Lengkap</td>
                 <td class="colon">:</td>
-                <td class="value">${student.alamat || "....................................."}</td>
+                <td class="value">${escapeHtml(student.alamat) || "....................................."}</td>
             </tr>
         </table>
         
