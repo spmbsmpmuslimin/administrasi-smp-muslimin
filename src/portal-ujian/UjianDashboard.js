@@ -24,7 +24,30 @@ import {
   IdCard,
   FileBarChart2,
   ClipboardCheck,
+  GraduationCap,
+  Sparkles,
 } from "lucide-react";
+
+// Tiap jenis ujian dikasih identitas visual sendiri (gradient + ikon) biar
+// gampang dibedain sekilas mata, gak semuanya keliatan sama kayak sebelumnya.
+// Jenis yang gak ada di daftar ini otomatis jatuh ke DEFAULT_JENIS_STYLE.
+const JENIS_UJIAN_STYLE = {
+  PSAS: { gradient: "from-amber-500 to-orange-600", icon: ClipboardList },
+  PSAT: { gradient: "from-sky-500 to-blue-600", icon: CalendarClock },
+  PSAJ: { gradient: "from-violet-500 to-purple-600", icon: GraduationCap },
+};
+const DEFAULT_JENIS_STYLE = {
+  gradient: "from-amber-500 to-orange-600",
+  icon: FileText,
+};
+
+function getSapaan() {
+  const jam = new Date().getHours();
+  if (jam < 11) return "Selamat Pagi";
+  if (jam < 15) return "Selamat Siang";
+  if (jam < 19) return "Selamat Sore";
+  return "Selamat Malam";
+}
 
 // Urutan kerja panitia ujian dari awal sampai selesai. Judul & deskripsi
 // sengaja nyebut nama sub-fitur PERSIS SAMA seperti di SUB_FITUR
@@ -38,7 +61,7 @@ const LANGKAH_PANDUAN = [
   },
   {
     title: "Cek Jadwal, Peserta & Pembagian Ruangan",
-    desc: "Lihat jadwal sesi & pembagian ruangan buat tau kamu ngawas kapan dan di ruangan mana.",
+    desc: "Lihat jadwal sesi & pembagian ruangan buat tau Anda ngawas kapan dan di ruangan mana.",
     icon: CalendarClock,
   },
   {
@@ -58,25 +81,21 @@ const LANGKAH_PANDUAN = [
   },
 ];
 
-export default function UjianDashboard({
-  namaGuru,
-  jenisUjianAktif,
-  onPilihJenisUjian,
-}) {
+export default function UjianDashboard({ namaGuru, jenisUjianAktif, onPilihJenisUjian }) {
   const [showPanduan, setShowPanduan] = useState(true);
 
   if (!jenisUjianAktif?.length) {
     return (
       <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm p-8 text-center">
-        <div className="w-14 h-14 bg-amber-50 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4">
+        <div className="w-14 h-14 bg-gradient-to-br from-amber-50 to-orange-50 dark:from-gray-800 dark:to-gray-800 rounded-full flex items-center justify-center mx-auto mb-4">
           <ClipboardList className="w-6 h-6 text-amber-500" />
         </div>
         <h2 className="text-base font-bold text-gray-900 dark:text-gray-100 mb-2">
-          Belum ada tugas panitia aktif
+          {getSapaan()}, {namaGuru}
         </h2>
         <p className="text-sm text-gray-500 dark:text-gray-400 max-w-sm mx-auto">
-          Portal ini akan aktif otomatis saat kamu terdaftar sebagai panitia
-          dan periode ujian sedang berlangsung.
+          Belum ada tugas panitia aktif. Portal ini akan aktif otomatis saat Anda terdaftar sebagai
+          panitia dan periode ujian sedang berlangsung.
         </p>
       </div>
     );
@@ -84,13 +103,19 @@ export default function UjianDashboard({
 
   return (
     <div className="space-y-5">
-      <div>
-        <h1 className="text-lg font-bold text-gray-900 dark:text-gray-100">
-          Selamat datang, {namaGuru}
-        </h1>
-        <p className="text-sm text-gray-500 dark:text-gray-400">
-          Kamu terdaftar sebagai panitia untuk:
-        </p>
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h1 className="text-lg font-bold text-gray-900 dark:text-gray-100">
+            {getSapaan()}, {namaGuru}
+          </h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400">
+            Anda Terdaftar Sebagai Panitia Untuk:
+          </p>
+        </div>
+        <span className="shrink-0 inline-flex items-center gap-1.5 bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300 text-xs font-semibold px-3 py-1.5 rounded-full">
+          <Sparkles size={12} />
+          {jenisUjianAktif.length} Jenis Ujian Aktif
+        </span>
       </div>
 
       {/* ====== PANDUAN: APA YANG PERLU DILAKUKAN? ====== */}
@@ -152,32 +177,35 @@ export default function UjianDashboard({
         )}
       </div>
 
-      {/* ====== KARTU JENIS UJIAN -- ORIGINAL, TIDAK BERUBAH ====== */}
+      {/* ====== KARTU JENIS UJIAN -- perilaku klik & data SAMA PERSIS,
+          cuma tampilan dibedain per jenis biar gampang dikenali ====== */}
       <div className="grid gap-3 sm:grid-cols-2">
-        {jenisUjianAktif.map((jenis) => (
-          <button
-            key={jenis}
-            onClick={() => onPilihJenisUjian(jenis)}
-            className="group flex items-center gap-4 bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800
-              shadow-sm hover:shadow-md hover:border-amber-200 dark:hover:border-amber-900 transition-all p-4 text-left"
-          >
-            <div className="w-12 h-12 bg-gradient-to-br from-amber-500 to-orange-600 rounded-xl flex items-center justify-center shrink-0 shadow-sm">
-              <FileText size={20} className="text-white" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-base font-bold text-gray-900 dark:text-gray-100">
-                {jenis}
-              </p>
-              <p className="text-xs text-gray-500 dark:text-gray-400">
-                Buka ruang kerja ujian
-              </p>
-            </div>
-            <ChevronRight
-              size={18}
-              className="text-gray-300 dark:text-gray-600 group-hover:text-amber-500 group-hover:translate-x-0.5 transition-all shrink-0"
-            />
-          </button>
-        ))}
+        {jenisUjianAktif.map((jenis) => {
+          const style = JENIS_UJIAN_STYLE[jenis] ?? DEFAULT_JENIS_STYLE;
+          const Icon = style.icon;
+          return (
+            <button
+              key={jenis}
+              onClick={() => onPilihJenisUjian(jenis)}
+              className="group flex items-center gap-4 bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800
+                shadow-sm hover:shadow-md hover:border-amber-200 dark:hover:border-amber-900 transition-all p-4 text-left"
+            >
+              <div
+                className={`w-12 h-12 bg-gradient-to-br ${style.gradient} rounded-xl flex items-center justify-center shrink-0 shadow-sm`}
+              >
+                <Icon size={20} className="text-white" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-base font-bold text-gray-900 dark:text-gray-100">{jenis}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">Buka ruang kerja ujian</p>
+              </div>
+              <ChevronRight
+                size={18}
+                className="text-gray-300 dark:text-gray-600 group-hover:text-amber-500 group-hover:translate-x-0.5 transition-all shrink-0"
+              />
+            </button>
+          );
+        })}
       </div>
     </div>
   );

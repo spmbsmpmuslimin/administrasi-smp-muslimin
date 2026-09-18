@@ -16,36 +16,9 @@ function getInitials(name) {
 }
 
 const NAV_ITEMS = [
-  {
-    id: "ujian-dashboard",
-    label: "Dashboard",
-    icon: LayoutDashboard,
-    activeBg: "bg-amber-50 dark:bg-amber-950/30",
-    activeText: "text-amber-700 dark:text-amber-400",
-    activeBar: "bg-amber-500",
-    inactiveText: "text-gray-500 dark:text-gray-400",
-    hoverText: "group-hover:text-amber-600 dark:group-hover:text-amber-400",
-  },
-  {
-    id: "ujian-jenis",
-    label: "Jenis Ujian",
-    icon: FileText,
-    activeBg: "bg-indigo-50 dark:bg-indigo-950/30",
-    activeText: "text-indigo-700 dark:text-indigo-400",
-    activeBar: "bg-indigo-500",
-    inactiveText: "text-gray-500 dark:text-gray-400",
-    hoverText: "group-hover:text-indigo-600 dark:group-hover:text-indigo-400",
-  },
-  {
-    id: "ujian-laporan",
-    label: "Laporan",
-    icon: ClipboardList,
-    activeBg: "bg-emerald-50 dark:bg-emerald-950/30",
-    activeText: "text-emerald-700 dark:text-emerald-400",
-    activeBar: "bg-emerald-500",
-    inactiveText: "text-gray-500 dark:text-gray-400",
-    hoverText: "group-hover:text-emerald-600 dark:group-hover:text-emerald-400",
-  },
+  { id: "ujian-dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { id: "ujian-jenis", label: "Jenis Ujian", icon: FileText },
+  { id: "ujian-laporan", label: "Laporan", icon: ClipboardList },
 ];
 
 export default function UjianSidebar({ currentPage, onPageChange, currentUser }) {
@@ -55,29 +28,26 @@ export default function UjianSidebar({ currentPage, onPageChange, currentUser })
     <aside
       className="hidden lg:flex lg:flex-col lg:fixed lg:inset-y-0 lg:left-0 lg:w-64 z-40
         bg-white dark:bg-gray-900
-        shadow-[4px_0_24px_rgba(120,53,15,0.06)] dark:shadow-black/40
+        shadow-sm dark:shadow-black/40
         border-r border-gray-100 dark:border-gray-800"
     >
       {/* Header / brand */}
-      <div
-        className="h-16 px-4 flex items-center gap-3 shrink-0 border-b border-amber-100/70 dark:border-gray-800
-          bg-gradient-to-r from-amber-100 via-orange-100 to-amber-50 dark:from-gray-900 dark:via-gray-900 dark:to-gray-900"
-      >
-        <div className="w-10 h-10 bg-gradient-to-br from-amber-500 to-orange-600 rounded-xl flex items-center justify-center shrink-0 shadow-sm ring-2 ring-white/60 dark:ring-gray-800">
+      <div className="h-16 px-4 flex items-center gap-3 shrink-0 border-b border-gray-100 dark:border-gray-800">
+        <div className="w-10 h-10 bg-amber-600 rounded-xl flex items-center justify-center shrink-0">
           <ClipboardList size={18} className="text-white" />
         </div>
         <div className="min-w-0">
-          <h1 className="text-amber-900 dark:text-gray-100 font-bold text-sm tracking-wide leading-tight">
+          <h1 className="text-gray-900 dark:text-gray-100 font-bold text-sm leading-tight">
             Portal Panitia Ujian
           </h1>
-          <p className="text-amber-700/80 dark:text-gray-400 text-xs font-medium truncate">
+          <p className="text-gray-500 dark:text-gray-400 text-xs font-medium truncate">
             {currentUser?.full_name || "Panitia"}
           </p>
         </div>
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 p-3 space-y-1.5 overflow-y-auto">
+      <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
         {NAV_ITEMS.map((item) => {
           const Icon = item.icon;
           const isActive = currentPage === item.id;
@@ -88,25 +58,27 @@ export default function UjianSidebar({ currentPage, onPageChange, currentUser })
               onClick={() => onPageChange(item.id)}
               className={`group relative w-full flex items-center gap-3 pl-4 pr-3 py-2.5 rounded-xl transition-all duration-200 ${
                 isActive
-                  ? `${item.activeBg} ${item.activeText} shadow-sm`
-                  : `${item.inactiveText} hover:bg-gray-50 dark:hover:bg-gray-800/60`
+                  ? "bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400 shadow-sm"
+                  : "text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800/60"
               }`}
             >
               {isActive && (
-                <span
-                  className={`absolute left-0 top-1/2 -translate-y-1/2 h-6 w-1 rounded-full ${item.activeBar}`}
-                />
+                <span className="absolute left-0 top-1/2 -translate-y-1/2 h-6 w-1 rounded-full bg-amber-500" />
               )}
               <Icon
                 size={20}
                 strokeWidth={isActive ? 2.6 : 2.1}
                 className={`flex-shrink-0 transition-transform duration-200 ${
-                  isActive ? "scale-110" : `group-hover:scale-110 ${item.hoverText}`
+                  isActive
+                    ? "scale-110"
+                    : "group-hover:scale-110 group-hover:text-amber-600 dark:group-hover:text-amber-400"
                 }`}
               />
               <span
                 className={`text-sm flex-1 text-left transition-colors duration-200 ${
-                  isActive ? "font-bold" : `font-medium ${item.hoverText}`
+                  isActive
+                    ? "font-bold"
+                    : "font-medium group-hover:text-amber-600 dark:group-hover:text-amber-400"
                 }`}
               >
                 {item.label}
@@ -118,23 +90,19 @@ export default function UjianSidebar({ currentPage, onPageChange, currentUser })
 
       {/* User info -> balik ke aplikasi utama */}
       <div className="border-t border-gray-100 dark:border-gray-800 p-3 shrink-0">
-        <div
-          className="w-full bg-gradient-to-br from-amber-50 via-orange-50 to-amber-50 dark:from-gray-800 dark:via-gray-800 dark:to-gray-800
-            rounded-xl p-3 border border-amber-100 dark:border-gray-700
-            flex items-center gap-3 shadow-sm"
-        >
-          <div className="w-10 h-10 bg-gradient-to-br from-amber-500 to-orange-600 rounded-lg flex items-center justify-center shrink-0 shadow-sm ring-2 ring-white dark:ring-gray-900">
+        <div className="w-full bg-gray-50 dark:bg-gray-800/60 rounded-xl p-3 border border-gray-100 dark:border-gray-800 flex items-center gap-3">
+          <div className="w-10 h-10 bg-amber-600 rounded-lg flex items-center justify-center shrink-0">
             <span className="text-white font-bold text-xs">{initials}</span>
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">
               {currentUser?.full_name || "Panitia Ujian"}
             </p>
-            <p className="text-xs text-amber-700/80 dark:text-gray-400 truncate">
+            <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
               @{currentUser?.username || "-"}
             </p>
           </div>
-          <ChevronRight size={16} className="text-amber-400 dark:text-gray-500 shrink-0" />
+          <ChevronRight size={16} className="text-gray-400 dark:text-gray-500 shrink-0" />
         </div>
       </div>
     </aside>

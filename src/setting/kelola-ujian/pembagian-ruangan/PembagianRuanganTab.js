@@ -74,6 +74,7 @@ import { terapkanQuotaManual, hitungTotalPerKelas } from "./bagiRuangan";
 import { exportDaftarPesertaUjian } from "./daftarPesertaExcelExport";
 import { exportDaftarPesertaUjianPdf } from "./daftarPesertaPdfExport";
 import { bangunPetaNoPeserta } from "./noPeserta";
+import DenahDuduk from "./DenahDuduk";
 
 const JENIS_UJIAN_LABEL = {
   PSAS: "PSAS - Penilaian Sumatif Akhir Semester (kelas 7-9)",
@@ -1419,135 +1420,24 @@ const PembagianRuanganTab = ({
                 </div>
               )}
 
-              {/* Tab "Denah Duduk" -- read-only, sama sumber data kayak tab
-              "Preview" (hasilLive + petaNoPeserta, diurutkan no_kursi),
-              cuma disusun jadi GRID kursi (representasi visual posisi
-              duduk fisik) bukan tabel daftar. "Jumlah Kolom" murni
-              pengaturan tampilan (lihat komentar di state
-              jumlahKolomDenah) -- admin nyesuaiin sendiri sama bentuk
-              ruangan aslinya. Kursi No. 1 = pojok kiri atas grid = paling
-              deket "DEPAN / PAPAN TULIS", lanjut row-major (baris demi
-              baris) ngikutin urutan no_kursi hasil algoritma pembagian. */}
+              {/* Tab "Denah Duduk" -- logic & render-nya sekarang di file
+              terpisah DenahDuduk.js (grid MEJA isi 2 siswa/meja, larangan
+              1 meja sekelas, urutan pengisian ke belakang dulu baru geser
+              kolom). Sumber data yang dikirim tetap PERSIS sama kayak tab
+              "Preview" (hasilLive + petaNoPeserta). */}
               {tabAktif === "denah" && (
                 <div className="mb-5">
-                  {quotaPerRuangan.length === 0 ? (
-                    <p className="text-sm text-gray-500 dark:text-gray-400 italic">
-                      Belum ada ruangan.
-                    </p>
-                  ) : (
-                    (() => {
-                      const ruangDipilih =
-                        quotaPerRuangan.find((r) => r.nomor_ruangan === ruanganDenahAktif) ||
-                        quotaPerRuangan[0];
-                      const siswaRuanganIni =
-                        hasilLive.find((h) => h.nomor_ruangan === ruangDipilih.nomor_ruangan)
-                          ?.siswa || [];
-                      const siswaTerurut = [...siswaRuanganIni].sort(
-                        (a, b) => (a.no_kursi || 0) - (b.no_kursi || 0)
-                      );
-                      const kolom = Math.max(1, jumlahKolomDenah || 1);
-
-                      return (
-                        <>
-                          <div className="flex flex-wrap items-end gap-4 mb-4">
-                            <div>
-                              <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1.5">
-                                Pilih Ruangan
-                              </label>
-                              <select
-                                value={ruangDipilih.nomor_ruangan}
-                                onChange={(e) => setRuanganDenahAktif(Number(e.target.value))}
-                                className="w-full sm:w-64 px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100"
-                              >
-                                {quotaPerRuangan.map((r) => (
-                                  <option key={r.nomor_ruangan} value={r.nomor_ruangan}>
-                                    Ruang {String(r.nomor_ruangan).padStart(2, "0")}
-                                  </option>
-                                ))}
-                              </select>
-                            </div>
-
-                            <div>
-                              <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1.5">
-                                Jumlah Kolom
-                              </label>
-                              <input
-                                type="number"
-                                min={1}
-                                // sama pola kayak input Kapasitas -- value dikosongin
-                                // (bukan "0") pas lagi 0/kosong, biar admin bisa clear
-                                // & ngetik ulang tanpa nempelin "0" di depan.
-                                value={jumlahKolomDenah === 0 ? "" : jumlahKolomDenah}
-                                onChange={(e) => {
-                                  const nilai = e.target.value;
-                                  setJumlahKolomDenah(nilai === "" ? 0 : Number(nilai));
-                                }}
-                                className="w-24 px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100"
-                              />
-                            </div>
-                          </div>
-
-                          <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-5">
-                            <div className="text-center mb-4 pb-3 border-b border-gray-100 dark:border-gray-700">
-                              <p className="text-sm font-semibold text-gray-800 dark:text-gray-100">
-                                DENAH DUDUK — RUANG{" "}
-                                {String(ruangDipilih.nomor_ruangan).padStart(2, "0")}
-                              </p>
-                              {labelTahunAjaranAktif && (
-                                <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
-                                  {(JENIS_UJIAN_LABEL[jenisUjian] || jenisUjian).toUpperCase()} —
-                                  TAHUN AJARAN {labelTahunAjaranAktif}
-                                </p>
-                              )}
-                            </div>
-
-                            {siswaTerurut.length === 0 ? (
-                              <p className="text-sm text-gray-400 italic">
-                                Belum ada siswa di ruangan ini.
-                              </p>
-                            ) : (
-                              <>
-                                <p className="text-center text-xs font-semibold tracking-widest text-gray-400 dark:text-gray-500 mb-3">
-                                  — DEPAN / PAPAN TULIS —
-                                </p>
-
-                                <div
-                                  className="grid gap-2.5"
-                                  style={{
-                                    gridTemplateColumns: `repeat(${kolom}, minmax(0, 1fr))`,
-                                  }}
-                                >
-                                  {siswaTerurut.map((s, idx) => (
-                                    <div
-                                      key={s.id}
-                                      className="rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800/60 p-2.5 text-center"
-                                    >
-                                      <p className="text-[10px] font-medium text-gray-400 dark:text-gray-500">
-                                        Kursi {idx + 1}
-                                      </p>
-                                      <p className="text-sm font-bold text-gray-900 dark:text-white">
-                                        {petaNoPeserta.get(String(s.id)) || "-"}
-                                      </p>
-                                      <p className="text-xs font-semibold text-gray-800 dark:text-gray-100 truncate mt-0.5">
-                                        {s.nama || "-"}
-                                      </p>
-                                      <p className="text-[10px] text-gray-500 dark:text-gray-400">
-                                        {s.asal_kelas || "-"}
-                                      </p>
-                                    </div>
-                                  ))}
-                                </div>
-
-                                <p className="text-right text-sm text-gray-500 dark:text-gray-400 mt-3">
-                                  {siswaRuanganIni.length} siswa
-                                </p>
-                              </>
-                            )}
-                          </div>
-                        </>
-                      );
-                    })()
-                  )}
+                  <DenahDuduk
+                    quotaPerRuangan={quotaPerRuangan}
+                    ruanganAktif={ruanganDenahAktif}
+                    onRuanganChange={setRuanganDenahAktif}
+                    hasilLive={hasilLive}
+                    petaNoPeserta={petaNoPeserta}
+                    jumlahKolom={jumlahKolomDenah}
+                    onJumlahKolomChange={setJumlahKolomDenah}
+                    jenisUjianLabel={(JENIS_UJIAN_LABEL[jenisUjian] || jenisUjian).toUpperCase()}
+                    labelTahunAjaranAktif={labelTahunAjaranAktif}
+                  />
                 </div>
               )}
 

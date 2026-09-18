@@ -56,7 +56,6 @@ import {
   ClipboardCheck,
   Wallet,
   BookOpen,
-  Construction,
   FileDown,
 } from "lucide-react";
 import JadwalRuanganTab from "./JadwalRuanganTab";
@@ -148,10 +147,6 @@ const STATUS_STYLE = {
   done: {
     badge: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300",
     label: "Aktif",
-  },
-  planned: {
-    badge: "bg-gray-100 text-gray-500 dark:bg-gray-700/50 dark:text-gray-400",
-    label: "Segera hadir",
   },
 };
 
@@ -262,21 +257,6 @@ const JenisUjianMenuTab = ({ jenisUjian, showToast, onBack }) => {
           <FileDown className="w-3.5 h-3.5" />
           Export Semua (PDF)
         </button>
-      </div>
-
-      <div className="flex items-start gap-3 p-4 mb-6 bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800 rounded-xl">
-        <Construction className="w-5 h-5 text-indigo-600 dark:text-indigo-400 flex-shrink-0 mt-0.5" />
-        <div>
-          <p className="text-sm font-semibold text-indigo-800 dark:text-indigo-300">
-            Modul dalam pengembangan
-          </p>
-          <p className="text-xs text-indigo-700 dark:text-indigo-400 mt-0.5">
-            Sub-fitur akan diaktifkan satu per satu. Jadwal, Peserta & Pembagian Ruangan, Daftar &
-            Jadwal Pengawas, Kartu Ujian, Presensi & Berita Acara, Anggaran & Biaya, Petunjuk &
-            Penggunaan Aplikasi, Program Kerja Pelaksanaan, dan Laporan Rekap Akhir sudah bisa
-            dipakai.
-          </p>
-        </div>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">

@@ -56,17 +56,17 @@ export default function UjianLayout({
       {/* ====== KONTEN UTAMA — digeser ke kanan di desktop (lg:pl-64) ====== */}
       <div className="lg:pl-64 h-full flex flex-col">
         {/* ====== HEADER ====== */}
-        <header className="shrink-0 bg-gradient-to-r from-amber-100 dark:from-amber-900/30 via-orange-100 dark:via-orange-900/30 to-amber-50 dark:to-amber-900/30 dark:from-gray-900 dark:via-gray-900 dark:to-gray-900 text-amber-900 dark:text-gray-100 z-30 shadow-sm border-b border-amber-100/80 dark:border-gray-800 transition-colors duration-200">
+        <header className="shrink-0 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 z-30 border-b border-gray-100 dark:border-gray-800 transition-colors duration-200">
           <div className="px-4 py-3 flex items-center justify-between gap-2">
             <div className="flex items-center gap-3 min-w-0">
-              <div className="w-9 h-9 bg-white/70 dark:bg-gray-800 rounded-full flex items-center justify-center shrink-0 lg:hidden shadow-sm">
-                <ClipboardList size={18} className="text-amber-600 dark:text-gray-300" />
+              <div className="w-9 h-9 bg-amber-50 dark:bg-amber-900/20 rounded-full flex items-center justify-center shrink-0 lg:hidden">
+                <ClipboardList size={18} className="text-amber-600 dark:text-amber-400" />
               </div>
               <div className="min-w-0">
-                <h1 className="text-sm font-bold leading-tight truncate text-amber-900 dark:text-gray-100">
+                <h1 className="text-sm font-bold leading-tight truncate text-gray-900 dark:text-gray-100">
                   {pageTitle}
                 </h1>
-                <p className="text-xs text-amber-700/70 dark:text-gray-400 truncate hidden sm:block">
+                <p className="text-xs text-gray-500 dark:text-gray-400 truncate hidden sm:block">
                   Portal Panitia Ujian — {currentUser?.full_name}
                 </p>
               </div>
@@ -77,8 +77,8 @@ export default function UjianLayout({
                 type="button"
                 onClick={() => navigate("/dashboard")}
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold
-                  text-amber-800 dark:text-gray-200 bg-white/60 dark:bg-gray-800 hover:bg-white
-                  dark:hover:bg-gray-700 shadow-sm transition-colors"
+                  text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:bg-gray-50
+                  dark:hover:bg-gray-800 transition-colors"
                 title="Kembali ke aplikasi utama"
               >
                 <ArrowLeftCircle size={16} />
@@ -89,8 +89,8 @@ export default function UjianLayout({
                 type="button"
                 onClick={() => setShowLogoutConfirm(true)}
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold
-                  text-rose-600 dark:text-rose-400 bg-white/60 dark:bg-gray-800 hover:bg-rose-50
-                  dark:hover:bg-rose-500/10 shadow-sm transition-colors"
+                  text-rose-600 dark:text-rose-400 border border-rose-100 dark:border-rose-900/40 hover:bg-rose-50
+                  dark:hover:bg-rose-500/10 transition-colors"
                 title="Keluar"
               >
                 <LogOut size={16} />
@@ -147,7 +147,7 @@ export default function UjianLayout({
       {/* ====== BOTTOM NAV (mobile only, cuma 3 item jadi inline di sini) ====== */}
       <nav
         className="lg:hidden fixed bottom-0 inset-x-0 z-40 bg-white dark:bg-gray-900
-          border-t border-gray-100 dark:border-gray-800 shadow-[0_-4px_24px_rgba(120,53,15,0.08)]
+          border-t border-gray-100 dark:border-gray-800 shadow-[0_-2px_16px_rgba(0,0,0,0.06)]
           flex items-stretch"
       >
         {BOTTOM_NAV_ITEMS.map((item) => {
