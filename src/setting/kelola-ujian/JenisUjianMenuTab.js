@@ -5,6 +5,13 @@
 // supaya query/filter siswa & kapasitas default otomatis sesuai (lihat
 // KONFIGURASI_JENIS_UJIAN di pembagianRuanganSupabase.js).
 //
+// CATATAN -- "Panitia Ujian" SUDAH DIPINDAH keluar dari grid ini, jadi
+// kartu top-level tersendiri di KelolaUjianTab.js (sejajar sama kartu
+// PSAS/PSAT/PSAJ), karena sekarang penentuan panitia mau diurus terpusat
+// di satu tempat buat semua jenis ujian, bukan per-jenis-ujian lagi.
+// Komponennya (PanitiaUjianTab.js) sekarang punya pemilihan jenis ujian
+// sendiri di dalam dirinya. JANGAN tambahin lagi sub-fitur ini di sini.
+//
 // Skema Kartu (lihat dokumentasi "dokumentasi-kelola-ujian.md"):
 // 1. Jadwal, Peserta & Pembagian Ruangan (aktif, sebelumnya bernama "Jadwal
 //    & Pembagian Ruangan" -- diganti karena Export Daftar Peserta udah

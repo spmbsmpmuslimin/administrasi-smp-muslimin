@@ -3,6 +3,7 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Eye, EyeOff, Mail, Lock } from "lucide-react";
 import { supabase } from "../supabaseClient";
+import { isPanitiaAktif } from "../portal-ujian/portalUjianSupabase";
 import { recordDeviceLogin } from "../utils/userDevices";
 import Logo from "./Logo";
 import backgroundImage from "../assets/Background.webp";
@@ -72,6 +73,15 @@ export const Login = ({ onLogin, onShowToast }) => {
         // ngeblok proses login.
         recordDeviceLogin(data.id);
 
+        // ✅ Cek apakah guru ini sedang jadi panitia ujian aktif (dipakai
+        // App.js buat redirect otomatis ke /portal-ujian). Role admin/tu/
+        // developer dikecualikan -- mereka selalu ke dashboard biasa
+        // walaupun kebetulan kedaftar di ujian_kepanitiaan.
+        const rolesDikecualikan = ["admin", "tu", "developer"];
+        const cekPanitia = rolesDikecualikan.includes(data.role)
+          ? false
+          : await isPanitiaAktif(data.id);
+
         const userData = {
           id: data.id,
           username: data.username,
@@ -84,6 +94,7 @@ export const Login = ({ onLogin, onShowToast }) => {
           email: data.email || `${data.username}@smp.edu`,
           is_active: data.is_active,
           created_at: data.created_at,
+          isPanitiaUjian: cekPanitia,
         };
 
         onLogin(userData, rememberMe);

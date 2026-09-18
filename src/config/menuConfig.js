@@ -37,6 +37,7 @@
 // Import semua page/module components
 import Dashboard from "../components/Dashboard";
 import StudentPortal from "../portal-siswa/StudentPortal";
+import UjianPortal from "../portal-ujian/UjianPortal";
 import PortalSiswaGuru from "../pages/PortalSiswaGuru";
 import DenahDuduk from "../pages/DenahDuduk";
 import Organigram from "../pages/Organigram";
@@ -125,6 +126,28 @@ export const menuConfig = [
     component: PortalSiswaGuru,
     allowedRoles: ["teacher"],
     requireWaliKelas: true,
+  },
+  {
+    path: "/portal-ujian",
+    title: "Portal Panitia Ujian",
+    component: UjianPortal,
+    // Panitia ujian bisa berasal dari guru mapel biasa, guru BK, atau
+    // petugas perpus (siapa aja yang ditugaskan lewat ujian_kepanitiaan) --
+    // gak dibatasin requireWaliKelas kayak menu portal lain di atas.
+    allowedRoles: ["teacher", "guru_bk", "petugas_perpus"],
+    // ✅ requirePanitiaUjian: true -- gembok BENERAN (bukan cuma
+    // disembunyiin dari sidebar). Role di allowedRoles TETAP wajib juga
+    // isPanitiaUjian true (dihitung sekali pas login, lihat Login.js) --
+    // kalau enggak, kena halaman "Akses Khusus Panitia Ujian" di
+    // ProtectedRoute (App.js), sama polanya kayak requireWaliKelas.
+    requirePanitiaUjian: true,
+    layout: false,
+    getProps: (ctx) => ({
+      user: ctx.user,
+      onShowToast: ctx.onShowToast,
+      darkMode: ctx.darkMode,
+      onLogout: ctx.handleLogout,
+    }),
   },
   {
     path: "/denah-duduk",

@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-09-18T02:40:04.381Z",
-  "executionTimeMs": 2338,
-  "filesScanned": 303,
+  "generatedAt": "2026-09-18T10:24:52.262Z",
+  "executionTimeMs": 2075,
+  "filesScanned": 310,
   "summary": {
     "status": "warning",
     "criticalCount": 0,
@@ -39,7 +39,7 @@
       "issues": [
         {
           "severity": "info",
-          "title": "5967 class warna (di 204 file) kemungkinan belum dark-mode-aware",
+          "title": "6027 class warna (di 209 file) kemungkinan belum dark-mode-aware",
           "description": "Ini backlog, bukan berarti semua salah — bisa aja file itu emang belum kena giliran migrasi theme-*, atau sengaja gak butuh dark mode (misal komponen buat print/PDF). Diurutin dari file paling banyak class polos-nya, biar keliatan mana yang paling worth dibenerin duluan. Heuristik regex, review manual tetep perlu.",
           "details": [
             "src/setting/school-management/TeacherAssignmentTab.js — 167 class belum ada dark: variant",
@@ -236,7 +236,7 @@
         },
         {
           "severity": "info",
-          "title": "16 tabel punya kolom yang gak pernah disebut eksplisit di frontend",
+          "title": "18 tabel punya kolom yang gak pernah disebut eksplisit di frontend",
           "description": "Tabelnya DIPAKE, tapi ada kolom yang gak pernah muncul di select/insert/update/filter manapun (dan gak ada select(\"*\") buat tabel ini yang bisa 'nyembunyiin' pemakaian implisit). Bisa jadi kolom peninggalan fitur lama, atau kolom yang emang cuma diisi lewat trigger/default value di DB. Cek manual, terutama kalau ada kolom NOT NULL tanpa default yang gak pernah di-insert dari frontend.",
           "details": [
             "pengumuman_siswa → kolom gak pernah disebut: updated_at",
@@ -249,11 +249,13 @@
             "student_report_grades → kolom gak pernah disebut: created_at",
             "kkm_mapel → kolom gak pernah disebut: id",
             "buku → kolom gak pernah disebut: created_at, kategori, penerbit, rak, tahun, total_eksemplar, updated_at",
+            "v_panitia_ujian_aktif → kolom gak pernah disebut: academic_year_id, status_ujian",
             "period_schedules → kolom gak pernah disebut: created_at, updated_at",
             "teacher_codes → kolom gak pernah disebut: created_at",
             "peserta_ujian → kolom gak pernah disebut: created_at, id",
             "ujian_jadwal → kolom gak pernah disebut: created_at",
             "ujian_pengawas → kolom gak pernah disebut: created_at",
+            "ujian_kepanitiaan → kolom gak pernah disebut: created_at, id",
             "teacher_profiles → kolom gak pernah disebut: created_at, id, updated_at"
           ]
         }

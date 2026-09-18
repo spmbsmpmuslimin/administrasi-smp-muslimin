@@ -73,6 +73,25 @@ const canAccessWakasekKurikulumRoute = (user) => {
   return user?.role === "admin" || isWakasekKurikulum(user);
 };
 
+/**
+ * Check if user can access Portal Ujian routes
+ * Beda dari isWaliKelas/isWakasekKurikulum (yang dihitung dari kolom
+ * users.homeroom_class_id / jabatan_struktural) -- isPanitiaUjian
+ * dihitung SEKALI pas login (lihat Login.js -> isPanitiaAktif()) dan
+ * ditempel ke object `user` di state top-level App.js, BUKAN kolom di
+ * tabel `users`. Makanya di sini cek `user` (prop asli dari state),
+ * bukan `userFullData` (hasil re-fetch fresh dari tabel `users` yang
+ * cuma punya kolom role/homeroom_class_id/jabatan_struktural).
+ *
+ * Admin/TU SENGAJA tidak di-bypass di sini kayak canAccessWaliKelasRoute
+ * -- route /portal-ujian di menuConfig.js allowedRoles-nya emang cuma
+ * ["teacher","guru_bk","petugas_perpus"], admin/tu udah keblock duluan
+ * di cek allowedRoles sebelum nyampe ke sini.
+ */
+const canAccessPanitiaUjianRoute = (user) => {
+  return !!user?.isPanitiaUjian;
+};
+
 // 🔥 PROTECTED ROUTE COMPONENT - WITH MAINTENANCE MODE
 const ProtectedRoute = ({
   children,
@@ -91,6 +110,7 @@ const ProtectedRoute = ({
   // config/menuConfig.js buat konteks lengkapnya.
   teacherRequiresWakasekKurikulum = false,
   requireRuangBelajarAccess = false, // ← Untuk route Kelola Ruang Belajar (whitelist)
+  requirePanitiaUjian = false, // ← Untuk route Portal Ujian (khusus panitia aktif)
   onShowToast,
 }) => {
   const [maintenanceMode, setMaintenanceMode] = useState(false);
@@ -547,6 +567,67 @@ const ProtectedRoute = ({
     );
   }
 
+  // ✅ Panitia Ujian Check
+  if (requirePanitiaUjian && !canAccessPanitiaUjianRoute(user)) {
+    return (
+      <div
+        className={`min-h-screen flex items-center justify-center transition-colors duration-300 p-4 ${
+          darkMode
+            ? "bg-gradient-to-br from-gray-900 to-gray-800"
+            : "bg-gradient-to-br from-blue-50 to-indigo-100"
+        }`}
+      >
+        <div className="text-center max-w-md mx-auto">
+          <div
+            className={`w-14 h-14 sm:w-16 sm:h-16 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4 transition-colors ${
+              darkMode ? "bg-yellow-900/30" : "bg-yellow-100"
+            }`}
+          >
+            <svg
+              className={`w-7 h-7 sm:w-8 sm:h-8 ${darkMode ? "text-yellow-400" : "text-yellow-600"}`}
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+              />
+            </svg>
+          </div>
+          <h2
+            className={`text-lg sm:text-xl font-bold mb-2 transition-colors ${
+              darkMode ? "text-white" : "text-theme"
+            }`}
+          >
+            Akses Khusus Panitia Ujian
+          </h2>
+          <p
+            className={`text-sm sm:text-base mb-4 sm:mb-6 transition-colors ${
+              darkMode ? "text-gray-400" : "text-theme-secondary"
+            }`}
+          >
+            Halaman ini hanya dapat diakses oleh guru yang sedang terdaftar sebagai panitia ujian
+            aktif. Kalau kamu merasa ini keliru, coba logout lalu login ulang -- status panitia cuma
+            dicek ulang saat login.
+          </p>
+          <button
+            onClick={() => (window.location.href = "/dashboard")}
+            className={`w-full sm:w-auto px-6 py-2.5 sm:py-3 rounded-lg font-medium transition-all duration-200 touch-manipulation active:scale-95 ${
+              darkMode
+                ? "bg-blue-600 hover:bg-blue-700 text-white"
+                : "bg-blue-600 hover:bg-blue-700 text-white"
+            }`}
+          >
+            Kembali ke Dashboard
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return children;
 };
 
@@ -809,7 +890,16 @@ function App() {
             path="/"
             element={
               user ? (
-                <Navigate to={user.role === "siswa" ? "/portal-siswa" : "/dashboard"} replace />
+                <Navigate
+                  to={
+                    user.role === "siswa"
+                      ? "/portal-siswa"
+                      : user.isPanitiaUjian
+                        ? "/portal-ujian"
+                        : "/dashboard"
+                  }
+                  replace
+                />
               ) : (
                 <Login
                   onLogin={handleLogin}
@@ -825,7 +915,16 @@ function App() {
             path="/login-siswa"
             element={
               user ? (
-                <Navigate to={user.role === "siswa" ? "/portal-siswa" : "/dashboard"} replace />
+                <Navigate
+                  to={
+                    user.role === "siswa"
+                      ? "/portal-siswa"
+                      : user.isPanitiaUjian
+                        ? "/portal-ujian"
+                        : "/dashboard"
+                  }
+                  replace
+                />
               ) : (
                 <StudentLogin onLogin={handleLogin} onShowToast={handleShowToast} />
               )
@@ -842,6 +941,7 @@ function App() {
               requireWakasekKurikulum = false,
               teacherRequiresWakasekKurikulum = false,
               requireRuangBelajarAccess = false,
+              requirePanitiaUjian = false,
               layout = true,
               getProps = (ctx) => ({
                 user: ctx.user,
@@ -863,6 +963,7 @@ function App() {
                     requireWakasekKurikulum={requireWakasekKurikulum}
                     teacherRequiresWakasekKurikulum={teacherRequiresWakasekKurikulum}
                     requireRuangBelajarAccess={requireRuangBelajarAccess}
+                    requirePanitiaUjian={requirePanitiaUjian}
                   >
                     {layout ? (
                       <LayoutWrapper>

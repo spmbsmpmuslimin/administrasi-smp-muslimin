@@ -1,9 +1,9 @@
 STRUKTUR SISTEM
-Di-download dari UI: 17 Sep 2026, 21.21
+Di-download dari UI: 18 Sep 2026, 17.25
 
 ======================================================================
 STRUKTUR PROJECT (src/)
-Terakhir di-generate: 17 Sep 2026, 21.20
+Terakhir di-generate: 18 Sep 2026, 17.24
 ======================================================================
 |-- src
 |   |-- assets
@@ -198,6 +198,12 @@ Terakhir di-generate: 17 Sep 2026, 21.20
 |   |   |-- StudentSaran.js
 |   |   |-- StudentSidebar.js
 |   |   `-- useStudentProfile.js
+|   |-- portal-ujian
+|   |   |-- UjianDashboard.js
+|   |   |-- UjianLayout.js
+|   |   |-- UjianPortal.js
+|   |   |-- UjianSidebar.js
+|   |   `-- portalUjianSupabase.js
 |   |-- reports
 |   |   |-- modals
 |   |   |   |-- AdminReportModal.js
@@ -273,8 +279,10 @@ Terakhir di-generate: 17 Sep 2026, 21.20
 |   |   |   |-- JadwalRuanganTab.js
 |   |   |   |-- JenisUjianMenuTab.js
 |   |   |   |-- KelolaUjianTab.js
+|   |   |   |-- PanitiaUjianTab.js
 |   |   |   |-- PesertaPengawasTab.js
-|   |   |   `-- exportSemuaKelolaUjian.js
+|   |   |   |-- exportSemuaKelolaUjian.js
+|   |   |   `-- panitiaUjianSupabase.js
 |   |   |-- portal-siswa
 |   |   |   |-- AkunSiswaTab.js
 |   |   |   `-- PortalSiswaTab.js
@@ -358,7 +366,7 @@ Terakhir di-generate: 17 Sep 2026, 21.20
 
 ======================================================================
 STRUKTUR DATABASE
-Terakhir di-generate: 17 Sep 2026, 21.20
+Terakhir di-generate: 18 Sep 2026, 17.24
 ======================================================================
 ## Daftar Tabel Database Supabase
 academic_events : id,title,category_id,start_date,end_date,description,academic_year,semester,created_by,created_at,updated_at
@@ -433,6 +441,8 @@ tindaklanjut_homevisits : id,home_visit_id,jenis,status,catatan,created_at,updat
 tujuan_pembelajaran : id,mata_pelajaran,tingkat,fase,deskripsi_tp,urutan,academic_year_id,semester,created_at,updated_at,is_active
 ujian : id,jenis,academic_year_id,status,kapasitas_ruangan,created_at,updated_at,versi_skema
 ujian_jadwal : id,ujian_id,tanggal,sesi_ke,waktu_mulai,waktu_selesai,mata_pelajaran,created_at,mata_pelajaran_kelas9,mata_pelajaran_kelas8
+ujian_kepanitiaan : id,ujian_id,guru_id,status,created_at,updated_at
 ujian_pengawas : id,jadwal_id,nomor_ruangan,guru_id,created_at
 user_devices : id,user_id,device_id,brand,model,platform,browser,last_login_at,created_at
 users : id,username,password,full_name,teacher_id,role,homeroom_class_id,is_active,created_at,updated_at,no_hp,last_login,last_activity,login_count,jabatan_struktural,is_blocked,kode_pengawas
+v_panitia_ujian_aktif : guru_id,ujian_id,jenis,status_ujian,academic_year_id

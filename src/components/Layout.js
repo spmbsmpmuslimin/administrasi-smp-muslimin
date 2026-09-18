@@ -397,6 +397,7 @@ const Layout = ({ user, onLogout, children, darkMode, onToggleDarkMode }) => {
             isCollapsed={isSidebarCollapsed}
             userRole={user?.role}
             isWaliKelas={!!user?.homeroom_class_id}
+            isPanitiaUjian={!!user?.isPanitiaUjian}
             userData={{
               id: user?.id,
               full_name: user?.full_name || user?.username || "User",
@@ -422,6 +423,7 @@ const Layout = ({ user, onLogout, children, darkMode, onToggleDarkMode }) => {
           isCollapsed={false}
           userRole={user?.role}
           isWaliKelas={!!user?.homeroom_class_id}
+          isPanitiaUjian={!!user?.isPanitiaUjian}
           userData={{
             id: user?.id,
             full_name: user?.full_name || user?.username || "User",
