@@ -155,15 +155,13 @@ async function getOrCreateUjian(supabase, jenis, academicYearId, kapasitas = 40,
  *   (buat disimpan di record ujian & peringatan di UI) -- BUKAN lagi
  *   penentu jumlah ruang. Jumlah ruang sekarang = jumlah kelas asal per
  *   jenjang. Lihat komentar di bagiRuanganPerJenjang.js.
- * @param {"silang"|"rotasi"|"rantai"} versiSkema -
- *   "silang" (V1) = tiap ruang campuran 1 potongan dari TIAP jenjang,
- *   pasangan kelasnya bergeser tiap putaran (jumlah ruang = jumlah kelas
- *   x jumlah jenjang);
- *   "rotasi" (V2) = per jenjang, tiap ruang kecampur rata dari SEMUA kelas
- *   asal di jenjang itu;
- *   "rantai" (V3) = per jenjang, tiap ruang cuma 2 kelas bersebelahan.
- *   Default "silang". Nilai legacy "v1"/"v2" dipetakan otomatis ke
- *   "rotasi"/"rantai".
+ * @param {"rotasi"|"rantai"|"silang"} versiSkema - kode versi algoritma
+ *   (lihat VERSI_SKEMA_LIST di bagiRuanganPerJenjang.js untuk daftar &
+ *   label terkini -- SENGAJA gak diduplikasi/ditulis ulang di sini biar
+ *   gak ada 2 sumber yang bisa saling kontradiksi kalau penomoran versi
+ *   digeser lagi ke depannya). WAJIB diisi, TIDAK ADA default -- lihat
+ *   "SENGAJA GAK ADA VERSI_DEFAULT" di bagiRuanganPerJenjang.js. Nilai
+ *   legacy "v1"/"v2" dipetakan otomatis ke "rotasi"/"rantai".
  * @returns {Promise<Array>} hasil pembagian ruangan (untuk ditampilkan / preview di UI dulu sebelum disimpan)
  */
 async function prosesPembagianRuangan(
@@ -321,19 +319,37 @@ async function ambilPembagianTersimpan(supabase, ujianId) {
  * admin konfirmasi + pilih versi baru lewat modal peringatan -- jangan
  * dipanggil langsung dari efek samping klik radio/tombol biasa.
  *
- * SENGAJA cuma hapus peserta_ujian + UPDATE versi_skema di tempat --
- * BUKAN hapus baris `ujian`-nya. ujian_jadwal, anggaran_ujian,
- * laporan_rekap_ujian, dan rekap_kehadiran_ujian semua ON DELETE CASCADE
- * ke ujian.id, jadi kalau baris ujian ikut kehapus, jadwal/anggaran/laporan
- * yang udah diisi admin buat ujian itu ikut lenyap -- padahal niatnya cuma
- * reset pembagian ruangan doang, bukan reset seluruh ujian.
+ * Hapus peserta_ujian + SEMUA penugasan pengawas (ujian_pengawas) buat
+ * ujian ini, lalu UPDATE versi_skema di tempat -- BUKAN hapus baris
+ * `ujian`-nya. ujian_jadwal, anggaran_ujian, laporan_rekap_ujian, dan
+ * rekap_kehadiran_ujian semua ON DELETE CASCADE ke ujian.id, jadi kalau
+ * baris ujian ikut kehapus, jadwal/anggaran/laporan yang udah diisi admin
+ * buat ujian itu ikut lenyap -- padahal niatnya cuma reset pembagian
+ * ruangan (+ pengawas yang nempel di nomor ruangan lama) doang, bukan
+ * reset seluruh ujian. Makanya ujian_jadwal (tanggal/sesi/mata pelajaran)
+ * SENGAJA tidak ikut dihapus di sini.
+ *
+ * FIX (Sep 2026): sebelumnya ujian_pengawas TIDAK ikut dihapus di sini --
+ * cuma diperingatkan lewat modal UI supaya admin "cek ulang manual".
+ * Masalahnya, `nomor_ruangan` yang jadi kunci penugasan pengawas gak
+ * dijamin berarti sama antar versi skema (jumlah & komposisi ruang bisa
+ * beda total antara rotasi/rantai/silang -- lihat dokumentasi Pembagian
+ * Ruangan), jadi penugasan lama yang ditinggal begitu saja jadi nempel ke
+ * ruang yang isinya sudah berubah tanpa ada yang sadar sampai hari-H.
+ * Sekarang dihapus otomatis bareng peserta_ujian, supaya admin PASTI mulai
+ * dari kosong dan wajib assign ulang pengawas lewat "Jadwal Ngawas" /
+ * "Terapkan Rotasi" setelah ganti versi -- lebih aman daripada mengandalkan
+ * kedisiplinan cek manual.
  *
  * @param {string} versiSkemaBaru - kode versi baru (lihat VERSI_SKEMA_LIST
  *   di bagiRuanganPerJenjang.js), DINORMALISASI dulu sebelum ditulis biar
  *   konsisten sama getOrCreateUjian().
- * @returns {Promise<{ada: boolean}>} ada=false kalau memang belum ada
- *   apa-apa buat kombinasi ini (no-op, gak ada yang diubah -- bisa
- *   kejadian kalau 2 admin klik bareng di waktu yang hampir sama)
+ * @returns {Promise<{ada: boolean, jumlahPengawasTerhapus: number}>}
+ *   ada=false kalau memang belum ada apa-apa buat kombinasi ini (no-op,
+ *   gak ada yang diubah -- bisa kejadian kalau 2 admin klik bareng di
+ *   waktu yang hampir sama). jumlahPengawasTerhapus dikembalikan supaya
+ *   UI bisa nunjukin secara eksplisit berapa penugasan pengawas yang ikut
+ *   kehapus (bukan cuma "data ruangan"), biar admin sadar itu juga hilang.
  */
 async function resetUntukProsesUlang(supabase, jenis, academicYearId, versiSkemaBaru) {
   const { data: ujian, error: errSelect } = await supabase
@@ -344,7 +360,27 @@ async function resetUntukProsesUlang(supabase, jenis, academicYearId, versiSkema
     .maybeSingle();
 
   if (errSelect) throw errSelect;
-  if (!ujian) return { ada: false };
+  if (!ujian) return { ada: false, jumlahPengawasTerhapus: 0 };
+
+  // ujian_pengawas nyambung ke ujian lewat ujian_jadwal.id (jadwal_id),
+  // bukan langsung ke ujian_id -- ambil dulu semua jadwal_id ujian ini.
+  const { data: daftarJadwal, error: errJadwal } = await supabase
+    .from("ujian_jadwal")
+    .select("id")
+    .eq("ujian_id", ujian.id);
+  if (errJadwal) throw errJadwal;
+
+  let jumlahPengawasTerhapus = 0;
+  const jadwalIds = (daftarJadwal || []).map((j) => j.id);
+  if (jadwalIds.length > 0) {
+    const { data: pengawasTerhapus, error: errDeletePengawas } = await supabase
+      .from("ujian_pengawas")
+      .delete()
+      .in("jadwal_id", jadwalIds)
+      .select("id");
+    if (errDeletePengawas) throw errDeletePengawas;
+    jumlahPengawasTerhapus = pengawasTerhapus?.length || 0;
+  }
 
   const { error: errDeletePeserta } = await supabase
     .from("peserta_ujian")
@@ -358,7 +394,7 @@ async function resetUntukProsesUlang(supabase, jenis, academicYearId, versiSkema
     .eq("id", ujian.id);
   if (errUpdateVersi) throw errUpdateVersi;
 
-  return { ada: true };
+  return { ada: true, jumlahPengawasTerhapus };
 }
 
 export {

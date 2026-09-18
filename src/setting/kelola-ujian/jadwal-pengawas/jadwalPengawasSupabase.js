@@ -8,6 +8,17 @@
  * Ambil daftar ruangan yang tersedia untuk 1 ujian, dari hasil Pembagian
  * Ruangan yang sudah tersimpan di tabel `peserta_ujian`. Kalau Pembagian
  * Ruangan belum diproses untuk ujian ini, hasilnya array kosong.
+ *
+ * FIX (Sep 2026): sebelumnya di sini diasumsikan "ruangan TIDAK dicampur
+ * lintas jenjang" dan jenjang ruangan diambil dari baris PERTAMA yang
+ * ketemu saja. Asumsi itu cuma benar untuk versi skema "rotasi" (V1).
+ * Untuk "rantai" (V2, grup 7+8 dst digabung) dan "silang" (V3, SELALU
+ * campur semua jenjang) satu ruangan bisa berisi 2-3 jenjang sekaligus --
+ * ambil-baris-pertama bikin jenjang ruangan salah / gak lengkap, dan itu
+ * dipakai buat nentuin mata pelajaran (lihat mataPelajaranUntukRuangan()
+ * di bawah), jadi ruangan campuran bisa nampilin mapel yang salah buat
+ * sebagian siswanya. Sekarang SEMUA jenjang yang muncul di 1
+ * nomor_ruangan dikumpulin (bukan cuma yang pertama).
  */
 async function ambilRuanganUjian(supabase, ujianId) {
   const { data, error } = await supabase
@@ -17,26 +28,35 @@ async function ambilRuanganUjian(supabase, ujianId) {
 
   if (error) throw error;
 
-  // Ruangan TIDAK dicampur lintas jenjang (lihat bagiRuanganPerJenjang.js),
-  // jadi semua siswa dalam 1 nomor_ruangan pasti 1 jenjang yang sama --
-  // cukup ambil jenjang dari baris pertama yang ketemu per ruangan, dipakai
-  // buat nentuin mata pelajaran mana (default/kelas8/kelas9) yang berlaku
-  // di ruangan itu waktu ditampilkan di tab "Rekap".
   const hitung = {};
-  const jenjangRuangan = {};
+  const jenjangSetPerRuangan = {};
   (data || []).forEach((row) => {
     hitung[row.nomor_ruangan] = (hitung[row.nomor_ruangan] || 0) + 1;
-    if (!jenjangRuangan[row.nomor_ruangan]) {
-      jenjangRuangan[row.nomor_ruangan] = row.asal_kelas?.match(/^\d+/)?.[0] || null;
+    if (!jenjangSetPerRuangan[row.nomor_ruangan]) {
+      jenjangSetPerRuangan[row.nomor_ruangan] = new Set();
     }
+    const jenjang = row.asal_kelas?.match(/^\d+/)?.[0];
+    if (jenjang) jenjangSetPerRuangan[row.nomor_ruangan].add(jenjang);
   });
 
   return Object.entries(hitung)
-    .map(([nomor_ruangan, jumlah_siswa]) => ({
-      nomor_ruangan: Number(nomor_ruangan),
-      jumlah_siswa,
-      jenjang: jenjangRuangan[nomor_ruangan],
-    }))
+    .map(([nomor_ruangan, jumlah_siswa]) => {
+      const jenjangSet = [...(jenjangSetPerRuangan[nomor_ruangan] || [])].sort(
+        (a, b) => Number(a) - Number(b)
+      );
+      return {
+        nomor_ruangan: Number(nomor_ruangan),
+        jumlah_siswa,
+        // jenjangSet: daftar LENGKAP semua jenjang di ruang ini (bisa >1
+        // elemen untuk ruang campuran V2/V3) -- WAJIB dipakai (bareng
+        // mataPelajaranUntukRuangan()) di mana pun logic butuh tau mapel
+        // yang berlaku per jenjang di ruangan itu.
+        jenjangSet,
+        // jenjang: label tampilan gabungan ("7+8"), dipertahankan buat
+        // tempat yang cuma butuh nampilin teks, BUKAN buat nentuin mapel.
+        jenjang: jenjangSet.join("+") || null,
+      };
+    })
     .sort((a, b) => a.nomor_ruangan - b.nomor_ruangan);
 }
 
@@ -50,6 +70,36 @@ function mataPelajaranUntukJenjang(jadwal, jenjang) {
   if (jenjang === "8" && jadwal.mata_pelajaran_kelas8) return jadwal.mata_pelajaran_kelas8;
   if (jenjang === "9" && jadwal.mata_pelajaran_kelas9) return jadwal.mata_pelajaran_kelas9;
   return jadwal.mata_pelajaran;
+}
+
+/**
+ * Sama seperti mataPelajaranUntukJenjang(), tapi untuk 1 RUANGAN yang bisa
+ * berisi LEBIH DARI 1 jenjang sekaligus (ruang hasil versi skema "rantai"
+ * atau "silang" -- lihat jenjangSet di ambilRuanganUjian()). Dipakai di
+ * tab "Rekap" buat nampilin mapel yang beneran berlaku di ruang itu,
+ * bukan cuma nebak dari 1 jenjang.
+ *
+ * Hasilnya dikelompokkan per teks mapel unik -- kalau semua jenjang di
+ * ruang itu kebetulan mapelnya sama (gak ada override kelas8/9 yang
+ * kena), hasilnya cuma 1 baris seperti biasa. Kalau beda, tiap baris
+ * nunjukin jenjang mana yang pakai mapel itu, jadi pengawas di ruang
+ * campuran itu tau dia ngawasin lebih dari 1 mapel sekaligus.
+ *
+ * @param {object} jadwal - baris ujian_jadwal (mata_pelajaran + override kelas8/kelas9)
+ * @param {string[]} jenjangSet - daftar jenjang yang ADA di ruangan itu, mis. ["7","8"]
+ * @returns {Array<{jenjang: string[], mapel: string}>}
+ */
+function mataPelajaranUntukRuangan(jadwal, jenjangSet) {
+  if (!jenjangSet || jenjangSet.length === 0) {
+    return [{ jenjang: [], mapel: jadwal.mata_pelajaran }];
+  }
+  const jenjangPerMapel = {};
+  jenjangSet.forEach((j) => {
+    const mapel = mataPelajaranUntukJenjang(jadwal, j);
+    if (!jenjangPerMapel[mapel]) jenjangPerMapel[mapel] = [];
+    jenjangPerMapel[mapel].push(j);
+  });
+  return Object.entries(jenjangPerMapel).map(([mapel, jenjang]) => ({ jenjang, mapel }));
 }
 
 /**
@@ -376,6 +426,57 @@ async function simpanKodePengawas(supabase, perubahan) {
   return perubahan.length;
 }
 
+/**
+ * Cek ada gak penugasan pengawas (ujian_pengawas) yang nomor_ruangan-nya
+ * SUDAH GAK VALID lagi buat komposisi ruangan yang sekarang tersimpan di
+ * peserta_ujian -- normalnya ini gak pernah kejadian (resetUntukProsesUlang()
+ * di pembagianRuanganSupabase.js otomatis bersihin ujian_pengawas begitu
+ * versi skema diganti), tapi dipakai sebagai JARING PENGAMAN tambahan di
+ * UI (banner peringatan) buat kasus di luar jalur normal itu -- misal data
+ * lama dari sebelum fix ini ada, atau edit manual langsung ke database.
+ *
+ * @param {string[]} jadwalIds - semua id ujian_jadwal buat ujian ini
+ * @param {number[]} nomorRuanganValid - nomor_ruangan yang ADA sekarang
+ *   di peserta_ujian (ambil dari hasil ambilRuanganUjian(), map ke
+ *   nomor_ruangan)
+ * @returns {Promise<Array>} baris ujian_pengawas yang nomor_ruangan-nya
+ *   TIDAK ada di nomorRuanganValid -- [{ id, jadwal_id, nomor_ruangan, nama }],
+ *   array kosong kalau semuanya valid (atau belum ada jadwal sama sekali)
+ */
+async function cariPenugasanPengawasTidakValid(supabase, jadwalIds, nomorRuanganValid) {
+  if (!jadwalIds || jadwalIds.length === 0) return [];
+
+  const { data, error } = await supabase
+    .from("ujian_pengawas")
+    .select("id, jadwal_id, nomor_ruangan, users:guru_id (full_name)")
+    .in("jadwal_id", jadwalIds);
+  if (error) throw error;
+
+  const setValid = new Set(nomorRuanganValid);
+  return (data || [])
+    .filter((row) => !setValid.has(row.nomor_ruangan))
+    .map((row) => ({
+      id: row.id,
+      jadwal_id: row.jadwal_id,
+      nomor_ruangan: row.nomor_ruangan,
+      nama: row.users?.full_name || "-",
+    }));
+}
+
+/**
+ * Hapus sekaligus semua penugasan pengawas basi (id-id dari hasil
+ * cariPenugasanPengawasTidakValid()) -- dipakai tombol "Bersihkan
+ * Sekarang" di banner peringatan.
+ * @param {string[]} idList - id baris ujian_pengawas yang mau dihapus
+ * @returns {Promise<number>} jumlah baris yang dihapus
+ */
+async function bersihkanPenugasanPengawasTidakValid(supabase, idList) {
+  if (!idList || idList.length === 0) return 0;
+  const { error } = await supabase.from("ujian_pengawas").delete().in("id", idList);
+  if (error) throw error;
+  return idList.length;
+}
+
 export {
   ambilRuanganUjian,
   ambilDaftarGuru,
@@ -383,6 +484,7 @@ export {
   simpanJadwalSesi,
   simpanJadwalSesiBulk,
   mataPelajaranUntukJenjang,
+  mataPelajaranUntukRuangan,
   hapusJadwalSesi,
   ambilPengawasUntukJadwal,
   tambahPengawas,
@@ -395,4 +497,6 @@ export {
   hapusPengawasKode,
   sarankanKodeDariTeacherId,
   simpanKodePengawas,
+  cariPenugasanPengawasTidakValid,
+  bersihkanPenugasanPengawasTidakValid,
 };

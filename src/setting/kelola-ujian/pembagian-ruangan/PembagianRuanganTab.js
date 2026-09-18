@@ -598,17 +598,26 @@ const PembagianRuanganTab = ({
     setKonfirmasiProsesUlang(false);
   };
 
-  // Eksekusi beneran: hapus peserta_ujian lama + update versi_skema di
-  // tempat ke versiBaruDipilih (lewat resetUntukProsesUlang -- baris ujian
-  // itu sendiri TIDAK dihapus, lihat catatan di fungsi itu), terus reset
-  // state lokal hasil pembagian yang lagi ditampilin (karena udah nggak
-  // valid lagi buat versi baru) biar admin tinggal pencet "Proses
-  // Pembagian" buat generate ulang pakai versi yang baru dipilih.
+  // Eksekusi beneran: hapus peserta_ujian + SEMUA penugasan ujian_pengawas
+  // lama, lalu update versi_skema di tempat ke versiBaruDipilih (lewat
+  // resetUntukProsesUlang -- baris ujian itu sendiri & ujian_jadwal TIDAK
+  // dihapus, lihat catatan di fungsi itu), terus reset state lokal hasil
+  // pembagian yang lagi ditampilin (karena udah nggak valid lagi buat
+  // versi baru) biar admin tinggal pencet "Proses Pembagian" buat generate
+  // ulang pakai versi yang baru dipilih. Penugasan pengawas ikut dihapus
+  // otomatis (bukan cuma diperingatkan) karena nomor_ruangan gak dijamin
+  // berarti sama antar versi skema -- lihat catatan FIX di
+  // resetUntukProsesUlang().
   const handleKonfirmasiProsesUlang = async () => {
     if (!konfirmasiProsesUlang || !tahunAjaranId) return;
     setMemProsesUlang(true);
     try {
-      await resetUntukProsesUlang(supabase, jenisUjian, tahunAjaranId, versiBaruDipilih);
+      const { jumlahPengawasTerhapus } = await resetUntukProsesUlang(
+        supabase,
+        jenisUjian,
+        tahunAjaranId,
+        versiBaruDipilih
+      );
       setVersiSkema(normalisasiVersiSkema(versiBaruDipilih) || "");
       setHasilAsli(null);
       setQuotaPerRuangan(null);
@@ -617,8 +626,12 @@ const PembagianRuanganTab = ({
       setRuanganPreviewAktif(null);
       setProsesUlangModalOpen(false);
       setKonfirmasiProsesUlang(false);
+      const infoPengawas =
+        jumlahPengawasTerhapus > 0
+          ? ` ${jumlahPengawasTerhapus} penugasan pengawas lama ikut dihapus (nomor ruangan sudah gak sama) -- assign ulang lewat "Jadwal Ngawas".`
+          : "";
       showToast?.(
-        `Versi diganti ke ${labelVersiSkema(versiBaruDipilih)} -- data ruangan lama sudah dihapus, klik "Proses Pembagian" untuk generate ulang.`,
+        `Versi diganti ke ${labelVersiSkema(versiBaruDipilih)} -- data ruangan lama sudah dihapus, klik "Proses Pembagian" untuk generate ulang.${infoPengawas}`,
         "success"
       );
     } catch (err) {
@@ -1570,10 +1583,13 @@ const PembagianRuanganTab = ({
                   . Nomor ruangan lama bisa berubah/hilang begitu diproses ulang pakai versi lain.
                 </p>
                 <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
-                  Kalau Jadwal Pengawas atau Kartu Ujian sudah pernah di-assign/dicetak pakai nomor
-                  ruangan yang sekarang, itu{" "}
-                  <span className="font-semibold">wajib dicek ulang</span> manual setelah proses
-                  ulang ini selesai.
+                  Semua <span className="font-semibold">penugasan pengawas</span> (Jadwal Ngawas)
+                  untuk ujian ini juga{" "}
+                  <span className="font-semibold">ikut terhapus otomatis</span> -- karena nomor
+                  ruangan lama belum tentu berarti sama setelah ganti versi. Jadwal sesi (tanggal/jam/
+                  mata pelajaran) tetap aman, tapi pengawas per ruangan perlu di-assign ulang lewat
+                  "Jadwal Ngawas" setelah proses ulang ini. Kartu Ujian yang sudah dicetak sebelumnya
+                  juga jadi tidak berlaku lagi.
                 </p>
               </div>
             </div>
@@ -1625,8 +1641,8 @@ const PembagianRuanganTab = ({
                 className="mt-0.5"
               />
               <span className="text-sm text-gray-700 dark:text-gray-300">
-                Saya paham data ruangan lama akan terhapus dan siap mengecek ulang Jadwal Pengawas &
-                Kartu Ujian setelahnya.
+                Saya paham data ruangan & SEMUA penugasan pengawas lama akan terhapus, dan siap
+                assign ulang Jadwal Pengawas serta cetak ulang Kartu Ujian setelahnya.
               </span>
             </label>
 

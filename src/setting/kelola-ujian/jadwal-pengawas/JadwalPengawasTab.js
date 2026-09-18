@@ -30,6 +30,7 @@ import {
   Shuffle,
   ClipboardList,
   Table2,
+  AlertTriangle,
 } from "lucide-react";
 import { supabase } from "../../../supabaseClient";
 import {
@@ -43,12 +44,15 @@ import {
   ambilJadwalSesi,
   simpanJadwalSesi,
   mataPelajaranUntukJenjang,
+  mataPelajaranUntukRuangan,
   hapusJadwalSesi,
   ambilPengawasUntukJadwal,
   tambahPengawas,
   hapusPengawas,
   kelompokkanJadwalPerHari,
   terapkanRotasiPengawasHarian,
+  cariPenugasanPengawasTidakValid,
+  bersihkanPenugasanPengawasTidakValid,
 } from "./jadwalPengawasSupabase";
 import DaftarPengawasTab from "./DaftarPengawasTab";
 
@@ -113,6 +117,14 @@ const JadwalPengawasTab = ({ jenisUjian, showToast, onBack, tabPaksa = null }) =
   const [daftarGuru, setDaftarGuru] = useState([]);
   const [daftarJadwal, setDaftarJadwal] = useState([]);
   const [loadingData, setLoadingData] = useState(false);
+
+  // Jaring pengaman: penugasan pengawas (ujian_pengawas) yang nomor_ruangan-nya
+  // udah gak valid lagi buat komposisi ruangan sekarang (lihat
+  // cariPenugasanPengawasTidakValid() di jadwalPengawasSupabase.js). Normalnya
+  // selalu kosong karena resetUntukProsesUlang() udah otomatis bersihin --
+  // ini cuma buat nangkep kasus di luar jalur normal (data lama / edit manual).
+  const [penugasanTidakValid, setPenugasanTidakValid] = useState([]);
+  const [sedangBersihkanPenugasan, setSedangBersihkanPenugasan] = useState(false);
 
   // Tab internal komponen ini: "jadwal" | "daftar" | "pengawas" | "rekap".
   // Kalau parent ngirim prop `tabPaksa`, tab bar internal disembunyiin dan
@@ -244,6 +256,20 @@ const JadwalPengawasTab = ({ jenisUjian, showToast, onBack, tabPaksa = null }) =
       setDaftarRuangan(ruangan);
       setDaftarGuru(guru);
       setDaftarJadwal(jadwal);
+
+      // Jaring pengaman: cek ada gak penugasan pengawas yang nomor_ruangan-nya
+      // udah gak nyambung sama komposisi ruangan sekarang. Gagal di langkah
+      // ini SENGAJA gak nge-throw ke luar (cuma logged) -- ini cuma
+      // pengecekan tambahan, bukan alur inti, jadi gak boleh nge-block
+      // tampilan Jadwal Sesi/Daftar Pengawas cuma gara-gara query ini error.
+      try {
+        const nomorValid = ruangan.map((r) => r.nomor_ruangan);
+        const jadwalIds = jadwal.map((j) => j.id);
+        const tidakValid = await cariPenugasanPengawasTidakValid(supabase, jadwalIds, nomorValid);
+        setPenugasanTidakValid(tidakValid);
+      } catch (errCek) {
+        console.error("Gagal cek penugasan pengawas tidak valid:", errCek);
+      }
     } catch (err) {
       console.error(err);
       showToast?.("Gagal memuat data jadwal & pengawas: " + err.message, "error");
@@ -255,6 +281,28 @@ const JadwalPengawasTab = ({ jenisUjian, showToast, onBack, tabPaksa = null }) =
   useEffect(() => {
     muatData();
   }, [muatData]);
+
+  // Handler tombol "Bersihkan Sekarang" di banner peringatan -- hapus semua
+  // baris ujian_pengawas basi yang ketahuan lewat cariPenugasanPengawasTidakValid(),
+  // lalu refresh state terkait (banner, list pengawas sesi aktif, rekap)
+  // biar UI langsung nunjukin hasil bersih tanpa perlu reload manual.
+  const handleBersihkanPenugasanTidakValid = async () => {
+    if (penugasanTidakValid.length === 0) return;
+    setSedangBersihkanPenugasan(true);
+    try {
+      const idList = penugasanTidakValid.map((p) => p.id);
+      const jumlah = await bersihkanPenugasanPengawasTidakValid(supabase, idList);
+      setPenugasanTidakValid([]);
+      if (jadwalPengawasAktif) await muatPengawasUntukJadwal(jadwalPengawasAktif);
+      if (tabAktif === "rekap") await muatRekapSemua();
+      showToast?.(`${jumlah} penugasan pengawas basi berhasil dibersihkan.`, "success");
+    } catch (err) {
+      console.error(err);
+      showToast?.("Gagal membersihkan penugasan pengawas: " + err.message, "error");
+    } finally {
+      setSedangBersihkanPenugasan(false);
+    }
+  };
 
   /**
    * Ambil pengawas untuk 1 jadwal & kelompokkan per nomor ruangan.
@@ -637,6 +685,43 @@ const JadwalPengawasTab = ({ jenisUjian, showToast, onBack, tabPaksa = null }) =
             <div className="p-3 mb-5 text-xs bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl text-amber-700 dark:text-amber-300">
               Belum ada data ruangan untuk tahun ajaran ini. Proses dulu{" "}
               <strong>Pembagian Ruangan</strong> supaya daftar ruangan tersedia di sini.
+            </div>
+          )}
+
+          {penugasanTidakValid.length > 0 && (
+            <div className="p-3 mb-5 text-xs bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl text-red-700 dark:text-red-300">
+              <div className="flex items-start gap-2">
+                <AlertTriangle size={16} className="flex-shrink-0 mt-0.5" />
+                <div className="flex-1">
+                  <p className="font-semibold">
+                    {penugasanTidakValid.length} penugasan pengawas nempel ke nomor ruangan yang
+                    sudah tidak ada di komposisi ruangan sekarang.
+                  </p>
+                  <p className="mt-1">
+                    Biasanya ini kejadian karena versi skema pernah diganti di luar tombol "Proses
+                    Ulang dengan Versi Lain" (mis. edit langsung ke database), atau data peninggalan
+                    dari sebelum pembersihan otomatis ada. Ruangan:{" "}
+                    <span className="font-medium">
+                      {[...new Set(penugasanTidakValid.map((p) => p.nomor_ruangan))]
+                        .sort((a, b) => a - b)
+                        .join(", ")}
+                    </span>
+                    .
+                  </p>
+                  <button
+                    onClick={handleBersihkanPenugasanTidakValid}
+                    disabled={sedangBersihkanPenugasan}
+                    className="mt-2 flex items-center gap-1.5 px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded-lg disabled:opacity-40 disabled:cursor-not-allowed font-medium transition"
+                  >
+                    {sedangBersihkanPenugasan ? (
+                      <Loader2 size={13} className="animate-spin" />
+                    ) : (
+                      <Trash2 size={13} />
+                    )}
+                    {sedangBersihkanPenugasan ? "Membersihkan..." : "Bersihkan Sekarang"}
+                  </button>
+                </div>
+              </div>
             </div>
           )}
 
@@ -1125,16 +1210,28 @@ const JadwalPengawasTab = ({ jenisUjian, showToast, onBack, tabPaksa = null }) =
                                   </td>
                                   {sesiHariIni.map((s) => {
                                     const pengawas = rekapPerJadwal[s.id]?.[r.nomor_ruangan] || [];
-                                    const mapelRuangIni = mataPelajaranUntukJenjang(s, r.jenjang);
-                                    const beda = mapelRuangIni !== s.mata_pelajaran;
+                                    // Ruang ini bisa berisi >1 jenjang (versi rantai/silang),
+                                    // jadi mapel yang berlaku juga bisa >1 sekaligus -- lihat
+                                    // mataPelajaranUntukRuangan() di jadwalPengawasSupabase.js.
+                                    const mapelPerJenjang = mataPelajaranUntukRuangan(s, r.jenjangSet);
+                                    const adaOverride = mapelPerJenjang.some(
+                                      (m) => m.mapel !== s.mata_pelajaran
+                                    );
                                     return (
                                       <td
                                         key={s.id}
                                         className="py-2 pr-3 text-gray-700 dark:text-gray-300"
                                       >
-                                        {beda && (
+                                        {adaOverride && (
                                           <div className="text-sm font-semibold text-amber-700 dark:text-amber-400 mb-0.5">
-                                            {mapelRuangIni}
+                                            {mapelPerJenjang.map((m) => (
+                                              <span key={m.mapel} className="block">
+                                                {m.mapel}
+                                                {r.jenjangSet && r.jenjangSet.length > 1
+                                                  ? ` (kls ${m.jenjang.join(",")})`
+                                                  : ""}
+                                              </span>
+                                            ))}
                                           </div>
                                         )}
                                         {pengawas.length === 0 ? (
