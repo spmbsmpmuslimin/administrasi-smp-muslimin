@@ -58,14 +58,29 @@ async function ambilPesertaRuangan(supabase, ujianId, nomorRuangan) {
  * padahal bukan/belum ditambahin ke Daftar Pengawas -- misklik pas isi
  * jadwal, dsb), orang itu otomatis di-skip di sini dan gak ikut kecetak
  * di Kartu Pengawas, tanpa perlu bersih-bersih manual ke database dulu.
- * @returns {Promise<Array>} [{ guru_id, nama, sesi: [{tanggal, sesi_ke, waktu_mulai, waktu_selesai, mata_pelajaran, nomor_ruangan}] }]
+ *
+ * `mapel` (mata pelajaran YANG DIAJAR guru itu sendiri, buat identitas di
+ * kartu -- BEDA sama `mata_pelajaran` di tiap sesi yang artinya mapel yang
+ * lagi diujiin) diambil dari Master Kode Guru (`teacher_codes`), difilter
+ * ke `tahunAjaran` yang sama kayak ujiannya. Kalau guru itu gak ada/belum
+ * kedaftar di Master Kode Guru tahun ajaran ini, fallback "-".
+ * @param {string} tahunAjaran - label tahun ajaran ("2026/2027"), dipakai
+ *   buat filter teacher_codes.academic_year -- BUKAN id tahun ajaran.
+ * @returns {Promise<Array>} [{ guru_id, nama, mapel, sesi: [{tanggal, sesi_ke, waktu_mulai, waktu_selesai, mata_pelajaran, nomor_ruangan}] }]
  */
-async function ambilJadwalPengawasPerGuru(supabase, ujianId) {
+async function ambilJadwalPengawasPerGuru(supabase, ujianId, tahunAjaran) {
   const [daftarJadwal, daftarPengawasResmi] = await Promise.all([
     ambilJadwalSesi(supabase, ujianId),
     ambilDaftarGuru(supabase),
   ]);
   const idPengawasResmi = new Set(daftarPengawasResmi.map((g) => g.id));
+  // Map guru_id (users.id, dipakai di ujian_pengawas) -> teacher_id
+  // (kode "G-001", dipakai di teacher_codes) -- 2 sistem ID beda yang
+  // perlu dijembatanin manual di sini.
+  const teacherIdByGuruId = {};
+  daftarPengawasResmi.forEach((g) => {
+    teacherIdByGuruId[g.id] = g.teacher_id;
+  });
 
   const perGuru = {};
 
@@ -88,8 +103,35 @@ async function ambilJadwalPengawasPerGuru(supabase, ujianId) {
       });
   }
 
+  // Query terpisah ke teacher_codes (Master Kode Guru) -- gak bisa
+  // di-nested-select dari ujian_pengawas karena relasinya lewat
+  // teacher_id (kode), bukan guru_id (uuid) langsung. Guard array kosong,
+  // sama kayak pola di ambilPesertaRuangan().
+  const daftarTeacherId = Object.keys(perGuru)
+    .map((guruId) => teacherIdByGuruId[guruId])
+    .filter(Boolean);
+
+  const mapelByTeacherId = {};
+  if (tahunAjaran && daftarTeacherId.length > 0) {
+    const { data: kodeGuruRows, error: errorKodeGuru } = await supabase
+      .from("teacher_codes")
+      .select("teacher_id, subject")
+      .eq("academic_year", tahunAjaran)
+      .in("teacher_id", daftarTeacherId);
+    if (errorKodeGuru) throw errorKodeGuru;
+    (kodeGuruRows || []).forEach((row) => {
+      // Kalau 1 guru punya >1 baris kode buat mapel beda (jarang tapi
+      // mungkin), gabung jadi 1 string dipisah "/" -- lebih informatif
+      // ketimbang cuma nampilin salah satu & nyembunyiin yang lain.
+      mapelByTeacherId[row.teacher_id] = mapelByTeacherId[row.teacher_id]
+        ? `${mapelByTeacherId[row.teacher_id]}/${row.subject}`
+        : row.subject;
+    });
+  }
+
   const hasil = Object.values(perGuru).map((g) => ({
     ...g,
+    mapel: mapelByTeacherId[teacherIdByGuruId[g.guru_id]] || "-",
     sesi: [...g.sesi].sort((a, b) =>
       a.tanggal === b.tanggal ? a.sesi_ke - b.sesi_ke : a.tanggal.localeCompare(b.tanggal)
     ),

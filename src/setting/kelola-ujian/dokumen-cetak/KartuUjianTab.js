@@ -133,10 +133,17 @@ const KartuUjianTab = ({ jenisUjian, showToast, onBack }) => {
     if (!ujian?.id) return;
     setLoadingData(true);
     try {
+      // Label tahun ajaran ("2026/2027") -- dibutuhin ambilJadwalPengawasPerGuru
+      // buat filter teacher_codes.academic_year pas ngambil mapel guru.
+      const taTerpilih = daftarTahunAjaran.find((ta) => ta.id === tahunAjaranId);
       const [ruangan, kelas, guruJadwal] = await Promise.all([
         ambilRuanganUjian(supabase, ujian.id),
         ambilDaftarKelasUjian(supabase, ujian.id),
-        ambilJadwalPengawasPerGuru(supabase, ujian.id),
+        ambilJadwalPengawasPerGuru(
+          supabase,
+          ujian.id,
+          taTerpilih ? labelTahunAjaran(taTerpilih) : null
+        ),
       ]);
       setDaftarRuangan(ruangan);
       setDaftarKelas(kelas);
@@ -147,7 +154,7 @@ const KartuUjianTab = ({ jenisUjian, showToast, onBack }) => {
     } finally {
       setLoadingData(false);
     }
-  }, [ujian?.id, showToast]);
+  }, [ujian?.id, daftarTahunAjaran, tahunAjaranId, showToast]);
 
   useEffect(() => {
     muatData();
@@ -388,11 +395,11 @@ const KartuUjianTab = ({ jenisUjian, showToast, onBack }) => {
                       <p className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">
                         Pilih ruangan untuk dicetak kartu pesertanya:
                       </p>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                      <div className="columns-1 sm:columns-2 md:columns-3 gap-3">
                         {daftarRuangan.map((r) => (
                           <div
                             key={r.nomor_ruangan}
-                            className="flex items-center justify-between p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800"
+                            className="flex items-center justify-between p-3 mb-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 break-inside-avoid"
                           >
                             <div className="flex items-center gap-2">
                               <DoorOpen className="w-4 h-4 text-indigo-500" />
@@ -432,11 +439,11 @@ const KartuUjianTab = ({ jenisUjian, showToast, onBack }) => {
                           Belum ada data kelas untuk tahun ajaran ini.
                         </div>
                       ) : (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                        <div className="columns-1 sm:columns-2 md:columns-3 gap-3">
                           {daftarKelas.map((k) => (
                             <div
                               key={k.kelas}
-                              className="flex items-center justify-between p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800"
+                              className="flex items-center justify-between p-3 mb-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 break-inside-avoid"
                             >
                               <div className="flex items-center gap-2">
                                 <GraduationCap className="w-4 h-4 text-indigo-500" />

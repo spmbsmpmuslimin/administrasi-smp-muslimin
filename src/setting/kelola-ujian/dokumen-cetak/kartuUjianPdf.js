@@ -481,44 +481,54 @@ function gambarSatuKartuPengawas(
   const innerWidth = innerRight - innerLeft;
   const centerX = x + width / 2;
 
-  // ---- Penanda lubang lanyard (cuma panduan visual, dilubangi manual) ----
-  doc.setDrawColor(...PDF_COLORS.border);
-  doc.setLineWidth(0.2);
-  doc.circle(centerX, y + 7, 1.8, "S");
+  let cy = y + padding + 3;
 
-  let cy = y + 15;
-
-  // ---- Header ----
+  // ---- Header sekolah -- gaya & ukuran font disamain persis sama kartu
+  // peserta (gambarSatuKartu) biar 2 dokumen ini kelihatan 1 keluarga/set,
+  // bukan 2 desain lepas-lepas ----
   doc.setTextColor(0, 0, 0);
   doc.setFont(PDF_FONT_FAMILY, "bold");
   doc.setFontSize(8.5);
   doc.text(SCHOOL_NAME, centerX, cy, { align: "center", maxWidth: innerWidth });
-  cy += 4;
+  cy += 3.8;
+
+  doc.setFont(PDF_FONT_FAMILY, "bold");
+  doc.setFontSize(6.5);
+  const judul = JUDUL_UJIAN[jenisUjian] || jenisUjian;
+  doc.text(judul, centerX, cy, { align: "center", maxWidth: innerWidth });
+  cy += 3.4;
 
   doc.setFont(PDF_FONT_FAMILY, "normal");
   doc.setFontSize(6.5);
-  doc.text("TANDA PENGENAL PENGAWAS UJIAN", centerX, cy, { align: "center" });
-  cy += 3.5;
+  doc.text(`Tahun Ajaran ${tahunAjaran}`, centerX, cy, { align: "center" });
+  cy += 4;
 
   doc.setDrawColor(...PDF_COLORS.border);
   doc.setLineWidth(0.15);
   doc.line(innerLeft, cy, innerRight, cy);
   cy += 6;
 
-  // ---- Nama guru (elemen paling menonjol di kartu) ----
+  // ---- Judul jabatan "PENGAWAS UJIAN" -- section title, bukan pasangan
+  // label:value, jadi bukan dari tulisLabelValue. Ukuran gede (sama kayak
+  // ukuran Nama guru sebelumnya) biar langsung kebaca dari jarak jauh ini
+  // kartu pengawas siapa, bukan peserta ----
   doc.setFont(PDF_FONT_FAMILY, "bold");
   doc.setFontSize(12);
-  const barisNama = doc.splitTextToSize(guru.nama || "-", innerWidth);
-  barisNama.forEach((line, i) => doc.text(line, centerX, cy + i * 5, { align: "center" }));
-  cy += barisNama.length * 5 + 2;
+  doc.text("PENGAWAS UJIAN", centerX, cy, { align: "center" });
+  cy += 7;
 
-  doc.setFont(PDF_FONT_FAMILY, "normal");
-  doc.setFontSize(7.5);
-  const judul = JUDUL_UJIAN[jenisUjian] || jenisUjian;
-  doc.text(judul, centerX, cy, { align: "center", maxWidth: innerWidth });
-  cy += 3.5;
-  doc.text(`Tahun Ajaran ${tahunAjaran}`, centerX, cy, { align: "center" });
-  cy += 5;
+  // ---- Identitas: Nama & Mapel, format label:value rata kiri (pola sama
+  // kayak identitas di kartu peserta) -- lebih gampang discan cepet
+  // dibanding nama di-center gede kayak versi sebelumnya ----
+  const labelOpts = {
+    x: innerLeft,
+    labelWidth: 16,
+    maxWidth: innerWidth,
+    lineHeight: 4.2,
+  };
+  doc.setFontSize(8);
+  cy = tulisLabelValue(doc, { ...labelOpts, y: cy }, "Nama", guru.nama) + 1.8;
+  cy = tulisLabelValue(doc, { ...labelOpts, y: cy }, "Mapel", guru.mapel) + 3;
 
   doc.setDrawColor(...PDF_COLORS.border);
   doc.setLineWidth(0.15);
@@ -532,27 +542,47 @@ function gambarSatuKartuPengawas(
   doc.text("JADWAL MENGAWAS", innerLeft, cy);
   cy += 4;
 
-  // Tinggi baris fleksibel: sisa area dibagi rata ke semua sesi, dibatasi
-  // min 6.5mm (2 baris teks) dan max 10mm, dengan ruang footer tanda
-  // tangan (~24mm) tetap disisakan di bawah.
+  // Grup sesi per tanggal -- kalau 1 hari ada >1 sesi (kayak Sesi 1 pagi +
+  // Sesi 2 siang), baris "Hari, Tanggal" cuma ditulis SEKALI di atas,
+  // sesi-sesi di hari itu jadi sub-baris di bawahnya. SEBELUMNYA tanggal
+  // ditulis ulang di tiap sesi -- mubazir & bikin daftar kepanjangan kalau
+  // guru itu ngawas banyak sesi di hari yang sama.
+  const grupTanggal = [];
+  guru.sesi.forEach((s) => {
+    const grupTerakhir = grupTanggal[grupTanggal.length - 1];
+    if (grupTerakhir && grupTerakhir.tanggal === s.tanggal) {
+      grupTerakhir.daftarSesi.push(s);
+    } else {
+      grupTanggal.push({ tanggal: s.tanggal, daftarSesi: [s] });
+    }
+  });
+
+  // Tinggi baris fleksibel: sisa area dibagi rata ke SEMUA baris (baris
+  // tanggal + baris sesi -- BUKAN cuma jumlah sesi lagi, karena sekarang
+  // 1 sesi = 1 baris, bukan 2), dibatasi min 3.4mm dan max 5mm, dengan
+  // ruang footer tanda tangan (~24mm) tetap disisakan di bawah.
   const footerReserved = 24;
   const sisaTinggi = y + height - padding - footerReserved - cy;
-  const jumlahBaris = guru.sesi.length || 1;
-  const tinggiBaris = Math.min(10, Math.max(6.5, sisaTinggi / jumlahBaris));
+  const totalBaris = grupTanggal.length + guru.sesi.length || 1;
+  const tinggiBaris = Math.min(5, Math.max(3.4, sisaTinggi / totalBaris));
 
-  guru.sesi.forEach((s) => {
-    const waktu = s.waktu_mulai && s.waktu_selesai ? `${s.waktu_mulai}-${s.waktu_selesai}` : "-";
+  grupTanggal.forEach((grup) => {
     doc.setFont(PDF_FONT_FAMILY, "bold");
     doc.setFontSize(6.5);
-    doc.text(`${formatHariTanggalSingkat(s.tanggal)} \u2022 Sesi ${s.sesi_ke}`, innerLeft, cy, {
-      maxWidth: innerWidth,
-    });
-    doc.setFont(PDF_FONT_FAMILY, "normal");
-    doc.setFontSize(6.5);
-    doc.text(`${waktu}  \u2014  Ruang ${s.nomor_ruangan}`, innerLeft, cy + 3, {
-      maxWidth: innerWidth,
-    });
+    doc.text(formatHariTanggalSingkat(grup.tanggal), innerLeft, cy, { maxWidth: innerWidth });
     cy += tinggiBaris;
+
+    grup.daftarSesi.forEach((s) => {
+      const waktu = s.waktu_mulai && s.waktu_selesai ? `${s.waktu_mulai}-${s.waktu_selesai}` : "-";
+      doc.setFont(PDF_FONT_FAMILY, "normal");
+      doc.setFontSize(6.5);
+      // Indent dikit (+3) biar keliatan ini sub-baris dari tanggal di
+      // atasnya, bukan baris sejajar.
+      doc.text(`Sesi ${s.sesi_ke}  ${waktu}  \u2014  Ruang ${s.nomor_ruangan}`, innerLeft + 3, cy, {
+        maxWidth: innerWidth - 3,
+      });
+      cy += tinggiBaris;
+    });
   });
 
   // ---- Tanda tangan kepala sekolah -- dipusatkan (kartu terlalu sempit
@@ -588,7 +618,7 @@ function formatHariTanggalSingkat(tanggal) {
  * garis potong + penanda lubang lanyard di tiap kartu.
  *
  * @param {Object} opts
- * @param {Array} opts.daftarGuruJadwal - dari ambilJadwalPengawasPerGuru(): [{guru_id, nama, sesi:[...]}]
+ * @param {Array} opts.daftarGuruJadwal - dari ambilJadwalPengawasPerGuru(): [{guru_id, nama, mapel, sesi:[...]}]
  * @param {string} opts.jenisUjian
  * @param {string} opts.tahunAjaran
  * @param {{nama: string, tempat: string}} opts.kepsek
