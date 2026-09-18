@@ -35,23 +35,79 @@
 // dulu di awal: total dibagi N ruang, sisa pembulatan dikasih ke ruang-
 // ruang PERTAMA.
 //
-// V2 -- RANTAI MUTER: tiap ruang cuma gabungan 2 kelas yang bersebelahan
-// (R1=7A+7B, R2=7B+7C, ..., R terakhir = kelas terakhir + kelas pertama
-// -- muter balik/wrap-around). Tiap kelas dibelah jadi 2 bagian: "bagian
-// maju" (ceil, masuk ke ruang bareng kelas SESUDAHNYA) dan "bagian
-// mundur" (floor, masuk ke ruang bareng kelas SEBELUMNYA) -- pembelahan
-// ini SELALU pas nambah jadi total kelas asli, tapi ukuran tiap ruang
-// sendiri BISA sedikit beda-beda (gak dipaksa rata persis kayak V1),
-// karena tiap ruang cuma nampung remah-remahan dari 2 kelas doang.
+// V2 -- GABUNG KELAS SEJENJANG (diganti total per Sep 2026, lihat catatan
+// PERUBAHAN V2 di bawah): BEDA sama V1 & V3 karena V2 SEKARANG LINTAS
+// JENJANG juga (kayak "silang"), bukan diproses 1 jenjang sendiri-sendiri
+// lewat loop orchestrator -- makanya masuk lewat jalur sendiri
+// (bagiRuanganGabungHuruf), persis kayak "silang".
+//
+// KASUS 2 JENJANG (PSAT: 7+8): kelas digabung berdasarkan HURUF YANG SAMA
+// lintas jenjang (7A+8A jadi 1 grup, 7B+8B grup lain, dst -- BUKAN
+// proporsional-nyambung-antar-huruf kayak bagiRuangan.js versi paling
+// lama). Tiap grup itu lalu dipecah PROPORSIONAL (largest remainder,
+// sama logic-nya kayak potongProporsional yang dipakai V1) jadi 2 ruang
+// per grup huruf.
+//   Contoh (7A=35, 8A=40): grup "A" total 75 siswa -> 2 ruang, proporsional
+//   ke sisa 7A vs 8A saat itu (kalau pas rata: Ruang1=20+20, Ruang2=15+20).
+//   Grup "B" (7B+8B) jadi Ruang berikutnya, dst -- gak ada nyambung sisa
+//   antar huruf, tiap grup huruf berdiri sendiri.
+//   Kalau jumlah kelas antar jenjang beda (mis. 7 ada 6 kelas, 8 cuma 5),
+//   jenjang yang lebih pendek diindeks muter (modulo), sama kayak
+//   bangunPetaRuangSilang() di bagiRuanganSilangJenjang.js.
+//   Fungsi generiknya (prosesGrupHurufMultiJenjang) sebenarnya nerima
+//   berapa pun jumlah jenjang, tapi SEKARANG cuma dipanggil buat 2 jenjang
+//   (PSAT) -- kasus 3 jenjang punya jalur sendiri, lihat di bawah.
+//
+// KASUS 1 JENJANG (PSAJ: 9 doang): gak ada jenjang lain buat dipasangin
+// per huruf, jadi PAKAI ULANG pola "silang" versi 1 jenjang
+// (susunPasanganSatuJenjang): pasangan huruf BERDEKATAN (9A+9B, 9C+9D,
+// dst, muter balik/wrap-around kalau kelasnya ganjil), 1 GRUP = 1 RUANG.
+// FIX (Sep 2026): karena tiap kelas bisa muncul di 2 pasangan (pola
+// "muter balik"-nya susunPasanganSatuJenjang), kelasnya WAJIB dipecah rata
+// dulu (pecahRata) sebelum diisi ke tiap ruang -- kalau dibaca utuh tiap
+// kemunculan, siswa yang sama kehitung dobel di 2 ruang (bug lama, udah
+// dibenerin, lihat prosesPasanganSatuJenjang()).
+//
+// KASUS 3 JENJANG (PSAS: 7+8+9) -- FIX Sep 2026, sesuai praktek asli TU:
+// kelas 9 SELALU dipisah total, TIDAK ikut campur proporsional sama 7 & 8
+// (beda sama versi sebelum fix ini, yang salah nyampur 7A+8A+9A jadi 1
+// grup 3-arah). Yang bener:
+//   - Kelas 7 + 8 digabung pake skema KASUS 2 JENJANG di atas (7A+8A,
+//     7B+8B, dst, tiap grup dipecah proporsional jadi 2 ruang) -> 12 ruang.
+//   - Kelas 9 diproses SENDIRI pake skema KASUS 1 JENJANG di atas
+//     (9A+9B, 9C+9D, dst, digabung utuh gak dipecah) -> 6 ruang.
+//   - Nomor ruang: 7+8 duluan (Ruang 1-12), baru nyusul kelas 9 (Ruang
+//     13-18).
+//   CATATAN: cabang ini di-hardcode buat "jenjang paling tinggi dipisah,
+//   sisanya digabung" KHUSUS pas ada TEPAT 3 jenjang, karena cuma itu yang
+//   ada sekarang (PSAS=3, PSAT=2, PSAJ=1). Kalau kelak ada jenis ujian
+//   baru dengan susunan jenjang lain (mis. 4 jenjang, atau 3 jenjang tapi
+//   aturannya beda), cabang ini WAJIB direvisit -- jangan asumsikan pola
+//   ini otomatis benar buat kombinasi jenjang lain.
+//
+// PERUBAHAN V2 (Sep 2026): sebelumnya V2 = "Rantai Muter" per-jenjang
+// (tiap ruang cuma 2 kelas bersebelahan DALAM 1 jenjang yang sama, kode
+// lama ada di git history). Diganti total atas permintaan panitia karena
+// kebutuhan sebenarnya adalah gabung ANTAR jenjang per huruf, bukan antar
+// huruf DALAM 1 jenjang. Kode `versi_skema` di DB ("rantai") SENGAJA
+// TIDAK diganti (biar record lama yang udah nyimpen "rantai"/"v2" tetap
+// kebaca sebagai versi ini) -- konsekuensinya, kalau ada ujian LAMA yang
+// pernah diproses pakai V2 versi sebelumnya dan di-"Proses Ulang", hasil
+// barunya bakal pakai algoritma BARU ini, bukan algoritma lama.
 //
 // CATATAN: nilai contoh di file Excel yang dijadiin acuan awal cuma
 // ilustrasi kasar (bukan hasil hitungan pasti dari algoritma ini) --
 // jadi angka detail per sel BISA beda dikit dari Excel itu. Yang WAJIB
 // sama: (1) total per kelas selalu pas [Cek Total = Data Asli],
-// (2) V1 = campur semua kelas tiap ruang, (3) V2 = cuma 2 kelas
-// bersebelahan tiap ruang.
+// (2) V1 = campur semua kelas tiap ruang, (3) V2 = grup per huruf dalam
+// jenjang yang sama (2 jenjang) / pasangan huruf berdekatan (1 jenjang) /
+// 7+8 digabung + 9 dipisah (3 jenjang, khusus PSAS).
 
-import { bagiRuanganSilangJenjang } from "./bagiRuanganSilangJenjang";
+import {
+  bagiRuanganSilangJenjang,
+  susunPasanganSatuJenjang,
+  pecahRata,
+} from "./bagiRuanganSilangJenjang";
 
 /**
  * SUMBER KEBENARAN TUNGGAL daftar versi skema -- dipakai bareng sama UI
@@ -71,8 +127,9 @@ const VERSI_SKEMA_LIST = [
   },
   {
     value: "rantai",
-    label: "V2 - Gabung 2 Kelas Berdekatan",
-    deskripsi: "Tiap ruang cuma gabungan 2 kelas yang bersebelahan.",
+    label: "V2 - Gabung Kelas Sejenjang",
+    deskripsi:
+      "Kelas digabung per huruf yang sama lintas jenjang (7A+8A, 7B+8B, dst), dipecah proporsional ke sejumlah ruang = jumlah jenjang. Khusus 1 jenjang (mis. kelas 9 doang): gabung 2 kelas berdekatan per huruf (9A+9B, dst), 1 ruang per pasangan.",
   },
   {
     value: "silang",
@@ -241,53 +298,193 @@ function bagiSatuJenjangV1(dataSiswaPerKelasJenjang) {
 }
 
 /**
- * V2 -- Rantai Muter, buat 1 jenjang.
- * Tiap kelas dibelah 2: "bagian maju" (ceil, masuk ke ruang bareng kelas
- * SESUDAHNYA) dan "bagian mundur" (floor, masuk ke ruang bareng kelas
- * SEBELUMNYA) -- urutan kelas muter balik ke awal di ujung (kelas
- * terakhir "maju"-nya nyambung ke kelas pertama).
- *
- * Kalau cuma ada 1 kelas di jenjang itu, gak ada pasangan buat dirantai
- * -- fallback jadi 1 ruang isi semua siswa kelas itu (sama kayak V1).
- *
- * @param {object} dataSiswaPerKelasJenjang - { "7A": [...], "7B": [...], ... }
- * @returns {Array} [{ siswa: [...] }] per ruang
+ * Bentuk baris hasil 1 ruangan buat skema V2: label jenjang gabungan
+ * (mis. "7+8") + siswa yang diberi nomor kursi urut. Dipisah jadi fungsi
+ * module-level (bukan nested) supaya bisa dipakai bareng oleh
+ * prosesPasanganSatuJenjang() dan prosesGrupHurufMultiJenjang() --
+ * dua-duanya kepake sekaligus di cabang "3 jenjang".
  */
-function bagiSatuJenjangV2(dataSiswaPerKelasJenjang) {
-  const urutanKelas = Object.keys(dataSiswaPerKelasJenjang).sort();
-  const n = urutanKelas.length;
-  if (n === 0) return [];
-  if (n === 1) {
-    const k = urutanKelas[0];
-    const siswa = dataSiswaPerKelasJenjang[k].map((s, idx) => ({
-      ...s,
-      asal_kelas: k,
-      no_kursi: idx + 1,
-    }));
-    return [{ siswa }];
-  }
+function buatBarisHasilGabungHuruf(kelasRuangIni, siswaRuanganIni) {
+  const jenjangRuangIni = [
+    ...new Set(kelasRuangIni.map((k) => k.match(/^\d+/)?.[0]).filter(Boolean)),
+  ].sort((a, b) => Number(a) - Number(b));
+  return {
+    jenjang: jenjangRuangIni.join("+"),
+    siswa: siswaRuanganIni.map((s, idx) => ({ ...s, no_kursi: idx + 1 })),
+  };
+}
 
-  // Belah tiap kelas jadi bagianMaju (ceil, ke ruang index sama) dan
-  // bagianMundur (floor, ke ruang index sebelumnya -- wrap: kelas 0
-  // "mundur"-nya nyambung ke ruang index n-1).
-  const bagianMaju = {};
-  const bagianMundur = {};
-  urutanKelas.forEach((k) => {
-    const siswaKelas = dataSiswaPerKelasJenjang[k].map((s) => ({ ...s, asal_kelas: k }));
-    const jumlahMaju = Math.ceil(siswaKelas.length / 2);
-    bagianMaju[k] = siswaKelas.slice(0, jumlahMaju);
-    bagianMundur[k] = siswaKelas.slice(jumlahMaju);
+/**
+ * Skema pasangan huruf berdekatan buat 1 jenjang (9A+9B, 9C+9D, dst,
+ * wrap-around kalau ganjil). Dipakai buat 2 situasi: (1) SEMUA jenjang di
+ * ujian itu cuma 1 (PSAJ), dan (2) 1 jenjang tertentu sengaja DIPISAH dari
+ * jenjang lain (kelas 9 di PSAS, kasus 3 jenjang).
+ *
+ * CATATAN (fix bug lama, bukan cuma buat kasus 3 jenjang): susunPasanganSatuJenjang()
+ * itu didesain BARENG downstream-nya yang mecah tiap kelas (lihat
+ * bagiRuanganSilangJenjang() -- kelas yang muncul di N pasangan otomatis
+ * dipecah jadi N potongan pake pecahRata). Kalau ukuran kelas GENAP, tiap
+ * kelas muncul PAS 2x di hasil susunPasanganSatuJenjang (lihat docstring-nya
+ * di bagiRuanganSilangJenjang.js). Sebelumnya di sini kelasnya dibaca UTUH
+ * tiap kali muncul (gak dipecah) -- akibatnya siswa yang sama kehitung
+ * DOBEL di 2 ruang sekaligus (total per kelas jadi 2x lipat dari data asli).
+ * Makanya di sini WAJIB dipecah dulu, sama persis kayak
+ * bagiRuanganSilangJenjang() nanganin kasus 1 jenjangnya sendiri.
+ *
+ * @param {string[]} daftarKelasJenjangIni - mis. ["9A",...,"9F"] (udah tersortir)
+ */
+function prosesPasanganSatuJenjang(daftarKelasJenjangIni, dataSiswaPerKelas) {
+  const petaPasangan = susunPasanganSatuJenjang(daftarKelasJenjangIni);
+
+  const jumlahPotonganPerKelas = {};
+  petaPasangan.forEach((kelasRuangIni) => {
+    kelasRuangIni.forEach((k) => {
+      jumlahPotonganPerKelas[k] = (jumlahPotonganPerKelas[k] || 0) + 1;
+    });
   });
 
-  // Ruang ke-i = bagianMaju kelas[i] + bagianMundur kelas[i+1] (wrap)
-  const hasil = [];
+  const antrianPotongan = {};
+  Object.entries(jumlahPotonganPerKelas).forEach(([kelas, jumlah]) => {
+    const siswaKelas = (dataSiswaPerKelas[kelas] || []).map((s) => ({ ...s, asal_kelas: kelas }));
+    antrianPotongan[kelas] = pecahRata(siswaKelas, jumlah);
+  });
+
+  return petaPasangan.map((kelasRuangIni) => {
+    const siswaRuanganIni = [];
+    kelasRuangIni.forEach((k) => {
+      const potongan = antrianPotongan[k].shift() || [];
+      siswaRuanganIni.push(...potongan);
+    });
+    return buatBarisHasilGabungHuruf(kelasRuangIni, siswaRuanganIni);
+  });
+}
+
+/**
+ * Skema grup-per-huruf-proporsional buat jenjang-jenjang yang MEMANG mau
+ * digabung jadi satu (dulu ini dipanggil dengan SEMUA jenjang sekaligus
+ * termasuk kasus 3 jenjang PSAS -- sekarang khusus dioper jenjang yang
+ * digabung aja, lihat catatan "KASUS 3 JENJANG" di header file). Grup per
+ * huruf (index kelas ke-i di tiap jenjang), tiap grup dipecah proporsional
+ * jadi J ruang (J = jumlah jenjang yang dioper). Jenjang yang kelasnya
+ * lebih sedikit diindeks muter (modulo), sama kayak bangunPetaRuangSilang()
+ * -- KONSEKUENSINYA, kalau n (jumlah grup) lebih banyak dari panjang kelas
+ * jenjang itu, ada kelas yang kepake di LEBIH DARI 1 grup (mis. 7 = 3
+ * kelas, 8 = 2 kelas -> n=3, 8A kepake di grup ke-0 DAN ke-2). Makanya
+ * kelas gak boleh langsung "dibaca utuh" tiap kali dipake di suatu grup
+ * (bisa kehitung dobel) -- harus dipecah DULU jadi sebanyak jumlah grup
+ * yang makainya (pakai pecahRata, sama persis kayak
+ * bagiRuanganSilangJenjang.js nanganin kasus serupa), baru tiap grup
+ * ngambil 1 potongan jatahnya masing-masing secara FIFO.
+ *
+ * @param {string[]} daftarJenjang - jenjang yang mau digabung, mis. ["7","8"]
+ * @param {object} kelasPerJenjang - { "7": ["7A",...], "8": [...], ... } (masing-masing tersortir)
+ */
+function prosesGrupHurufMultiJenjang(daftarJenjang, kelasPerJenjang, dataSiswaPerKelas) {
+  const J = daftarJenjang.length;
+  const n = Math.max(...daftarJenjang.map((j) => kelasPerJenjang[j].length));
+
+  const petaGrup = [];
   for (let i = 0; i < n; i++) {
-    const kelasIni = urutanKelas[i];
-    const kelasSelanjutnya = urutanKelas[(i + 1) % n];
-    const siswaRuanganIni = [...bagianMaju[kelasIni], ...bagianMundur[kelasSelanjutnya]];
-    hasil.push({ siswa: siswaRuanganIni.map((s, idx) => ({ ...s, no_kursi: idx + 1 })) });
+    petaGrup.push(
+      daftarJenjang.map((j) => {
+        const daftar = kelasPerJenjang[j];
+        return daftar[i % daftar.length];
+      })
+    );
   }
+
+  const jumlahPotonganPerKelas = {};
+  petaGrup.forEach((kelasGrupIni) => {
+    kelasGrupIni.forEach((k) => {
+      jumlahPotonganPerKelas[k] = (jumlahPotonganPerKelas[k] || 0) + 1;
+    });
+  });
+
+  const antrianPotongan = {};
+  Object.entries(jumlahPotonganPerKelas).forEach(([kelas, jumlah]) => {
+    const siswaKelas = (dataSiswaPerKelas[kelas] || []).map((s) => ({ ...s, asal_kelas: kelas }));
+    antrianPotongan[kelas] = pecahRata(siswaKelas, jumlah);
+  });
+
+  const hasil = [];
+  petaGrup.forEach((kelasGrupIni) => {
+    const antrianPerKelas = {};
+    kelasGrupIni.forEach((k) => {
+      antrianPerKelas[k] = antrianPotongan[k].shift() || [];
+    });
+
+    const totalGrup = kelasGrupIni.reduce((sum, k) => sum + antrianPerKelas[k].length, 0);
+    const targetPerRuang = hitungTargetPerRuang(totalGrup, J);
+
+    for (let r = 0; r < J; r++) {
+      const siswaRuanganIni = potongProporsional(kelasGrupIni, antrianPerKelas, targetPerRuang[r]);
+      hasil.push(buatBarisHasilGabungHuruf(kelasGrupIni, siswaRuanganIni));
+    }
+  });
   return hasil;
+}
+
+/**
+ * V2 -- Gabung Kelas Sejenjang. Entry point utama, dipanggil dari
+ * bagiRuanganPerJenjang() (orchestrator) waktu versiSkema = "rantai".
+ * SAMA POSISINYA kayak bagiRuanganSilangJenjang(): nerima SEMUA kelas
+ * lintas jenjang sekaligus dan gak lewat loop per-jenjang, karena
+ * pengelompokannya emang lintas jenjang (lihat header file).
+ *
+ * @param {object} dataSiswaPerKelas - { "7A": [...], "8B": [...], ... } SEMUA kelas yang ikut ujian
+ * @returns {Array} [{ nomor_ruangan, jenjang, siswa: [{...,asal_kelas,no_kursi}] }]
+ *   `jenjang` diisi gabungan jenjang yang ada di ruang itu: "7+8" buat
+ *   ruang gabungan (kasus 2 & 3 jenjang), atau cuma "9" buat ruang kelas 9
+ *   (kasus 1 jenjang, dan bagian kelas 9 yang dipisah di kasus 3 jenjang)
+ *   -- dipakai buat label/grouping di UI, sama kayak bagiRuanganSilangJenjang().
+ */
+function bagiRuanganGabungHuruf(dataSiswaPerKelas) {
+  // Kelompokkan nama kelas per jenjang, urut jenjang naik (7, 8, 9, ...)
+  const kelasPerJenjang = {};
+  Object.keys(dataSiswaPerKelas).forEach((k) => {
+    const jenjang = k.match(/^\d+/)?.[0];
+    if (!jenjang) return; // skip key yang formatnya gak sesuai pola "7A"
+    if (!kelasPerJenjang[jenjang]) kelasPerJenjang[jenjang] = [];
+    kelasPerJenjang[jenjang].push(k);
+  });
+  const urutanJenjang = Object.keys(kelasPerJenjang).sort((a, b) => Number(a) - Number(b));
+  urutanJenjang.forEach((j) => kelasPerJenjang[j].sort());
+
+  if (urutanJenjang.length === 0) return [];
+
+  // KASUS 1 JENJANG (PSAJ: 9 doang): gak ada jenjang lain buat digabung
+  // per huruf, jadi pakai skema pasangan huruf berdekatan.
+  if (urutanJenjang.length === 1) {
+    return prosesPasanganSatuJenjang(kelasPerJenjang[urutanJenjang[0]], dataSiswaPerKelas);
+  }
+
+  // KASUS 3 JENJANG (PSAS: 7+8+9) -- jenjang PALING TINGGI (angka
+  // terbesar di urutanJenjang, mis. "9") dipisah total, TIDAK ikut
+  // digabung proporsional sama 2 jenjang di bawahnya. Lihat catatan
+  // "KASUS 3 JENJANG" di header file buat alasannya (sesuai praktek asli
+  // TU) dan kenapa cabang ini di-hardcode khusus buat TEPAT 3 jenjang.
+  if (urutanJenjang.length === 3) {
+    const jenjangDipisah = urutanJenjang[urutanJenjang.length - 1]; // "9"
+    const jenjangGabung = urutanJenjang.slice(0, -1); // ["7","8"]
+
+    // 7+8 duluan (jadi Ruang 1-12), baru nyusul kelas 9 (Ruang 13-18) --
+    // nomor_ruangan final ditempel belakangan di orchestrator
+    // (bagiRuanganPerJenjang), urutan array ini yang nentuin urutannya.
+    const hasilGabung = prosesGrupHurufMultiJenjang(
+      jenjangGabung,
+      kelasPerJenjang,
+      dataSiswaPerKelas
+    );
+    const hasilPisah = prosesPasanganSatuJenjang(
+      kelasPerJenjang[jenjangDipisah],
+      dataSiswaPerKelas
+    );
+    return [...hasilGabung, ...hasilPisah];
+  }
+
+  // KASUS 2 JENJANG (PSAT: 7+8): grup per huruf, tiap grup dipecah
+  // proporsional jadi 2 ruang.
+  return prosesGrupHurufMultiJenjang(urutanJenjang, kelasPerJenjang, dataSiswaPerKelas);
 }
 
 /**
@@ -306,10 +503,13 @@ function bagiSatuJenjangV2(dataSiswaPerKelasJenjang) {
  *   sengaja error keras, biar salah oper versi ketahuan langsung dan gak
  *   diem-diem ngasilin pembagian pakai skema yang gak diminta siapa pun.
  * @returns {Array} [{ nomor_ruangan, jenjang, siswa: [{ id, nama, nis, asal_kelas, no_kursi }] }]
- *   nomor_ruangan JALAN TERUS lintas jenjang (jenjang kecil duluan: 7,
- *   lalu 8, lalu 9). Field `jenjang` ditambahin per ruang biar gampang
- *   di-group di UI (tab Komposisi Ruangan / Preview) tanpa perlu
- *   nebak-nebak dari asal_kelas siswa pertamanya.
+ *   nomor_ruangan selalu JALAN TERUS 1..N, tapi URUTANNYA beda per versi:
+ *   "rotasi" = jenjang kecil duluan (7, lalu 8, lalu 9); "rantai" = per
+ *   grup huruf lintas jenjang urut A,B,C,... (2+ jenjang) atau per
+ *   pasangan huruf berdekatan (1 jenjang); "silang" = per putaran rotasi
+ *   (lihat bagiRuanganSilangJenjang.js). Field `jenjang` ditambahin per
+ *   ruang biar gampang di-group di UI (tab Komposisi Ruangan / Preview)
+ *   tanpa perlu nebak-nebak dari asal_kelas siswa pertamanya.
  */
 function bagiRuanganPerJenjang(dataSiswaPerKelas, versiSkema) {
   const versi = normalisasiVersiSkema(versiSkema);
@@ -320,10 +520,16 @@ function bagiRuanganPerJenjang(dataSiswaPerKelas, versiSkema) {
     );
   }
 
-  // Silang Jenjang punya alur sendiri (ruang dicampur lintas jenjang),
-  // jadi langsung dilempar ke modulnya dan gak ikut loop per-jenjang.
+  // Silang Jenjang & Gabung Kelas Sejenjang (rantai) punya alur sendiri
+  // (ruang dicampur/digabung lintas jenjang), jadi langsung dilempar ke
+  // modulnya dan gak ikut loop per-jenjang di bawah -- beda sama V1
+  // (rotasi) yang emang diproses 1 jenjang sendiri-sendiri.
   if (versi === "silang") {
     return bagiRuanganSilangJenjang(dataSiswaPerKelas);
+  }
+  if (versi === "rantai") {
+    const hasilGabungHuruf = bagiRuanganGabungHuruf(dataSiswaPerKelas);
+    return hasilGabungHuruf.map((r, idx) => ({ nomor_ruangan: idx + 1, ...r }));
   }
 
   const semuaKelas = Object.keys(dataSiswaPerKelas);
@@ -347,10 +553,9 @@ function bagiRuanganPerJenjang(dataSiswaPerKelas, versiSkema) {
       dataSiswaPerKelasJenjang[k] = dataSiswaPerKelas[k];
     });
 
-    const hasilJenjangIni =
-      versi === "rantai"
-        ? bagiSatuJenjangV2(dataSiswaPerKelasJenjang)
-        : bagiSatuJenjangV1(dataSiswaPerKelasJenjang);
+    // Titik ini cuma kena buat "rotasi" -- "silang" & "rantai" udah
+    // dicegat & di-return duluan di atas sebelum loop ini mulai.
+    const hasilJenjangIni = bagiSatuJenjangV1(dataSiswaPerKelasJenjang);
 
     hasilJenjangIni.forEach((ruang) => {
       hasilAkhir.push({

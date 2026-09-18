@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-09-17T14:20:38.974Z",
-  "executionTimeMs": 1903,
+  "generatedAt": "2026-09-18T02:40:04.381Z",
+  "executionTimeMs": 2338,
   "filesScanned": 303,
   "summary": {
     "status": "warning",
@@ -39,7 +39,7 @@
       "issues": [
         {
           "severity": "info",
-          "title": "5962 class warna (di 204 file) kemungkinan belum dark-mode-aware",
+          "title": "5967 class warna (di 204 file) kemungkinan belum dark-mode-aware",
           "description": "Ini backlog, bukan berarti semua salah — bisa aja file itu emang belum kena giliran migrasi theme-*, atau sengaja gak butuh dark mode (misal komponen buat print/PDF). Diurutin dari file paling banyak class polos-nya, biar keliatan mana yang paling worth dibenerin duluan. Heuristik regex, review manual tetep perlu.",
           "details": [
             "src/setting/school-management/TeacherAssignmentTab.js — 167 class belum ada dark: variant",
@@ -92,7 +92,7 @@
       "issues": [
         {
           "severity": "info",
-          "title": "26 embedded join tanpa hint TAPI udah dicek ke skema live, FK-nya cuma 1 (aman)",
+          "title": "27 embedded join tanpa hint TAPI udah dicek ke skema live, FK-nya cuma 1 (aman)",
           "description": "Udah di-cross-check ke skema live Supabase (via RPC get_foreign_key_map): antara 2 tabel yang di-embed di sini cuma ada 1 FK, jadi PostgREST ngga akan pernah bingung nentuin relasinya. Ngga perlu ditambahin hint.",
           "details": [
             "src/components/StudentLogin.js:70 → select(\"*, students(id, full_name, nis, class_id, academic_year)\")",
@@ -116,7 +116,8 @@
             "src/portal-siswa/StudentRaport.js:137 → select(\"id, academic_year, semester, status, student_report_grades(subject, score)\")",
             "src/reports/ReportHelpers.js:302 → select(\"*, classes(grade)\")",
             "src/setting/academic/YearTransition.js:392 → select(\"id, full_name, nis, nisn, class_id, student_profile_details ( jenis_kelamin, tempat_lahir,\")",
-            "src/setting/kelola-ujian/dokumen-cetak/kartuUjianSupabase.js:25 → select(\"no_peserta, asal_kelas, students(full_name, nis)\")",
+            "src/setting/kelola-ujian/dokumen-cetak/kartuUjianSupabase.js:28 → select(\"no_peserta, asal_kelas, students(full_name, nis, nisn, gender)\")",
+            "src/setting/kelola-ujian/dokumen-cetak/kartuUjianSupabase.js:218 → select(\"no_peserta, asal_kelas, nomor_ruangan, students(full_name, nis, nisn, gender)\")",
             "src/setting/kelola-ujian/pembagian-ruangan/pembagianRuanganSupabase.js:284 → select(\"nomor_ruangan, no_peserta, asal_kelas, siswa_id, students(id, full_name, nis)\")",
             "src/setting/school-management/SiswaLulusTab.js:549 → select(\"id, tahun_lulus, kelas_terakhir, academic_year_id, academic_years(id, year, semester, star\")",
             "src/setting/school-management/SiswaLulusTab.js:596 → select(\"*, academic_years(id, year, semester, start_date)\")",

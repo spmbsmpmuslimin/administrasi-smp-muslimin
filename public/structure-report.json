@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-09-17T14:20:39.211Z",
-  "executionTimeMs": 235,
+  "generatedAt": "2026-09-18T02:40:04.686Z",
+  "executionTimeMs": 302,
   "tree": {
     "name": "src",
     "path": "src",
@@ -4755,7 +4755,7 @@
                     "file": {
                       "path": "src/setting/kelola-ujian/dokumen-cetak/kartuUjianPdf.js",
                       "type": "other",
-                      "lines": 612,
+                      "lines": 670,
                       "functions": [
                         "jenjangDariKelas",
                         "formatNomorRuangan",
@@ -4785,7 +4785,7 @@
                     "file": {
                       "path": "src/setting/kelola-ujian/dokumen-cetak/kartuUjianSupabase.js",
                       "type": "other",
-                      "lines": 123,
+                      "lines": 245,
                       "functions": [],
                       "imports": [
                         "src/setting/kelola-ujian/jadwal-pengawas/jadwalPengawasSupabase.js"
@@ -4804,7 +4804,7 @@
                     "file": {
                       "path": "src/setting/kelola-ujian/dokumen-cetak/KartuUjianTab.js",
                       "type": "other",
-                      "lines": 386,
+                      "lines": 528,
                       "functions": [
                         "labelTahunAjaran",
                         "KartuUjianTab"
@@ -11173,7 +11173,7 @@
     "src/setting/kelola-ujian/dokumen-cetak/kartuUjianPdf.js": {
       "path": "src/setting/kelola-ujian/dokumen-cetak/kartuUjianPdf.js",
       "type": "other",
-      "lines": 612,
+      "lines": 670,
       "functions": [
         "jenjangDariKelas",
         "formatNomorRuangan",
@@ -11199,7 +11199,7 @@
     "src/setting/kelola-ujian/dokumen-cetak/kartuUjianSupabase.js": {
       "path": "src/setting/kelola-ujian/dokumen-cetak/kartuUjianSupabase.js",
       "type": "other",
-      "lines": 123,
+      "lines": 245,
       "functions": [],
       "imports": [
         "src/setting/kelola-ujian/jadwal-pengawas/jadwalPengawasSupabase.js"
@@ -11214,7 +11214,7 @@
     "src/setting/kelola-ujian/dokumen-cetak/KartuUjianTab.js": {
       "path": "src/setting/kelola-ujian/dokumen-cetak/KartuUjianTab.js",
       "type": "other",
-      "lines": 386,
+      "lines": 528,
       "functions": [
         "labelTahunAjaran",
         "KartuUjianTab"

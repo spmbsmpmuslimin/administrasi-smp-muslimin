@@ -189,4 +189,8 @@ function bagiRuanganSilangJenjang(dataSiswaPerKelas) {
   });
 }
 
-export { bagiRuanganSilangJenjang, bangunPetaRuangSilang, pecahRata };
+// susunPasanganSatuJenjang diekspor juga karena dipakai ulang di
+// bagiRuanganPerJenjang.js buat skema "rantai" (V2 -- Gabung Kelas
+// Sejenjang) versi kasus 1 jenjang, yang polanya sama persis: pasangan
+// huruf berdekatan, 1 ruang per pasangan.
+export { bagiRuanganSilangJenjang, bangunPetaRuangSilang, pecahRata, susunPasanganSatuJenjang };
