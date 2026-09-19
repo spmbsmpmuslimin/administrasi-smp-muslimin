@@ -59,11 +59,29 @@ const TAB_LIST = [
 
 const JadwalRuanganTab = ({ jenisUjian, showToast, onBack }) => {
   const [tabAktif, setTabAktif] = useState("komposisi");
+  // Diisi PembagianRuanganTab (lewat onDirtyChange): true kalau ada pembagian
+  // ruangan / quota yang belum disimpan ke database.
+  const [adaBelumDisimpan, setAdaBelumDisimpan] = useState(false);
+
+  // Pindah antar 5 tab di sini aman (komponen isinya sama, cuma ganti prop),
+  // tapi "Kembali ke Sub-fitur" melepas komponen itu -- perubahan yang belum
+  // disimpan bakal hilang, jadi tanya dulu.
+  const handleKembali = () => {
+    if (
+      adaBelumDisimpan &&
+      !window.confirm(
+        "Ada pembagian ruangan atau quota yang belum disimpan. Kalau kembali sekarang, perubahan itu hilang. Tetap kembali?"
+      )
+    ) {
+      return;
+    }
+    onBack();
+  };
 
   return (
     <div className="p-4 sm:p-6">
       <button
-        onClick={onBack}
+        onClick={handleKembali}
         className="flex items-center gap-1.5 text-sm text-gray-600 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 mb-4"
       >
         <ChevronLeft size={16} /> Kembali ke Sub-fitur
@@ -100,6 +118,7 @@ const JadwalRuanganTab = ({ jenisUjian, showToast, onBack }) => {
         jenisUjian={jenisUjian}
         showToast={showToast}
         mode="ruangan"
+        onDirtyChange={setAdaBelumDisimpan}
         viewPaksa={tabAktif === "komposisi" ? "komposisi" : "pembagian"}
         tabPaksa={
           tabAktif === "preview"

@@ -122,6 +122,28 @@ function labelTahunAjaran(row) {
   return row.year || row.tahun_ajaran || row.name || row.label || row.nama || `ID: ${row.id}`;
 }
 
+// Tanda tangan (signature) tabel quota -- string yang SAMA kalau isi quotanya
+// sama, apa pun urutan ruangan/kelasnya. Dipakai buat ngecek "ada perubahan
+// yang belum disimpan?" (bandingin quota di layar vs quota terakhir yang
+// dimuat dari / disimpan ke database). Ruangan yang total quotanya 0
+// diabaikan karena handleSimpan() juga membuang ruangan kosong, jadi ruangan
+// kosong yang ditambah lalu dibiarkan nggak dianggap perubahan.
+function buatSignaturQuota(quotaPerRuangan) {
+  if (!quotaPerRuangan) return "";
+  return JSON.stringify(
+    quotaPerRuangan
+      .map((r) => ({
+        nomor: r.nomor_ruangan,
+        isi: Object.entries(r.quota || {})
+          .map(([kelas, jumlah]) => [kelas, Number(jumlah) || 0])
+          .filter(([, jumlah]) => jumlah > 0)
+          .sort(([a], [b]) => a.localeCompare(b)),
+      }))
+      .filter((r) => r.isi.length > 0)
+      .sort((a, b) => a.nomor - b.nomor)
+  );
+}
+
 // Warna aksen per versi skema, dipakai buat nge-highlight kelas yang MASUK
 // ke suatu ruangan (jumlah > 0) di TabelMatrixJenjang -- beda warna per versi
 // biar pas gonta-ganti sub-tab (Silang Jenjang / Rotasi Penuh / Rantai
@@ -277,6 +299,10 @@ const PembagianRuanganTab = ({
   // komponen ini di-embed di kartu yang udah punya tab bar sendiri.
   viewPaksa = null,
   tabPaksa = null,
+  // Opsional. Dipanggil dengan true/false tiap status "ada perubahan yang
+  // belum disimpan" berubah, supaya parent (mis. JadwalRuanganTab) bisa
+  // nanya konfirmasi sebelum user pindah layar dan ngebuang perubahan itu.
+  onDirtyChange,
 }) => {
   const modePeserta = mode === "peserta";
   const [daftarTahunAjaran, setDaftarTahunAjaran] = useState([]);
@@ -346,6 +372,11 @@ const PembagianRuanganTab = ({
   const [hasilAsli, setHasilAsli] = useState(null);
   // quotaPerRuangan = yang admin lihat & edit di tabel: [{ nomor_ruangan, quota: { "7A": 14, ... } }]
   const [quotaPerRuangan, setQuotaPerRuangan] = useState(null);
+  // Signature (lihat buatSignaturQuota) quota terakhir yang SUDAH ada di
+  // database -- diisi pas data tersimpan dimuat & setelah Simpan berhasil.
+  // null = belum ada yang tersimpan buat tahun ajaran ini. Dibandingin sama
+  // quotaPerRuangan buat deteksi perubahan yang belum disimpan.
+  const [quotaTersimpan, setQuotaTersimpan] = useState(null);
   // targetPerKelas = total siswa per kelas (dari hasilAsli) -- angka yang
   // harus dipenuhi PAS oleh jumlah quota manual admin per kelas.
   const [targetPerKelas, setTargetPerKelas] = useState({});
@@ -435,6 +466,7 @@ const PembagianRuanganTab = ({
       setMemuatTersimpan(true);
       setHasilAsli(null);
       setQuotaPerRuangan(null);
+      setQuotaTersimpan(null);
       setVersiSkemaTerkunci(false);
       try {
         const ujian = await cariUjian(supabase, jenisUjian, tahunAjaranId);
@@ -455,15 +487,15 @@ const PembagianRuanganTab = ({
         setDaftarKelas(
           [...new Set(tersimpan.flatMap((r) => r.siswa.map((s) => s.asal_kelas)))].sort()
         );
-        setQuotaPerRuangan(
-          tersimpan.map((r) => {
-            const quota = {};
-            r.siswa.forEach((s) => {
-              quota[s.asal_kelas] = (quota[s.asal_kelas] || 0) + 1;
-            });
-            return { nomor_ruangan: r.nomor_ruangan, quota };
-          })
-        );
+        const quotaTermuat = tersimpan.map((r) => {
+          const quota = {};
+          r.siswa.forEach((s) => {
+            quota[s.asal_kelas] = (quota[s.asal_kelas] || 0) + 1;
+          });
+          return { nomor_ruangan: r.nomor_ruangan, quota };
+        });
+        setQuotaPerRuangan(quotaTermuat);
+        setQuotaTersimpan(buatSignaturQuota(quotaTermuat));
         setRuanganPreviewAktif(tersimpan[0]?.nomor_ruangan ?? null);
       } catch (err) {
         console.error(err);
@@ -526,6 +558,49 @@ const PembagianRuanganTab = ({
     setViewAktif("pembagian");
   };
 
+  // true kalau quota di layar beda dari yang ada di database (atau belum
+  // pernah disimpan sama sekali). Mode "peserta" read-only, jadi nggak
+  // pernah dianggap ada perubahan.
+  const adaPerubahanBelumDisimpan = useMemo(
+    () =>
+      !modePeserta &&
+      quotaPerRuangan != null &&
+      buatSignaturQuota(quotaPerRuangan) !== quotaTersimpan,
+    [modePeserta, quotaPerRuangan, quotaTersimpan]
+  );
+
+  // Kabari parent (JadwalRuanganTab) supaya tombol "Kembali"-nya bisa nanya
+  // konfirmasi.
+  useEffect(() => {
+    onDirtyChange?.(adaPerubahanBelumDisimpan);
+  }, [adaPerubahanBelumDisimpan, onDirtyChange]);
+
+  // Refresh / tutup tab browser: minta konfirmasi bawaan browser selama ada
+  // perubahan yang belum disimpan. (Browser menampilkan teks standarnya
+  // sendiri, teks kustom diabaikan.)
+  useEffect(() => {
+    if (!adaPerubahanBelumDisimpan) return undefined;
+    const cegahTutup = (e) => {
+      e.preventDefault();
+      e.returnValue = "";
+    };
+    window.addEventListener("beforeunload", cegahTutup);
+    return () => window.removeEventListener("beforeunload", cegahTutup);
+  }, [adaPerubahanBelumDisimpan]);
+
+  const handleGantiTahunAjaran = (idBaru) => {
+    if (
+      adaPerubahanBelumDisimpan &&
+      idBaru !== tahunAjaranId &&
+      !window.confirm(
+        "Ada pembagian ruangan atau quota yang belum disimpan. Kalau ganti tahun ajaran, perubahan itu hilang. Tetap ganti?"
+      )
+    ) {
+      return;
+    }
+    setTahunAjaranId(idBaru);
+  };
+
   const handleProses = async () => {
     if (!tahunAjaranId) {
       showToast?.("Pilih tahun ajaran dulu", "error");
@@ -543,6 +618,14 @@ const PembagianRuanganTab = ({
     // tapi mendingan ketemu pesan yang jelas daripada error mentah).
     if (!versiSkemaValid(versiSkema)) {
       showToast?.("Pilih versi algoritma pembagian dulu", "error");
+      return;
+    }
+    if (
+      adaPerubahanBelumDisimpan &&
+      !window.confirm(
+        "Pembagian & quota yang sedang tampil belum disimpan. Kalau diproses ulang, semuanya diganti hasil otomatis yang baru. Lanjut proses?"
+      )
+    ) {
       return;
     }
     setMemproses(true);
@@ -621,6 +704,7 @@ const PembagianRuanganTab = ({
       setVersiSkema(normalisasiVersiSkema(versiBaruDipilih) || "");
       setHasilAsli(null);
       setQuotaPerRuangan(null);
+      setQuotaTersimpan(null);
       setTargetPerKelas({});
       setDaftarKelas([]);
       setRuanganPreviewAktif(null);
@@ -717,6 +801,7 @@ const PembagianRuanganTab = ({
         hasilFinal,
         labelTahunAjaranAktif
       );
+      setQuotaTersimpan(buatSignaturQuota(quotaPerRuangan));
       showToast?.(`Berhasil disimpan: ${jumlah} siswa ke ${hasilFinal.length} ruangan`, "success");
     } catch (err) {
       console.error(err);
@@ -817,7 +902,17 @@ const PembagianRuanganTab = ({
       {onBack && (
         <>
           <button
-            onClick={onBack}
+            onClick={() => {
+              if (
+                adaPerubahanBelumDisimpan &&
+                !window.confirm(
+                  "Ada pembagian ruangan atau quota yang belum disimpan. Kalau kembali sekarang, perubahan itu hilang. Tetap kembali?"
+                )
+              ) {
+                return;
+              }
+              onBack();
+            }}
             className="flex items-center gap-1.5 text-sm text-gray-600 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 mb-4"
           >
             <ChevronLeft size={16} /> Kembali ke Sub-fitur
@@ -840,7 +935,7 @@ const PembagianRuanganTab = ({
           </label>
           <select
             value={tahunAjaranId}
-            onChange={(e) => setTahunAjaranId(e.target.value)}
+            onChange={(e) => handleGantiTahunAjaran(e.target.value)}
             disabled={loadingTahunAjaran}
             className="w-full px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100"
           >
@@ -1161,6 +1256,12 @@ const PembagianRuanganTab = ({
                 <span className="flex items-center gap-1.5 text-gray-700 dark:text-gray-300">
                   <Users size={16} /> {totalSiswaQuota} siswa
                 </span>
+                {adaPerubahanBelumDisimpan && !modePeserta && (
+                  <span className="flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300">
+                    <AlertTriangle size={13} />
+                    Belum disimpan ke database
+                  </span>
+                )}
               </div>
 
               {/* Tab switcher: Pembagian Ruangan <-> Preview Per Ruangan <-> Export.
@@ -1584,12 +1685,11 @@ const PembagianRuanganTab = ({
                 </p>
                 <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
                   Semua <span className="font-semibold">penugasan pengawas</span> (Jadwal Ngawas)
-                  untuk ujian ini juga{" "}
-                  <span className="font-semibold">ikut terhapus otomatis</span> -- karena nomor
-                  ruangan lama belum tentu berarti sama setelah ganti versi. Jadwal sesi (tanggal/jam/
-                  mata pelajaran) tetap aman, tapi pengawas per ruangan perlu di-assign ulang lewat
-                  "Jadwal Ngawas" setelah proses ulang ini. Kartu Ujian yang sudah dicetak sebelumnya
-                  juga jadi tidak berlaku lagi.
+                  untuk ujian ini juga <span className="font-semibold">ikut terhapus otomatis</span>{" "}
+                  -- karena nomor ruangan lama belum tentu berarti sama setelah ganti versi. Jadwal
+                  sesi (tanggal/jam/ mata pelajaran) tetap aman, tapi pengawas per ruangan perlu
+                  di-assign ulang lewat "Jadwal Ngawas" setelah proses ulang ini. Kartu Ujian yang
+                  sudah dicetak sebelumnya juga jadi tidak berlaku lagi.
                 </p>
               </div>
             </div>
