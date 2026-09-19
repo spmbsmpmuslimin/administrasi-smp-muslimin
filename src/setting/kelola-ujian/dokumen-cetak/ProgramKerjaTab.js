@@ -39,6 +39,7 @@ import {
   KONFIGURASI_JENIS_UJIAN,
 } from "../pembagian-ruangan/pembagianRuanganSupabase";
 import { ambilRekapPeserta, ambilRekapPengawas } from "./laporanRekapAkhirSupabase";
+import { ambilMetadataKepsek } from "./kartuUjianSupabase";
 import { generateProgramKerjaPdf } from "./programKerjaPdf";
 
 const JENIS_UJIAN_LABEL = {
@@ -81,7 +82,7 @@ function SeksiCard({ icon: Icon, title, subtitle, action, children }) {
   );
 }
 
-const ProgramKerjaTab = ({ jenisUjian, showToast, onBack, kepalaSekolah }) => {
+const ProgramKerjaTab = ({ jenisUjian, showToast, onBack }) => {
   const [daftarTahunAjaran, setDaftarTahunAjaran] = useState([]);
   const [tahunAjaranId, setTahunAjaranId] = useState("");
   const [loadingTahunAjaran, setLoadingTahunAjaran] = useState(true);
@@ -92,6 +93,16 @@ const ProgramKerjaTab = ({ jenisUjian, showToast, onBack, kepalaSekolah }) => {
   const [rekapPeserta, setRekapPeserta] = useState(null);
   const [rekapPengawas, setRekapPengawas] = useState(null);
   const [loadingRekap, setLoadingRekap] = useState(false);
+
+  // FIX (Sep 2026): SEBELUMNYA nama kepala sekolah diharapkan datang lewat
+  // prop `kepalaSekolah` dari parent (JenisUjianMenuTab.js) -- tapi prop itu
+  // gak pernah dikirim, jadi kolom tanda tangan kepsek di PDF Program Kerja
+  // selalu kosong tiap generate satuan dari kartu ini (beda sama generate
+  // lewat "Export Semua (PDF)", yang justru benar karena
+  // exportSemuaKelolaUjian.js manggil ambilMetadataKepsek() sendiri).
+  // Sekarang komponen ini ambil sendiri, sama persis pola yang sudah dipakai
+  // KartuUjianTab.js -- gak nunggu dikasih dari luar lagi.
+  const [kepalaSekolah, setKepalaSekolah] = useState("");
 
   const [nomorSkPanitia, setNomorSkPanitia] = useState("");
   const [tanggalSkPanitia, setTanggalSkPanitia] = useState("");
@@ -119,6 +130,22 @@ const ProgramKerjaTab = ({ jenisUjian, showToast, onBack, kepalaSekolah }) => {
       }
     })();
   }, [showToast]);
+
+  // Ambil nama kepala sekolah sekali aja pas komponen dibuka -- gak
+  // gantung tahun ajaran/jenis ujian, sama kayak KartuUjianTab.js.
+  useEffect(() => {
+    (async () => {
+      try {
+        const kepsek = await ambilMetadataKepsek(supabase);
+        setKepalaSekolah(kepsek?.nama || "");
+      } catch (err) {
+        console.error(err);
+        // Sengaja gak showToast error di sini -- kalau gagal, field tanda
+        // tangan cuma kosong (sama seperti behavior lama), gak menghalangi
+        // admin ngisi/generate bagian lain dari Program Kerja.
+      }
+    })();
+  }, []);
 
   useEffect(() => {
     if (opsiTahunAjaran.length === 0) {

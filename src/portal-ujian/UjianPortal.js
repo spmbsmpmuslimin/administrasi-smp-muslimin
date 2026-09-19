@@ -72,10 +72,29 @@ export default function UjianPortal({ user, onShowToast, darkMode, onLogout }) {
         // sub-fitur (Pembagian Ruangan, Kepanitiaan & Regulasi, Kartu
         // Ujian, Jadwal & Pengawas, Presensi/Berita Acara/Laporan). Tidak
         // ada filter jabatan: semua panitia dapat akses yang sama.
+        //
+        // FIX (Sep 2026): prop toast SEBELUMNYA salah nama --
+        // `onShowToast={onShowToast}`, padahal JenisUjianMenuTab (dan
+        // semua sub-fitur turunannya: JadwalRuanganTab, PesertaPengawasTab,
+        // KartuUjianTab, dkk) minta prop bernama `showToast`. Akibatnya
+        // semua toast sukses/error di seluruh sub-fitur diam-diam nggak
+        // pernah muncul buat guru panitia (dipanggil pakai `showToast?.()`
+        // jadi gagal senyap, gak ada error di console). Sekarang
+        // dipetakan ke nama prop yang benar.
+        //
+        // FIX (Sep 2026): `onBack` SEBELUMNYA gak dioper sama sekali,
+        // jadi tombol "Ganti Jenis Ujian" di dalam JenisUjianMenuTab mati
+        // total (onClick={undefined}) khusus di jalur Portal Ujian ini --
+        // guru yang masuk lewat sidebar "Jenis Ujian" (bukan dari kartu di
+        // Dashboard) jadi kejebak di 1 jenis ujian tanpa cara ganti kalau
+        // dia panitia di lebih dari 1 jenis ujian. Sekarang diarahkan
+        // balik ke Dashboard portal, sama seperti pola onBack di
+        // LaporanRekapAkhirTab di bawah.
         return (
           <JenisUjianMenuTab
             jenisUjian={selectedJenisUjian ?? jenisUjianAktif[0]}
-            onShowToast={onShowToast}
+            showToast={onShowToast}
+            onBack={() => setCurrentPage("ujian-dashboard")}
           />
         );
 

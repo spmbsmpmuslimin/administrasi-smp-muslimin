@@ -99,9 +99,24 @@ async function ambilSiswaPerKelas(supabase, academicYearId, allowedGrades = null
 
 /**
  * Cari record `ujian` untuk kombinasi jenis + tahun ajaran tertentu.
- * Kalau belum ada, bikin baru (status "draft"). Ini bikin proses
+ * Kalau belum ada, bikin baru (status "aktif"). Ini bikin proses
  * "Proses Pembagian" bisa dipanggil berkali-kali tanpa bikin duplikat
  * record ujian.
+ *
+ * CATATAN status "aktif" (Sep 2026) -- kolom `status` ini yang jadi
+ * salah satu syarat di view `v_panitia_ujian_aktif`
+ * (ujian_kepanitiaan.status='aktif' DAN ujian.status='aktif') buat
+ * nentuin guru panitia bisa akses Portal Ujian (src/portal-ujian/) atau
+ * enggak. Sebelumnya kolom ini defaultnya "draft" dan HARUS diaktifkan
+ * manual lewat Supabase dashboard tiap buka periode ujian baru -- gampang
+ * kelupaan & gak ada indikasi apa pun di UI kalau lupa (guru cuma liat
+ * "Belum ada tugas panitia aktif" tanpa tau penyebabnya). Sekarang
+ * di-set "aktif" langsung pas record ujian pertama kali dibikin di sini
+ * (DB column default juga udah diubah ke "aktif" biar konsisten kalau
+ * ada insert dari jalur lain), jadi begitu admin proses & simpan
+ * Pembagian Ruangan pertama kali, guru panitia yang udah dicentang di
+ * PanitiaUjianTab.js otomatis bisa akses Portal Ujian tanpa langkah
+ * manual tambahan di luar aplikasi.
  *
  * @param {"rotasi"|"rantai"|"silang"} versiSkema - versi algoritma yang
  *   dipilih admin (lihat VERSI_SKEMA_LIST di bagiRuanganPerJenjang.js).
@@ -133,6 +148,7 @@ async function getOrCreateUjian(supabase, jenis, academicYearId, kapasitas = 40,
       academic_year_id: academicYearId,
       kapasitas_ruangan: kapasitas,
       versi_skema: versi,
+      status: "aktif", // eksplisit, jangan cuma ngandelin default kolom di DB
     })
     .select()
     .single();
@@ -230,7 +246,9 @@ async function simpanPembagianRuangan(supabase, ujianId, hasilRuangan, tahunAjar
             "Jangan tutup halaman ini -- proses & simpan ulang pembagian ruangan sekarang."
         );
       }
-      throw new Error(`${errInsert.message} (data lama sudah dikembalikan, tidak ada yang berubah)`);
+      throw new Error(
+        `${errInsert.message} (data lama sudah dikembalikan, tidak ada yang berubah)`
+      );
     }
     throw errInsert;
   }
@@ -364,7 +382,9 @@ async function hitungDampakSimpan(supabase, ujianId, hasilRuangan) {
     if (errPengawas) throw errPengawas;
     jumlahPengawas = (pengawas || []).length;
     jumlahPengawasTerdampak = (pengawas || []).filter(
-      (p) => ruanganBerubah.has(Number(p.nomor_ruangan)) || ruanganHilang.includes(Number(p.nomor_ruangan))
+      (p) =>
+        ruanganBerubah.has(Number(p.nomor_ruangan)) ||
+        ruanganHilang.includes(Number(p.nomor_ruangan))
     ).length;
   }
 
