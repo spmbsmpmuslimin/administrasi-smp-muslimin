@@ -57,6 +57,7 @@ import {
   cariUjian,
   prosesPembagianRuangan,
   simpanPembagianRuangan,
+  hitungDampakSimpan,
   ambilPembagianTersimpan,
   resetUntukProsesUlang,
   KONFIGURASI_JENIS_UJIAN,
@@ -795,6 +796,37 @@ const PembagianRuanganTab = ({
         kapasitas,
         versiSkema
       );
+      // Kalau pembagian ini sudah pernah disimpan, hitung dulu apa yang
+      // ikut basi (kartu yang sudah dicetak, penugasan pengawas) dan
+      // minta konfirmasi -- simpan ulang gak cuma nimpa satu tabel.
+      const dampak = await hitungDampakSimpan(supabase, ujian.id, hasilFinal);
+      if (dampak.adaDataTersimpan && dampak.adaPerubahan) {
+        const baris = [
+          "Pembagian ruangan ini sudah pernah disimpan. Kalau disimpan ulang:",
+          "",
+        ];
+        if (dampak.jumlahPindahRuangan > 0)
+          baris.push(`• ${dampak.jumlahPindahRuangan} siswa pindah ruangan`);
+        if (dampak.jumlahSiswaBaru > 0)
+          baris.push(`• ${dampak.jumlahSiswaBaru} siswa baru masuk daftar peserta`);
+        if (dampak.jumlahSiswaHilang > 0)
+          baris.push(`• ${dampak.jumlahSiswaHilang} siswa keluar dari daftar peserta`);
+        if (dampak.ruanganHilang.length > 0)
+          baris.push(`• Ruangan ${dampak.ruanganHilang.join(", ")} tidak ada lagi`);
+        if (dampak.jumlahNomorBerubah > 0)
+          baris.push(
+            `• ${dampak.jumlahNomorBerubah} siswa nomor pesertanya berubah -> Kartu Peserta & daftar peserta yang sudah dicetak harus dicetak ulang`
+          );
+        if (dampak.jumlahPengawasTerdampak > 0)
+          baris.push(
+            `• ${dampak.jumlahPengawasTerdampak} dari ${dampak.jumlahPengawas} penugasan pengawas ada di ruangan yang isinya berubah (ruangan ${[
+              ...new Set([...dampak.ruanganBerubah, ...dampak.ruanganHilang]),
+            ].join(", ")}) -> cek lagi Jadwal Pengawas`
+          );
+        baris.push("", "Lanjut simpan?");
+        if (!window.confirm(baris.join("\n"))) return; // finally di bawah yang reset menyimpan
+      }
+
       const jumlah = await simpanPembagianRuangan(
         supabase,
         ujian.id,

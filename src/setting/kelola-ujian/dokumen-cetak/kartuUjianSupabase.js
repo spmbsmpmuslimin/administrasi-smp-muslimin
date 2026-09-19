@@ -143,6 +143,53 @@ async function ambilJadwalPengawasPerGuru(supabase, ujianId, tahunAjaran) {
 }
 
 /**
+ * Cari guru yang PUNYA penugasan pengawas di ujian ini (tabel ujian_pengawas)
+ * tapi TIDAK ada di Daftar Pengawas resmi (users.kode_pengawas kosong atau
+ * teacher_id kosong) -- mereka SENGAJA dilewati ambilJadwalPengawasPerGuru()
+ * di atas, jadi TIDAK dapat Kartu Pengawas. Fungsi ini cuma buat
+ * MEMPERINGATKAN admin (banner di KartuUjianTab) supaya tidak ada guru yang
+ * diam-diam tidak kebagian kartu.
+ *
+ * Kejadian yang paling mungkin: guru dihapus dari Daftar Pengawas, atau
+ * "Reset Daftar Pengawas" dijalankan (mis. pas mulai semester baru), SETELAH
+ * guru itu sudah ditugaskan di jadwal -- kode_pengawas kosong, tapi baris
+ * ujian_pengawas-nya tetap ada.
+ *
+ * Read-only, 1 query penugasan (bukan N+1 per sesi).
+ * @returns {Promise<Array>} [{ guru_id, nama, jumlahSesi }] urut nama; kosong
+ *   kalau semua guru bertugas sudah ada di Daftar Pengawas.
+ */
+async function cariPengawasTerlewat(supabase, ujianId) {
+  const [daftarJadwal, daftarPengawasResmi] = await Promise.all([
+    ambilJadwalSesi(supabase, ujianId),
+    ambilDaftarGuru(supabase),
+  ]);
+  const jadwalIds = daftarJadwal.map((j) => j.id);
+  if (jadwalIds.length === 0) return [];
+
+  const { data, error } = await supabase
+    .from("ujian_pengawas")
+    .select("guru_id, users:guru_id (full_name)")
+    .in("jadwal_id", jadwalIds);
+  if (error) throw error;
+
+  const idResmi = new Set(daftarPengawasResmi.map((g) => g.id));
+  const perGuru = {};
+  (data || []).forEach((row) => {
+    if (idResmi.has(row.guru_id)) return;
+    if (!perGuru[row.guru_id]) {
+      perGuru[row.guru_id] = {
+        guru_id: row.guru_id,
+        nama: row.users?.full_name || "(nama tidak ditemukan)",
+        jumlahSesi: 0,
+      };
+    }
+    perGuru[row.guru_id].jumlahSesi += 1;
+  });
+  return Object.values(perGuru).sort((a, b) => a.nama.localeCompare(b.nama));
+}
+
+/**
  * Ambil nama kepala sekolah untuk dicantumkan di kolom tanda tangan kartu.
  *
  * SEBELUMNYA baca dari raport_metadata (nama_kepala_sekolah) -- tapi tabel
@@ -242,5 +289,6 @@ export {
   ambilDaftarKelasUjian,
   ambilPesertaKelas,
   ambilJadwalPengawasPerGuru,
+  cariPengawasTerlewat,
   ambilMetadataKepsek,
 };

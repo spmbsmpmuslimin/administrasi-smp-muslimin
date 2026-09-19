@@ -427,6 +427,27 @@ async function simpanKodePengawas(supabase, perubahan) {
 }
 
 /**
+ * Hitung berapa penugasan pengawas (baris ujian_pengawas, di UJIAN MANA PUN)
+ * yang masih memakai guru-guru ini. Dipakai buat memperingatkan admin
+ * SEBELUM guru dihapus dari Daftar Pengawas / Daftar Pengawas direset:
+ * kode_pengawas jadi kosong tapi baris ujian_pengawas-nya tetap ada, jadi
+ * guru itu masih tampil di jadwal tapi diam-diam TIDAK dapat Kartu Pengawas
+ * (lihat cariPengawasTerlewat() di kartuUjianSupabase.js). Read-only.
+ *
+ * @param {string[]} guruIds
+ * @returns {Promise<number>} total penugasan (sesi x ruangan) yang menempel
+ */
+async function hitungPenugasanPengawas(supabase, guruIds) {
+  if (!guruIds || guruIds.length === 0) return 0;
+  const { count, error } = await supabase
+    .from("ujian_pengawas")
+    .select("id", { count: "exact", head: true })
+    .in("guru_id", guruIds);
+  if (error) throw error;
+  return count || 0;
+}
+
+/**
  * Cek ada gak penugasan pengawas (ujian_pengawas) yang nomor_ruangan-nya
  * SUDAH GAK VALID lagi buat komposisi ruangan yang sekarang tersimpan di
  * peserta_ujian -- normalnya ini gak pernah kejadian (resetUntukProsesUlang()
@@ -498,5 +519,6 @@ export {
   sarankanKodeDariTeacherId,
   simpanKodePengawas,
   cariPenugasanPengawasTidakValid,
+  hitungPenugasanPengawas,
   bersihkanPenugasanPengawasTidakValid,
 };

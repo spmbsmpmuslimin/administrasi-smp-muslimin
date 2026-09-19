@@ -38,6 +38,7 @@ import {
   ambilCalonPengawas,
   hapusPengawasKode,
   simpanKodePengawas,
+  hitungPenugasanPengawas,
 } from "./jadwalPengawasSupabase";
 import { ambilGuruPanitiaAktifTahunIni } from "../panitiaUjianSupabase";
 
@@ -191,15 +192,28 @@ const DaftarPengawasTab = ({ jenisUjian, showToast, onBack, embedded = false, on
   // bukan sesuatu yang otomatis "ketimpa" sendiri oleh sistem.
   const handleReset = async () => {
     if (daftarAsli.length === 0) return;
-    if (
-      !window.confirm(
-        `Reset Daftar Pengawas? Kode pengawas ${daftarAsli.length} guru di daftar ini akan dikosongkan semua (mereka balik muncul di checklist "Tambah Pengawas"). Tindakan ini tidak bisa dibatalkan.`
-      )
-    )
-      return;
 
     setMereset(true);
     try {
+      // Cek dulu berapa penugasan jadwal yang masih nempel ke guru-guru ini.
+      // Kalau ada, mereka bakal tetap tampil di jadwal tapi TIDAK dapat Kartu
+      // Pengawas setelah kodenya dikosongkan.
+      const jumlahPenugasan = await hitungPenugasanPengawas(
+        supabase,
+        daftarAsli.map((g) => g.id)
+      );
+      const peringatanJadwal =
+        jumlahPenugasan > 0
+          ? `\n\nPERHATIAN: ${jumlahPenugasan} penugasan jadwal pengawas (di ujian yang sudah ada) masih memakai guru-guru ini. Setelah direset, mereka tetap tampil di jadwal tapi TIDAK akan dapat Kartu Pengawas sampai kodenya diisi lagi.`
+          : "";
+      if (
+        !window.confirm(
+          `Reset Daftar Pengawas? Kode pengawas ${daftarAsli.length} guru di daftar ini akan dikosongkan semua (mereka balik muncul di checklist "Tambah Pengawas"). Tindakan ini tidak bisa dibatalkan.${peringatanJadwal}`
+        )
+      ) {
+        return; // finally di bawah yang reset state mereset
+      }
+
       const perubahan = daftarAsli.map((g) => ({ id: g.id, kode_pengawas: "" }));
       await simpanKodePengawas(supabase, perubahan);
       showToast?.(
@@ -218,9 +232,16 @@ const DaftarPengawasTab = ({ jenisUjian, showToast, onBack, embedded = false, on
   };
 
   const handleHapus = async (guru) => {
-    if (!window.confirm(`Hapus "${guru.full_name}" dari Daftar Pengawas?`)) return;
     setMenghapus(guru.id);
     try {
+      const jumlahPenugasan = await hitungPenugasanPengawas(supabase, [guru.id]);
+      const peringatanJadwal =
+        jumlahPenugasan > 0
+          ? `\n\nPERHATIAN: guru ini masih punya ${jumlahPenugasan} penugasan di jadwal pengawas. Kalau dihapus, dia tetap tampil di jadwal tapi TIDAK akan dapat Kartu Pengawas.`
+          : "";
+      if (!window.confirm(`Hapus "${guru.full_name}" dari Daftar Pengawas?${peringatanJadwal}`)) {
+        return; // finally di bawah yang reset state menghapus
+      }
       await hapusPengawasKode(supabase, guru.id);
       showToast?.("Guru dihapus dari Daftar Pengawas", "success");
       await muatData();

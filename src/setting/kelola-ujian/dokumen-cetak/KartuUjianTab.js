@@ -26,6 +26,7 @@ import {
   ambilDaftarKelasUjian,
   ambilPesertaKelas,
   ambilJadwalPengawasPerGuru,
+  cariPengawasTerlewat,
   ambilMetadataKepsek,
 } from "./kartuUjianSupabase";
 import { generateKartuPesertaPdf, generateKartuPengawasPdf } from "./kartuUjianPdf";
@@ -57,6 +58,9 @@ const KartuUjianTab = ({ jenisUjian, showToast, onBack }) => {
   const [daftarRuangan, setDaftarRuangan] = useState([]);
   const [daftarKelas, setDaftarKelas] = useState([]);
   const [daftarGuruJadwal, setDaftarGuruJadwal] = useState([]);
+  // Guru yang ditugaskan ngawas tapi gak ada di Daftar Pengawas -> gak dapat
+  // Kartu Pengawas (lihat cariPengawasTerlewat() di kartuUjianSupabase.js).
+  const [pengawasTerlewat, setPengawasTerlewat] = useState([]);
   const [loadingData, setLoadingData] = useState(false);
 
   const [mencetakRuangan, setMencetakRuangan] = useState(null);
@@ -136,7 +140,7 @@ const KartuUjianTab = ({ jenisUjian, showToast, onBack }) => {
       // Label tahun ajaran ("2026/2027") -- dibutuhin ambilJadwalPengawasPerGuru
       // buat filter teacher_codes.academic_year pas ngambil mapel guru.
       const taTerpilih = daftarTahunAjaran.find((ta) => ta.id === tahunAjaranId);
-      const [ruangan, kelas, guruJadwal] = await Promise.all([
+      const [ruangan, kelas, guruJadwal, terlewat] = await Promise.all([
         ambilRuanganUjian(supabase, ujian.id),
         ambilDaftarKelasUjian(supabase, ujian.id),
         ambilJadwalPengawasPerGuru(
@@ -144,10 +148,12 @@ const KartuUjianTab = ({ jenisUjian, showToast, onBack }) => {
           ujian.id,
           taTerpilih ? labelTahunAjaran(taTerpilih) : null
         ),
+        cariPengawasTerlewat(supabase, ujian.id),
       ]);
       setDaftarRuangan(ruangan);
       setDaftarKelas(kelas);
       setDaftarGuruJadwal(guruJadwal);
+      setPengawasTerlewat(terlewat);
     } catch (err) {
       console.error(err);
       showToast?.("Gagal memuat data kartu ujian: " + err.message, "error");
@@ -185,7 +191,7 @@ const KartuUjianTab = ({ jenisUjian, showToast, onBack }) => {
       // ditambahin (lihat generateKartuPesertaPdf()).
       if (!daftarJadwal || daftarJadwal.length === 0) {
         showToast?.(
-          'Jadwal ujian belum diisi di tab "Jadwal Sesi" -- kartu tetap dicetak 1 sisi (tanpa halaman jadwal di belakang)',
+          'Jadwal ujian belum diisi di "Jadwal Ujian & Pengawas > Jadwal Ujian" -- kartu tetap dicetak 1 sisi (tanpa halaman jadwal di belakang)',
           "error"
         );
       }
@@ -481,10 +487,41 @@ const KartuUjianTab = ({ jenisUjian, showToast, onBack }) => {
 
           {tabAktif === "pengawas" && (
             <div>
+              {/* Peringatan: guru yang ditugaskan ngawas tapi gak ada di Daftar
+                  Pengawas TIDAK dapat kartu -- ditampilin di sini biar gak
+                  ada yang diam-diam kelewat pas cetak. */}
+              {pengawasTerlewat.length > 0 && (
+                <div className="p-3 mb-4 text-xs bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl text-amber-700 dark:text-amber-300">
+                  <p className="font-semibold mb-1">
+                    {pengawasTerlewat.length} guru ditugaskan mengawas tapi TIDAK dapat Kartu
+                    Pengawas
+                  </p>
+                  <p className="mb-1.5">
+                    Mereka tidak ada di Daftar Pengawas (kodenya kosong, mungkin sudah dihapus atau
+                    Daftar Pengawas pernah direset). Tambahkan lagi lewat{" "}
+                    <strong>Jadwal Ujian & Pengawas &rsaquo; Daftar Pengawas</strong> lalu muat ulang
+                    halaman ini.
+                  </p>
+                  <p>
+                    {pengawasTerlewat.map((g) => `${g.nama} (${g.jumlahSesi} sesi)`).join(", ")}
+                  </p>
+                </div>
+              )}
+              {daftarGuruJadwal.some((g) => g.mapel === "-") && (
+                <div className="p-3 mb-4 text-xs bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl text-amber-700 dark:text-amber-300">
+                  Mapel yang diajar {daftarGuruJadwal.filter((g) => g.mapel === "-").length} guru
+                  tampil "-" di kartu karena belum ada di Master Kode Guru tahun ajaran ini:{" "}
+                  {daftarGuruJadwal
+                    .filter((g) => g.mapel === "-")
+                    .map((g) => g.nama)
+                    .join(", ")}
+                  .
+                </div>
+              )}
               {daftarGuruJadwal.length === 0 ? (
                 <div className="p-3 text-xs bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl text-amber-700 dark:text-amber-300">
                   Belum ada guru yang kebagian jadwal mengawas. Atur dulu di{" "}
-                  <strong>Jadwal & Pembagian Ruangan</strong> supaya kartu pengawas bisa dicetak.
+                  <strong>Jadwal Ujian & Pengawas &rsaquo; Kelola Jadwal Pengawas</strong> supaya kartu pengawas bisa dicetak.
                 </div>
               ) : (
                 <>

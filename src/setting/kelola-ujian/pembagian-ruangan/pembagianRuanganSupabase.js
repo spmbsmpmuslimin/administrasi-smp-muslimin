@@ -202,16 +202,53 @@ async function prosesPembagianRuangan(
  *   angka urut polos tanpa prefix (fallback, jangan sengaja diandalkan).
  */
 async function simpanPembagianRuangan(supabase, ujianId, hasilRuangan, tahunAjaran) {
+  const rows = susunBarisPesertaUjian(ujianId, hasilRuangan, tahunAjaran);
+
+  // Cadangan data lama SEBELUM dihapus. supabase-js gak punya transaksi,
+  // jadi delete + insert di bawah dua langkah terpisah: kalau insert gagal
+  // (koneksi putus, constraint, dst) setelah delete sukses, tanpa cadangan
+  // ini SEMUA peserta ujian lenyap. Dengan cadangan, kita coba kembalikan.
+  const { data: cadangan, error: errCadangan } = await supabase
+    .from("peserta_ujian")
+    .select("*")
+    .eq("ujian_id", ujianId);
+  if (errCadangan) throw errCadangan;
+
   const { error: errDelete } = await supabase
     .from("peserta_ujian")
     .delete()
     .eq("ujian_id", ujianId);
   if (errDelete) throw errDelete;
 
-  // Dihitung dari SELURUH hasilRuangan yang dikirim (bukan per-ruangan) --
-  // itu yang bikin no_peserta ruangan ke-2 lanjut dari ruangan ke-1, bukan
-  // balik ke 001.
-  const petaNoPeserta = bangunPetaNoPeserta(hasilRuangan, tahunAjaran);
+  const { error: errInsert } = await supabase.from("peserta_ujian").insert(rows);
+  if (errInsert) {
+    if (cadangan && cadangan.length > 0) {
+      const { error: errPulih } = await supabase.from("peserta_ujian").insert(cadangan);
+      if (errPulih) {
+        throw new Error(
+          `Simpan gagal (${errInsert.message}) DAN data lama gagal dikembalikan (${errPulih.message}). ` +
+            "Jangan tutup halaman ini -- proses & simpan ulang pembagian ruangan sekarang."
+        );
+      }
+      throw new Error(`${errInsert.message} (data lama sudah dikembalikan, tidak ada yang berubah)`);
+    }
+    throw errInsert;
+  }
+  return rows.length; // jumlah baris tersimpan
+}
+
+/**
+ * Susun baris peserta_ujian dari hasil pembagian ruangan. Dipakai bersama
+ * oleh simpanPembagianRuangan() dan hitungDampakSimpan() supaya angka yang
+ * ditampilkan di peringatan PERSIS sama dengan yang beneran akan ditulis.
+ *
+ * no_peserta dihitung dari SELURUH hasilRuangan (bukan per-ruangan) -- itu
+ * yang bikin no_peserta ruangan ke-2 lanjut dari ruangan ke-1, bukan balik
+ * ke 001. (Argumen ke-2 bangunPetaNoPeserta itu objek opsi, bukan label
+ * tahun ajaran, jadi sengaja gak dikirim.)
+ */
+function susunBarisPesertaUjian(ujianId, hasilRuangan /* , tahunAjaran */) {
+  const petaNoPeserta = bangunPetaNoPeserta(hasilRuangan);
 
   const rows = [];
   for (const ruangan of hasilRuangan) {
@@ -225,10 +262,132 @@ async function simpanPembagianRuangan(supabase, ujianId, hasilRuangan, tahunAjar
       });
     }
   }
+  return rows;
+}
 
-  const { error: errInsert } = await supabase.from("peserta_ujian").insert(rows);
-  if (errInsert) throw errInsert;
-  return rows.length; // jumlah baris tersimpan
+/**
+ * Hitung DAMPAK kalau hasilRuangan ini disimpan menimpa pembagian yang
+ * sudah tersimpan -- dipanggil sebelum simpanPembagianRuangan() supaya
+ * admin tau apa yang ikut basi di sub-fitur lain:
+ *   - Kartu Peserta / daftar peserta yang sudah dicetak (kalau no_peserta
+ *     atau ruangan siswa berubah)
+ *   - Penugasan pengawas (ujian_pengawas), yang nempel ke NOMOR ruangan,
+ *     bukan ke isi ruangannya -- jadi gak otomatis ikut berubah
+ *
+ * Read-only, gak nulis apa pun.
+ *
+ * @returns {Promise<{
+ *   adaDataTersimpan: boolean,
+ *   adaPerubahan: boolean,
+ *   jumlahTersimpan: number,
+ *   jumlahPindahRuangan: number,
+ *   jumlahNomorBerubah: number,
+ *   jumlahSiswaBaru: number,
+ *   jumlahSiswaHilang: number,
+ *   ruanganBerubah: number[],
+ *   ruanganHilang: number[],
+ *   jumlahPengawas: number,
+ *   jumlahPengawasTerdampak: number,
+ * }>}
+ */
+async function hitungDampakSimpan(supabase, ujianId, hasilRuangan) {
+  const { data: lama, error: errLama } = await supabase
+    .from("peserta_ujian")
+    .select("siswa_id, nomor_ruangan, no_peserta")
+    .eq("ujian_id", ujianId);
+  if (errLama) throw errLama;
+
+  const kosong = {
+    adaDataTersimpan: false,
+    adaPerubahan: false,
+    jumlahTersimpan: 0,
+    jumlahPindahRuangan: 0,
+    jumlahNomorBerubah: 0,
+    jumlahSiswaBaru: 0,
+    jumlahSiswaHilang: 0,
+    ruanganBerubah: [],
+    ruanganHilang: [],
+    jumlahPengawas: 0,
+    jumlahPengawasTerdampak: 0,
+  };
+  if (!lama || lama.length === 0) return kosong;
+
+  const baru = susunBarisPesertaUjian(ujianId, hasilRuangan);
+  const petaLama = new Map(lama.map((r) => [String(r.siswa_id), r]));
+  const petaBaru = new Map(baru.map((r) => [String(r.siswa_id), r]));
+
+  let jumlahPindahRuangan = 0;
+  let jumlahNomorBerubah = 0;
+  let jumlahSiswaBaru = 0;
+  let jumlahSiswaHilang = 0;
+  const ruanganBerubah = new Set(); // ruangan yang isinya berubah (lama ATAU baru)
+
+  for (const [id, b] of petaBaru) {
+    const l = petaLama.get(id);
+    if (!l) {
+      jumlahSiswaBaru += 1;
+      ruanganBerubah.add(Number(b.nomor_ruangan));
+      continue;
+    }
+    if (Number(l.nomor_ruangan) !== Number(b.nomor_ruangan)) {
+      jumlahPindahRuangan += 1;
+      ruanganBerubah.add(Number(l.nomor_ruangan));
+      ruanganBerubah.add(Number(b.nomor_ruangan));
+    }
+    if (String(l.no_peserta) !== String(b.no_peserta)) jumlahNomorBerubah += 1;
+  }
+  for (const [id, l] of petaLama) {
+    if (!petaBaru.has(id)) {
+      jumlahSiswaHilang += 1;
+      ruanganBerubah.add(Number(l.nomor_ruangan));
+    }
+  }
+
+  const ruanganLama = new Set(lama.map((r) => Number(r.nomor_ruangan)));
+  const ruanganBaru = new Set(baru.map((r) => Number(r.nomor_ruangan)));
+  const ruanganHilang = [...ruanganLama].filter((n) => !ruanganBaru.has(n)).sort((a, b) => a - b);
+
+  // Penugasan pengawas: ujian_pengawas nyambung ke ujian lewat ujian_jadwal.
+  let jumlahPengawas = 0;
+  let jumlahPengawasTerdampak = 0;
+  const { data: daftarJadwal, error: errJadwal } = await supabase
+    .from("ujian_jadwal")
+    .select("id")
+    .eq("ujian_id", ujianId);
+  if (errJadwal) throw errJadwal;
+  const jadwalIds = (daftarJadwal || []).map((j) => j.id);
+  if (jadwalIds.length > 0) {
+    const { data: pengawas, error: errPengawas } = await supabase
+      .from("ujian_pengawas")
+      .select("nomor_ruangan")
+      .in("jadwal_id", jadwalIds);
+    if (errPengawas) throw errPengawas;
+    jumlahPengawas = (pengawas || []).length;
+    jumlahPengawasTerdampak = (pengawas || []).filter(
+      (p) => ruanganBerubah.has(Number(p.nomor_ruangan)) || ruanganHilang.includes(Number(p.nomor_ruangan))
+    ).length;
+  }
+
+  const adaPerubahan =
+    jumlahPindahRuangan > 0 ||
+    jumlahNomorBerubah > 0 ||
+    jumlahSiswaBaru > 0 ||
+    jumlahSiswaHilang > 0 ||
+    ruanganHilang.length > 0;
+
+  return {
+    adaDataTersimpan: true,
+    adaPerubahan,
+    jumlahTersimpan: lama.length,
+    jumlahPindahRuangan,
+    jumlahNomorBerubah,
+    jumlahSiswaBaru,
+    jumlahSiswaHilang,
+    ruanganBerubah: [...ruanganBerubah].sort((a, b) => a - b),
+    ruanganHilang,
+    jumlahPengawas,
+    jumlahPengawasTerdampak,
+  };
 }
 
 /**
@@ -399,6 +558,7 @@ async function resetUntukProsesUlang(supabase, jenis, academicYearId, versiSkema
 
 export {
   ambilSiswaPerKelas,
+  hitungDampakSimpan,
   ambilDaftarTahunAjaran,
   getOrCreateUjian,
   cariUjian,
