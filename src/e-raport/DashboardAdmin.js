@@ -7,8 +7,8 @@ import RaportConfig from "./RaportConfig";
 function DashboardAdmin({ user, onShowToast, darkMode }) {
   const [activeTab, setActiveTab] = useState("monitoring");
 
-  // Cek apakah user adalah admin
-  if (user?.role !== "admin") {
+  // Cek apakah user adalah admin (developer ikut boleh -- buat QA lintas role)
+  if (user?.role !== "admin" && user?.role !== "developer") {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">

@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "../supabaseClient";
 import { getAllSemestersInYear } from "../services/academicYearService";
 import { Printer, Download, RefreshCw } from "lucide-react";
+import { REPORT_NAME } from "./eraportLabels";
 
 // ✅ URUTAN MAPEL STANDAR
 const getMapelOrder = (mapel) => {
@@ -502,7 +503,7 @@ function PreviewRaport({ semester, setSemester, academicYear }) {
             {nilaiData && nilaiData.length > 0 && (
               <div className="mt-6 print:mt-4 text-sm text-gray-600 dark:text-gray-400 bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg print:hidden">
                 <p className="font-medium">
-                  ℹ️ Ini Adalah Preview Tabel Nilai Saja. Untuk Mencetak Raport Lengkap Dengan
+                  ℹ️ Ini Adalah Preview Tabel Nilai Saja. Untuk Mencetak {REPORT_NAME} Lengkap Dengan
                   Kehadiran, Catatan, Dan Tanda Tangan, Gunakan Menu <strong>Cetak Raport</strong>.
                 </p>
               </div>
@@ -556,9 +557,9 @@ function PreviewRaport({ semester, setSemester, academicYear }) {
               />
             </svg>
           </div>
-          <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">Preview Raport</h3>
+          <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">Preview {REPORT_NAME}</h3>
           <p className="text-gray-600 dark:text-gray-400">
-            Pilih siswa dan semester untuk melihat preview raport
+            Pilih siswa dan semester untuk melihat preview rapor tengah semester
           </p>
         </div>
       )}

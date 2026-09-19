@@ -8,9 +8,10 @@
 // route baru ditambah di sana, tambahin juga card-nya di sini biar dashboard
 // ini tetap jadi "peta lengkap" modul yang ada.
 //
-// Grup E-RAPORT SENGAJA gak dimasukin -- modul itu lagi dinonaktifkan
-// (eraportActive: false), jadi gak ditaro di sini juga (konsisten sama
-// sidebarConfig.js yang nge-hide grup itu buat semua role termasuk developer).
+// Grup E-RAPORT (Sep 2026) sekarang DIMASUKIN lagi -- modul internalnya
+// memang lagi dinonaktifkan buat guru/wali kelas (eraportActive: false),
+// tapi developer tetap perlu bisa buka semua halamannya buat QA. Konsisten
+// sama sidebarConfig.js yang sekarang nampilin grup itu khusus buat developer.
 //
 // REVISI: nambahin search/filter modul + quick-jump antar kategori, dan
 // nampilin path route di tiap card (bukan cuma label) -- soalnya dashboard
@@ -91,8 +92,35 @@ const MODULE_GROUPS = [
       { path: "/jadwal-saya", label: "Jadwal Saya", icon: CalendarClock },
       { path: "/jurnal-harian", label: "Jurnal Harian", icon: NotebookPen },
       { path: "/jurnal-harian-rekap", label: "Rekap Jurnal Harian", icon: JurnalRekapIcon },
+      { path: "/portal-ujian", label: "Portal Panitia Ujian", icon: ClipboardList },
       { path: "/catatan-siswa", label: "Catatan Siswa", icon: StickyNote },
       { path: "/reports", label: "Laporan", icon: FileText },
+    ],
+  },
+  {
+    // ===== E-RAPORT (Sep 2026) =====
+    // Modul E-Raport internal lagi dinonaktifkan (eraportActive: false) buat
+    // guru & wali kelas, tapi developer tetap butuh akses buat QA -- makanya
+    // grup ini ditaro di sini (bypass ProtectedRoute di App.js udah nge-cover
+    // route-nya). Catatan: halaman Wali Kelas (kehadiran, catatan, cetak,
+    // dst) & halaman Guru (input nilai/TP) baca homeroom_class_id / teacher_id
+    // dari akun yang login -- kalau akun developer gak punya, isinya kosong
+    // atau muncul "Anda bukan wali kelas", itu dari datanya, bukan dari akses.
+    title: "E-Raport",
+    color: "violet",
+    items: [
+      { path: "/era-dashboard-admin", label: "Dashboard E-Raport (Admin)", icon: LayoutDashboard },
+      { path: "/era-dashboard-teacher", label: "Dashboard E-Raport (Guru)", icon: LayoutDashboard },
+      { path: "/era-dashboard-homeroom", label: "Dashboard E-Raport (Wali Kelas)", icon: LayoutDashboard },
+      { path: "/era-input-tp", label: "Input Tujuan Pembelajaran", icon: NotebookPen },
+      { path: "/era-input-nilai", label: "Input Nilai", icon: BookOpenCheck },
+      { path: "/era-cek-nilai", label: "Cek Nilai", icon: Search },
+      { path: "/era-input-kehadiran", label: "Input Kehadiran", icon: ClipboardCheck },
+      { path: "/era-input-catatan", label: "Input Catatan", icon: StickyNote },
+      { path: "/era-input-kokurikuler", label: "Input Kokurikuler", icon: GraduationCap },
+      { path: "/era-input-ekstrakurikuler", label: "Input Ekstrakurikuler", icon: Users },
+      { path: "/era-cek-kelengkapan", label: "Cek Kelengkapan Nilai", icon: ClipboardList },
+      { path: "/era-cetak-raport", label: "Cetak Raport", icon: FileBarChart },
     ],
   },
   {

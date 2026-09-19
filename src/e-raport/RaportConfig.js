@@ -567,7 +567,7 @@ export default function RaportConfig({ user, showToast, darkMode }) {
                       }))
                     }
                     className={`w-full px-3 py-2 border rounded-lg ${inputBg}`}
-                    placeholder="Semester 1 2025/2026"
+                    placeholder="Tengah Semester 1 2026/2027"
                   />
                 </div>
 

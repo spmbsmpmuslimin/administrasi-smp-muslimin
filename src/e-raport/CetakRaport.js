@@ -4,6 +4,7 @@ import { Download, Printer, Edit, ChevronDown, ChevronUp, Save } from "lucide-re
 import { jsPDF } from "jspdf";
 import "jspdf-autotable";
 import { getActiveAcademicInfo, applyAcademicFilters } from "../services/academicYearService";
+import { REPORT_TITLE, REPORT_FILE_PREFIX } from "./eraportLabels";
 
 // ✅ FUNGSI UNTUK MENDAPATKAN TINGKAT DARI KELAS (7F → 7) - sama kayak di InputNilai.js
 // (tujuan_pembelajaran disimpan per tingkat, bukan per class_id)
@@ -536,7 +537,7 @@ function CetakRaport() {
         if (pageNum === 1) {
           doc.setFontSize(11);
           doc.setFont("helvetica", "bold");
-          doc.text("LAPORAN HASIL BELAJAR", 105, yPos, { align: "center" });
+          doc.text(REPORT_TITLE, 105, yPos, { align: "center" });
           yPos += 6;
         }
       };
@@ -840,7 +841,7 @@ function CetakRaport() {
       const doc = new jsPDF();
       await addStudentPages(doc, siswa, true);
       doc.save(
-        `RAPOR_${siswa.full_name}_Kelas${classId}_${getSemesterText()}_${academicYear?.year}.pdf`
+        `${REPORT_FILE_PREFIX}_${siswa.full_name}_Kelas${classId}_${getSemesterText()}_${academicYear?.year}.pdf`
       );
     } catch (error) {
       alert("Gagal download: " + error.message);
@@ -876,7 +877,7 @@ function CetakRaport() {
         await addStudentPages(doc, siswa, i === 0);
         await new Promise((resolve) => setTimeout(resolve, 200));
       }
-      doc.save(`RAPOR_Kelas${classId}_${getSemesterText()}_${academicYear?.year}.pdf`);
+      doc.save(`${REPORT_FILE_PREFIX}_Kelas${classId}_${getSemesterText()}_${academicYear?.year}.pdf`);
       alert("Berhasil! File PDF telah didownload.");
     } catch (error) {
       alert("Gagal download: " + error.message);

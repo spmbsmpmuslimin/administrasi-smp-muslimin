@@ -52,7 +52,7 @@ const Layout = ({ user, onLogout, children, darkMode, onToggleDarkMode }) => {
   const hasAccessToCurrentPage = useCallback(() => {
     if (!user) return false;
     if (location.pathname === "/attendance-management") {
-      return user.role === "admin";
+      return user.role === "admin" || user.role === "developer";
     }
     return true;
   }, [user, location.pathname]);
@@ -247,7 +247,7 @@ const Layout = ({ user, onLogout, children, darkMode, onToggleDarkMode }) => {
 
       if (!path) return;
 
-      if (path === "/attendance-management" && user?.role !== "admin") {
+      if (path === "/attendance-management" && user?.role !== "admin" && user?.role !== "developer") {
         navigate("/dashboard");
         return;
       }
