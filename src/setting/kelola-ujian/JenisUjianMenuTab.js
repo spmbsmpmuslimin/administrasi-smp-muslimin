@@ -12,6 +12,13 @@
 // Komponennya (PanitiaUjianTab.js) sekarang punya pemilihan jenis ujian
 // sendiri di dalam dirinya. JANGAN tambahin lagi sub-fitur ini di sini.
 //
+// CATATAN -- "Petunjuk & Penggunaan Aplikasi" JUGA SUDAH DIPINDAH keluar
+// dari grid ini (alasan sama kayak Panitia Ujian: isinya panduan umum,
+// gak spesifik ke 1 jenis ujian), sekarang jadi kartu top-level sendiri
+// di KelolaUjianTab.js. PetunjukPenggunaanTab.js gak butuh prop
+// jenisUjian jadi cukup di-render apa adanya di sana. JANGAN tambahin
+// lagi sub-fitur ini di sini.
+//
 // Skema Kartu (lihat dokumentasi "dokumentasi-kelola-ujian.md"):
 // 1. Jadwal, Peserta & Pembagian Ruangan (aktif, sebelumnya bernama "Jadwal
 //    & Pembagian Ruangan" -- diganti karena Export Daftar Peserta udah
@@ -34,13 +41,11 @@
 //    programKerjaPdf.js.
 // 6. Anggaran & Biaya (aktif) -- catat rencana anggaran & realisasi biaya
 //    per pos (ATK, konsumsi, honor pengawas, dst), lihat AnggaranBiayaTab.js.
-// 7. Petunjuk & Penggunaan Aplikasi (aktif) -- panduan statis langkah demi
-//    langkah tiap sub-fitur, lihat PetunjukPenggunaanTab.js.
-// 8. Laporan Rekap Akhir (aktif) -- kumpulan rekap dari sub-fitur lain
+// 7. Laporan Rekap Akhir (aktif) -- kumpulan rekap dari sub-fitur lain
 //    (peserta, pengawas, anggaran) + input manual kehadiran & catatan
 //    evaluasi, bahan Laporan Pelaksanaan Ujian. Lihat LaporanRekapAkhirTab.js
 //    & laporanRekapAkhirSupabase.js.
-// 9. Export Semua (PDF) (aktif) -- tombol di kanan atas grid ini (bukan
+// 8. Export Semua (PDF) (aktif) -- tombol di kanan atas grid ini (bukan
 //    kartu sub-fitur, karena bukan area kerja tersendiri). Checklist semua
 //    dokumen PDF dari sub-fitur 1-4 & 8, query ulang dari DB (bukan reuse
 //    state tab lain). Lihat ExportSemuaTab.js & exportSemuaKelolaUjian.js.
@@ -55,7 +60,6 @@ import {
   FileBarChart2,
   ClipboardCheck,
   Wallet,
-  BookOpen,
   FileDown,
 } from "lucide-react";
 import JadwalRuanganTab from "./JadwalRuanganTab";
@@ -63,7 +67,6 @@ import PesertaPengawasTab from "./PesertaPengawasTab";
 import KartuUjianTab from "./dokumen-cetak/KartuUjianTab";
 import PresensiBeritaAcaraTab from "./dokumen-cetak/PresensiBeritaAcaraTab";
 import AnggaranBiayaTab from "./dokumen-cetak/AnggaranBiayaTab";
-import PetunjukPenggunaanTab from "./petunjuk-penggunaan/PetunjukPenggunaanTab";
 import LaporanRekapAkhirTab from "./dokumen-cetak/LaporanRekapAkhirTab";
 import ProgramKerjaTab from "./dokumen-cetak/ProgramKerjaTab";
 import ExportSemuaTab from "./ExportSemuaTab";
@@ -121,14 +124,6 @@ const SUB_FITUR = [
     title: "Anggaran & Biaya",
     description: "Catat rencana anggaran & realisasi biaya per pos (ATK, konsumsi, honor, dll)",
     icon: Wallet,
-    status: "done",
-    clickable: true,
-  },
-  {
-    id: "petunjuk-penggunaan",
-    title: "Petunjuk & Penggunaan Aplikasi",
-    description: "Panduan langkah demi langkah cara memakai tiap sub-fitur Manajemen Ujian",
-    icon: BookOpen,
     status: "done",
     clickable: true,
   },
@@ -201,10 +196,6 @@ const JenisUjianMenuTab = ({ jenisUjian, showToast, onBack }) => {
         onBack={() => setActiveSubFitur(null)}
       />
     );
-  }
-
-  if (activeSubFitur === "petunjuk-penggunaan") {
-    return <PetunjukPenggunaanTab showToast={showToast} onBack={() => setActiveSubFitur(null)} />;
   }
 
   if (activeSubFitur === "kepanitiaan") {

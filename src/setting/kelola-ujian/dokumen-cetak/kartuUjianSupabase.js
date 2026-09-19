@@ -121,10 +121,12 @@ async function ambilJadwalPengawasPerGuru(supabase, ujianId, tahunAjaran) {
     if (errorKodeGuru) throw errorKodeGuru;
     (kodeGuruRows || []).forEach((row) => {
       // Kalau 1 guru punya >1 baris kode buat mapel beda (jarang tapi
-      // mungkin), gabung jadi 1 string dipisah "/" -- lebih informatif
+      // mungkin), gabung jadi 1 string dipisah " & " -- lebih informatif
       // ketimbang cuma nampilin salah satu & nyembunyiin yang lain.
+      // SEBELUMNYA dipisah "/" (revisi Sep 2026: diganti "&" biar gak
+      // ketuker sama notasi kelas/tanggal yang juga banyak pakai "/").
       mapelByTeacherId[row.teacher_id] = mapelByTeacherId[row.teacher_id]
-        ? `${mapelByTeacherId[row.teacher_id]}/${row.subject}`
+        ? `${mapelByTeacherId[row.teacher_id]} & ${row.subject}`
         : row.subject;
     });
   }

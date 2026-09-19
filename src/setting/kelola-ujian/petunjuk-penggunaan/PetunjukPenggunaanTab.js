@@ -59,7 +59,7 @@ const PetunjukPenggunaanTab = ({ showToast, onBack }) => {
         onClick={onBack}
         className="flex items-center gap-1.5 text-sm text-gray-600 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 mb-4"
       >
-        <ChevronLeft size={16} /> Kembali ke Sub-fitur
+        <ChevronLeft size={16} /> Kembali ke Manajemen Ujian
       </button>
 
       <div className="flex items-start justify-between gap-3 mb-5">

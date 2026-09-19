@@ -80,3 +80,32 @@ export async function setPanitiaUjian(supabase, ujianId, guruId, aktif) {
 
   if (error) throw error;
 }
+
+/**
+ * Ambil daftar guru_id yang berstatus panitia AKTIF di ujian MANAPUN --
+ * jenis ujian apapun (PSAS/PSAT/PSAJ) & tahun ajaran apapun -- dipakai
+ * buat ngunci checkbox guru itu di Daftar Pengawas (DaftarPengawasTab.js).
+ *
+ * SENGAJA gak difilter ke "tahun ajaran aktif" (beda dari versi awal
+ * fungsi ini) -- Daftar Pengawas itu global, gak punya konsep tahun
+ * ajaran sama sekali, jadi gak ada cara buat tau "tahun ajaran yang
+ * dimaksud" itu yang mana. Nge-filter ke academic_years.is_active malah
+ * bisa salah kunci kalau pas nyentang Panitia, tahun ajaran yang dipilih
+ * di tab Panitia Ujian beda sama yang lagi ditandai aktif di sistem.
+ * Jadi query ini langsung ambil SEMUA baris ujian_kepanitiaan yang
+ * status-nya 'aktif', gak peduli ujian_id-nya yang mana -- paling akurat
+ * merepresentasikan "guru ini beneran lagi jadi panitia sekarang".
+ *
+ * @param {object} supabase
+ * @returns {Promise<string[]>} array guru_id, kosong kalau belum ada
+ *   panitia aktif sama sekali
+ */
+export async function ambilGuruPanitiaAktifTahunIni(supabase) {
+  const { data, error } = await supabase
+    .from("ujian_kepanitiaan")
+    .select("guru_id")
+    .eq("status", "aktif");
+  if (error) throw error;
+
+  return [...new Set((data || []).map((r) => r.guru_id))];
+}

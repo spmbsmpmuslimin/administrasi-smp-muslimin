@@ -39,6 +39,7 @@ import {
   hapusPengawasKode,
   simpanKodePengawas,
 } from "./jadwalPengawasSupabase";
+import { ambilGuruPanitiaAktifTahunIni } from "../panitiaUjianSupabase";
 
 const JENIS_UJIAN_LABEL = {
   PSAS: "PSAS - Penilaian Sumatif Akhir Semester",
@@ -50,6 +51,10 @@ const DaftarPengawasTab = ({ jenisUjian, showToast, onBack, embedded = false, on
   const [daftarAsli, setDaftarAsli] = useState([]); // dari DB, buat dibandingin (deteksi baris yang berubah)
   const [daftarEdit, setDaftarEdit] = useState([]); // versi yang lagi diedit admin di tabel
   const [calonPengawas, setCalonPengawas] = useState([]); // guru yang belum ditambah
+  // guru_id yang berstatus panitia aktif (jenis ujian manapun, tahun
+  // ajaran aktif) -- guru ini dikunci, gak bisa dicentang jadi pengawas.
+  // Lihat ambilGuruPanitiaAktifTahunIni() di panitiaUjianSupabase.js.
+  const [guruPanitiaAktif, setGuruPanitiaAktif] = useState([]);
   const [loading, setLoading] = useState(true);
   const [menyimpan, setMenyimpan] = useState(false);
 
@@ -62,13 +67,15 @@ const DaftarPengawasTab = ({ jenisUjian, showToast, onBack, embedded = false, on
   const muatData = useCallback(async () => {
     setLoading(true);
     try {
-      const [pengawas, calon] = await Promise.all([
+      const [pengawas, calon, panitiaAktif] = await Promise.all([
         ambilDaftarPengawasKode(supabase),
         ambilCalonPengawas(supabase),
+        ambilGuruPanitiaAktifTahunIni(supabase),
       ]);
       setDaftarAsli(pengawas);
       setDaftarEdit(pengawas);
       setCalonPengawas(calon);
+      setGuruPanitiaAktif(panitiaAktif);
     } catch (err) {
       console.error(err);
       showToast?.("Gagal memuat daftar pengawas: " + err.message, "error");
@@ -82,16 +89,35 @@ const DaftarPengawasTab = ({ jenisUjian, showToast, onBack, embedded = false, on
     muatData();
   }, [muatData]);
 
+  // Guru yang statusnya panitia aktif TERKUNCI, gak bisa dicentang jadi
+  // calon pengawas -- checkbox-nya disabled di render, dan di sini
+  // dipastikan gak ikut kecentang kalau somehow ke-toggle (mis. race
+  // condition data panitia baru masuk pas checkbox sempat tercentang).
+  const calonTerkunci = useCallback(
+    (guruId) => guruPanitiaAktif.includes(guruId),
+    [guruPanitiaAktif]
+  );
+
   const toggleCalon = (guruId) => {
+    if (calonTerkunci(guruId)) return;
     setCalonTerpilih((prev) =>
       prev.includes(guruId) ? prev.filter((id) => id !== guruId) : [...prev, guruId]
     );
   };
 
-  const semuaTercentang = calonPengawas.length > 0 && calonTerpilih.length === calonPengawas.length;
+  // "Centang Semua" cuma ngitung dari calon yang BISA dicentang (yang
+  // gak terkunci sebagai panitia) -- guru yang terkunci gak pernah ikut
+  // ke-centang walau tombol ini dipencet.
+  const calonBisaDicentang = useMemo(
+    () => calonPengawas.filter((g) => !calonTerkunci(g.id)),
+    [calonPengawas, calonTerkunci]
+  );
+
+  const semuaTercentang =
+    calonBisaDicentang.length > 0 && calonTerpilih.length === calonBisaDicentang.length;
 
   const toggleCentangSemua = () => {
-    setCalonTerpilih(semuaTercentang ? [] : calonPengawas.map((g) => g.id));
+    setCalonTerpilih(semuaTercentang ? [] : calonBisaDicentang.map((g) => g.id));
   };
 
   // Kode tiap guru yang ditambah dulu disaranin dari teacher_id, tapi itu
@@ -281,7 +307,7 @@ const DaftarPengawasTab = ({ jenisUjian, showToast, onBack, embedded = false, on
               <p className="text-xs font-medium text-gray-600 dark:text-gray-400">
                 Tambah Pengawas
               </p>
-              {calonPengawas.length > 0 && (
+              {calonBisaDicentang.length > 0 && (
                 <label className="flex items-center gap-1.5 text-[11px] text-gray-600 dark:text-gray-400 cursor-pointer">
                   <input
                     type="checkbox"
@@ -301,25 +327,40 @@ const DaftarPengawasTab = ({ jenisUjian, showToast, onBack, embedded = false, on
             ) : (
               <>
                 <p className="text-[11px] text-gray-500 dark:text-gray-400 mb-2">
-                  Centang guru yang kebagian tugas ngawas ujian (guru yang cuma jadi panitia gak
-                  perlu dicentang). Kode masing-masing otomatis disaranin dari teacher_id, bisa
-                  dikoreksi belakangan di tabel.
+                  Centang guru yang kebagian tugas ngawas ujian. Guru yang sudah jadi{" "}
+                  <strong>Panitia Ujian</strong> otomatis terkunci (gak bisa dicentang) -- lihat
+                  label abu-abu di sampingnya. Kode masing-masing otomatis disaranin dari
+                  teacher_id, bisa dikoreksi belakangan di tabel.
                 </p>
                 <div className="columns-1 sm:columns-2 lg:columns-3 gap-3 mb-3 p-2 rounded-lg bg-white dark:bg-gray-800">
-                  {calonPengawas.map((g) => (
-                    <label
-                      key={g.id}
-                      className="flex items-center gap-2 text-xs px-1.5 py-1 mb-1 rounded text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer break-inside-avoid"
-                    >
-                      <input
-                        type="checkbox"
-                        checked={calonTerpilih.includes(g.id)}
-                        onChange={() => toggleCalon(g.id)}
-                        className="rounded border-gray-300"
-                      />
-                      {g.full_name}
-                    </label>
-                  ))}
+                  {calonPengawas.map((g) => {
+                    const terkunci = calonTerkunci(g.id);
+                    return (
+                      <label
+                        key={g.id}
+                        className={`flex items-center gap-2 text-xs px-1.5 py-1 mb-1 rounded break-inside-avoid ${
+                          terkunci
+                            ? "text-gray-400 dark:text-gray-600 cursor-not-allowed"
+                            : "text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer"
+                        }`}
+                        title={terkunci ? "Sudah jadi Panitia Ujian, gak bisa jadi pengawas" : undefined}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={calonTerpilih.includes(g.id)}
+                          disabled={terkunci}
+                          onChange={() => toggleCalon(g.id)}
+                          className="rounded border-gray-300"
+                        />
+                        <span className="truncate">{g.full_name}</span>
+                        {terkunci && (
+                          <span className="shrink-0 text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400">
+                            Panitia
+                          </span>
+                        )}
+                      </label>
+                    );
+                  })}
                 </div>
                 <button
                   onClick={handleTambahBanyak}

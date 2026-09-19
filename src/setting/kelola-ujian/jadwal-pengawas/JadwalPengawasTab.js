@@ -575,6 +575,24 @@ const JadwalPengawasTab = ({ jenisUjian, showToast, onBack, tabPaksa = null }) =
     });
   };
 
+  // "Centang Semua" -- sistem ngewajibin jumlah guru dicentang PAS SAMA
+  // dengan jumlah ruangan (lihat validasi handleGenerateHari), jadi ini
+  // BUKAN literal "centang semua guru pengawas" (bisa kelebihan & malah
+  // nge-block tombol Acak & Terapkan). Yang dilakukan: isi otomatis dari
+  // urutan Daftar Pengawas sampai PAS jumlah ruangan tercapai -- jadi
+  // shortcut biar admin gak perlu klik satu-satu. Kalau udah penuh pas
+  // dipencet, jadi toggle "Batalkan Semua" (ngosongin lagi).
+  const semuaGuruGenerateTerisi =
+    daftarRuanganUrut.length > 0 && guruTerpilihGenerate.length === daftarRuanganUrut.length;
+
+  const toggleCentangSemuaGenerate = () => {
+    if (semuaGuruGenerateTerisi) {
+      setGuruTerpilihGenerate([]);
+    } else {
+      setGuruTerpilihGenerate(daftarGuru.slice(0, daftarRuanganUrut.length).map((g) => g.id));
+    }
+  };
+
   const handleGenerateHari = async () => {
     const jumlahRuangan = daftarRuanganUrut.length;
     if (jumlahRuangan === 0) {
@@ -942,11 +960,23 @@ const JadwalPengawasTab = ({ jenisUjian, showToast, onBack, tabPaksa = null }) =
                               <X size={16} />
                             </button>
                           </div>
-                          <p className="text-[11px] text-emerald-700 dark:text-emerald-400 mb-3">
-                            Centang tepat <strong>{daftarRuanganUrut.length} guru</strong> (jumlah
-                            ruangan hari ini) -- nanti diacak & disebar otomatis 1 guru per ruangan,
-                            berlaku juga untuk sesi berikutnya hari ini (rotasi geser +1 ruangan).
-                          </p>
+                          <div className="flex items-center justify-between gap-2 mb-3 flex-wrap">
+                            <p className="text-[11px] text-emerald-700 dark:text-emerald-400">
+                              Centang tepat <strong>{daftarRuanganUrut.length} guru</strong> (jumlah
+                              ruangan hari ini) -- nanti diacak & disebar otomatis 1 guru per
+                              ruangan, berlaku juga untuk sesi berikutnya hari ini (rotasi geser +1
+                              ruangan).
+                            </p>
+                            {daftarGuru.length > 0 && (
+                              <button
+                                onClick={toggleCentangSemuaGenerate}
+                                disabled={daftarRuanganUrut.length === 0}
+                                className="shrink-0 text-[11px] font-medium px-2.5 py-1 rounded-lg bg-white dark:bg-gray-800 border border-emerald-300 dark:border-emerald-700 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 disabled:opacity-50 transition-colors"
+                              >
+                                {semuaGuruGenerateTerisi ? "Batalkan Semua" : "Centang Semua"}
+                              </button>
+                            )}
+                          </div>
 
                           <div className="columns-1 sm:columns-2 lg:columns-3 gap-3 mb-3 p-2 rounded-lg bg-white dark:bg-gray-800">
                             {daftarGuru.map((g) => {
@@ -1173,79 +1203,91 @@ const JadwalPengawasTab = ({ jenisUjian, showToast, onBack, tabPaksa = null }) =
                       }
 
                       return (
-                        <div className="overflow-x-auto -mx-4 sm:mx-0 px-4 sm:px-0">
-                          <table className="w-full text-xs sm:text-sm border-collapse">
-                            <thead>
-                              <tr className="text-left text-gray-600 dark:text-gray-400">
-                                <th className="py-2 pr-3 font-medium whitespace-nowrap">Ruang</th>
-                                {sesiHariIni.map((s) => (
-                                  <th
-                                    key={s.id}
-                                    className="py-2 pr-3 font-medium whitespace-nowrap"
-                                  >
-                                    Jam Ke {s.sesi_ke}
-                                    <span className="block font-normal text-[11px] text-gray-500 dark:text-gray-400">
-                                      {s.mata_pelajaran}
-                                      {s.waktu_mulai && s.waktu_selesai
-                                        ? ` (${s.waktu_mulai}–${s.waktu_selesai})`
-                                        : ""}
-                                    </span>
+                        <div className="rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+                          <div className="overflow-x-auto">
+                            <table className="w-full text-xs sm:text-sm border-collapse">
+                              <thead>
+                                <tr className="bg-gray-50 dark:bg-gray-700/50 text-left text-gray-600 dark:text-gray-400">
+                                  <th className="py-2.5 px-3 font-medium whitespace-nowrap sticky left-0 bg-gray-50 dark:bg-gray-700/50">
+                                    Ruang
                                   </th>
-                                ))}
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {daftarRuanganUrut.map((r) => (
-                                <tr
-                                  key={r.nomor_ruangan}
-                                  className="border-t border-gray-100 dark:border-gray-700"
-                                >
-                                  <td className="py-2 pr-3 font-medium whitespace-nowrap text-gray-800 dark:text-gray-100">
-                                    Ruang {r.nomor_ruangan}
-                                    {r.jenjang && (
-                                      <span className="block text-sm font-normal text-gray-500 dark:text-gray-400">
-                                        Kelas {r.jenjang}
+                                  {sesiHariIni.map((s) => (
+                                    <th
+                                      key={s.id}
+                                      className="py-2.5 px-3 font-medium whitespace-nowrap border-l border-gray-200 dark:border-gray-700"
+                                    >
+                                      Jam Ke {s.sesi_ke}
+                                      <span className="block font-normal text-[11px] text-gray-500 dark:text-gray-400">
+                                        {s.mata_pelajaran}
+                                        {s.waktu_mulai && s.waktu_selesai
+                                          ? ` (${s.waktu_mulai}–${s.waktu_selesai})`
+                                          : ""}
                                       </span>
-                                    )}
-                                  </td>
-                                  {sesiHariIni.map((s) => {
-                                    const pengawas = rekapPerJadwal[s.id]?.[r.nomor_ruangan] || [];
-                                    // Ruang ini bisa berisi >1 jenjang (versi rantai/silang),
-                                    // jadi mapel yang berlaku juga bisa >1 sekaligus -- lihat
-                                    // mataPelajaranUntukRuangan() di jadwalPengawasSupabase.js.
-                                    const mapelPerJenjang = mataPelajaranUntukRuangan(s, r.jenjangSet);
-                                    const adaOverride = mapelPerJenjang.some(
-                                      (m) => m.mapel !== s.mata_pelajaran
-                                    );
-                                    return (
-                                      <td
-                                        key={s.id}
-                                        className="py-2 pr-3 text-gray-700 dark:text-gray-300"
-                                      >
-                                        {adaOverride && (
-                                          <div className="text-sm font-semibold text-amber-700 dark:text-amber-400 mb-0.5">
-                                            {mapelPerJenjang.map((m) => (
-                                              <span key={m.mapel} className="block">
-                                                {m.mapel}
-                                                {r.jenjangSet && r.jenjangSet.length > 1
-                                                  ? ` (kls ${m.jenjang.join(",")})`
-                                                  : ""}
-                                              </span>
-                                            ))}
-                                          </div>
-                                        )}
-                                        {pengawas.length === 0 ? (
-                                          <span className="text-gray-400 italic">Belum ada</span>
-                                        ) : (
-                                          pengawas.map((p) => p.nama).join(", ")
-                                        )}
-                                      </td>
-                                    );
-                                  })}
+                                    </th>
+                                  ))}
                                 </tr>
-                              ))}
-                            </tbody>
-                          </table>
+                              </thead>
+                              <tbody>
+                                {daftarRuanganUrut.map((r, idx) => (
+                                  <tr
+                                    key={r.nomor_ruangan}
+                                    className={`border-t border-gray-100 dark:border-gray-700 ${
+                                      idx % 2 === 1 ? "bg-gray-50/60 dark:bg-gray-800/40" : ""
+                                    }`}
+                                  >
+                                    <td
+                                      className={`py-2.5 px-3 font-medium whitespace-nowrap text-gray-800 dark:text-gray-100 sticky left-0 ${
+                                        idx % 2 === 1
+                                          ? "bg-gray-50/60 dark:bg-gray-800/40"
+                                          : "bg-white dark:bg-gray-800"
+                                      }`}
+                                    >
+                                      Ruang {r.nomor_ruangan}
+                                      {r.jenjang && (
+                                        <span className="block text-sm font-normal text-gray-500 dark:text-gray-400">
+                                          Kelas {r.jenjang}
+                                        </span>
+                                      )}
+                                    </td>
+                                    {sesiHariIni.map((s) => {
+                                      const pengawas = rekapPerJadwal[s.id]?.[r.nomor_ruangan] || [];
+                                      // Ruang ini bisa berisi >1 jenjang (versi rantai/silang),
+                                      // jadi mapel yang berlaku juga bisa >1 sekaligus -- lihat
+                                      // mataPelajaranUntukRuangan() di jadwalPengawasSupabase.js.
+                                      const mapelPerJenjang = mataPelajaranUntukRuangan(s, r.jenjangSet);
+                                      const adaOverride = mapelPerJenjang.some(
+                                        (m) => m.mapel !== s.mata_pelajaran
+                                      );
+                                      return (
+                                        <td
+                                          key={s.id}
+                                          className="py-2.5 px-3 text-gray-700 dark:text-gray-300 border-l border-gray-100 dark:border-gray-700"
+                                        >
+                                          {adaOverride && (
+                                            <div className="text-sm font-semibold text-amber-700 dark:text-amber-400 mb-0.5">
+                                              {mapelPerJenjang.map((m) => (
+                                                <span key={m.mapel} className="block">
+                                                  {m.mapel}
+                                                  {r.jenjangSet && r.jenjangSet.length > 1
+                                                    ? ` (kls ${m.jenjang.join(",")})`
+                                                    : ""}
+                                                </span>
+                                              ))}
+                                            </div>
+                                          )}
+                                          {pengawas.length === 0 ? (
+                                            <span className="text-gray-400 italic">Belum ada</span>
+                                          ) : (
+                                            pengawas.map((p) => p.nama).join(", ")
+                                          )}
+                                        </td>
+                                      );
+                                    })}
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
                         </div>
                       );
                     })()}
