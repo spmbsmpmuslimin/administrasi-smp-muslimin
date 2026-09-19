@@ -456,7 +456,8 @@ function generateKartuPesertaPdf({
 // dikasih garis potong di tiap kartu). 2 sisi:
 // - Sisi depan: identitas guru (badge jabatan, nama, mapel) yang
 //   otomatis di-center secara vertikal. REVISI Sep 2026 (2): blok tanda
-//   tangan kepala sekolah DIHAPUS dari sisi depan.
+//   tangan kepala sekolah DIHAPUS dari sisi depan; ditambah ornamen
+//   hexagon di 4 sudut (header & footer dibuat simetris).
 // - Sisi belakang: tabel rekap jadwal mengawas. REVISI Sep 2026 (2): sel
 //   "Hari / Tanggal" digabung (merge) tiap hari, jadi sesi ke-2 di hari
 //   yang sama gak makan baris/tempat sendiri. Garis footer di sisi
@@ -504,6 +505,92 @@ function gambarGarisGanda(doc, xKiri, xKanan, y, tebalDiAtas = true) {
 }
 
 /**
+ * Warna ornamen hexagon di 4 sudut sisi depan (RGB), nuansa biru kayak
+ * name tag referensi. Mau versi abu-abu (hemat tinta / print hitam-putih)?
+ * Ganti 3 nilai ini, contoh:
+ * terang: [205, 205, 205], sedang: [140, 140, 140], gelap: [70, 70, 70]
+ */
+const WARNA_HEX = {
+  terang: [140, 200, 240],
+  sedang: [72, 165, 225],
+  gelap: [30, 120, 200],
+};
+
+/**
+ * Potong poligon terhadap garis "koordinat sumbu >= 0" (Sutherland-Hodgman,
+ * 1 sisi). Dipakai buat motong hexagon yang keluar dari tepi kartu, karena
+ * jsPDF gak punya clipping yang bisa diandalin di semua versi.
+ * @param {Array<[number,number]>} titik - titik-titik poligon [u, v]
+ * @param {0|1} sumbu - 0 = potong di u=0, 1 = potong di v=0
+ */
+function potongPoligon(titik, sumbu) {
+  const hasil = [];
+  for (let i = 0; i < titik.length; i++) {
+    const a = titik[i];
+    const b = titik[(i + 1) % titik.length];
+    const aDalam = a[sumbu] >= 0;
+    const bDalam = b[sumbu] >= 0;
+    if (aDalam) hasil.push(a);
+    if (aDalam !== bDalam) {
+      const t = (0 - a[sumbu]) / (b[sumbu] - a[sumbu]);
+      hasil.push([a[0] + t * (b[0] - a[0]), a[1] + t * (b[1] - a[1])]);
+    }
+  }
+  return hasil;
+}
+
+/**
+ * Gugus honeycomb di 1 sudut kartu -- hexagon GEDE yang menempel di tepi
+ * kartu dan KEPOTONG oleh tepi (jadi ada yang setengah hexagon / trapesium,
+ * kayak name tag referensi). Ada celah putih tipis antar hexagon.
+ *
+ * Dihitung di koordinat lokal (u = jarak dari tepi vertikal, v = jarak dari
+ * tepi horizontal, keduanya ke arah DALAM kartu), lalu dipetakan ke sudut
+ * mana pun lewat sx/sy, jadi 4 sudut = cermin satu sama lain.
+ *
+ * @param {Object} kartu - { x, y, width, height } kartu (mm)
+ * @param {number} sx - +1 = sudut kiri, -1 = sudut kanan
+ * @param {number} sy - +1 = sudut atas, -1 = sudut bawah
+ * @param {number} r  - jari-jari hexagon (pusat ke sudut lancip, mm)
+ */
+function gambarGugusHexagon(doc, { x, y, width, height }, sx, sy, r) {
+  const w = Math.sqrt(3) * r; // lebar hexagon pointy-top
+  const rGambar = r * 0.9; // dikecilin -> celah putih antar hexagon
+  // u/v dalam satuan lebar (w) & tinggi baris (1.5r). Baris ganjil
+  // digeser setengah lebar (pola honeycomb).
+  const pola = [
+    { u: 0, v: 0, warna: WARNA_HEX.sedang },
+    { u: 1, v: 0, warna: WARNA_HEX.terang },
+    { u: 2, v: 0, warna: WARNA_HEX.sedang },
+    { u: 0.5, v: 1, warna: WARNA_HEX.gelap },
+    { u: 1.5, v: 1, warna: WARNA_HEX.sedang },
+    { u: 0, v: 2, warna: WARNA_HEX.terang },
+    { u: 1, v: 2, warna: WARNA_HEX.gelap },
+  ];
+
+  pola.forEach(({ u, v, warna }) => {
+    const pusatU = u * w;
+    const pusatV = v * 1.5 * r;
+    let titik = [];
+    for (let k = 0; k < 6; k++) {
+      const sudut = ((-90 + 60 * k) * Math.PI) / 180;
+      titik.push([pusatU + rGambar * Math.cos(sudut), pusatV + rGambar * Math.sin(sudut)]);
+    }
+    titik = potongPoligon(potongPoligon(titik, 0), 1); // potong di tepi kartu
+    if (titik.length < 3) return;
+
+    // lokal (u,v) -> koordinat halaman
+    const halaman = titik.map(([pu, pv]) => [
+      sx > 0 ? x + pu : x + width - pu,
+      sy > 0 ? y + pv : y + height - pv,
+    ]);
+    const segmen = halaman.slice(1).map(([px, py], i) => [px - halaman[i][0], py - halaman[i][1]]);
+    doc.setFillColor(...warna);
+    doc.lines(segmen, halaman[0][0], halaman[0][1], [1, 1], "F", true);
+  });
+}
+
+/**
  * Sisi DEPAN kartu pengawas -- header sekolah, lalu blok identitas
  * (badge "PENGAWAS UJIAN", nama guru, mapel) yang ditaruh di TENGAH ruang
  * kosong antara header & footer. Tinggi blok dihitung dari isi yang
@@ -525,6 +612,18 @@ function gambarSatuKartuPengawas(doc, { x, y, width, height }, { guru, jenisUjia
   const innerRight = x + width - padding;
   const innerWidth = innerRight - innerLeft;
   const centerX = x + width / 2;
+
+  // Ukur teks header terlebar -> sisa ruang kiri/kanan di band header
+  // dipakai buat nentuin ukuran ornamen hexagon (biar gak nabrak teks).
+  const judulHeader = JUDUL_UJIAN[jenisUjian] || jenisUjian;
+  doc.setFont(PDF_FONT_FAMILY, "bold");
+  doc.setFontSize(8.5);
+  const wSekolah = doc.getTextWidth(SCHOOL_NAME);
+  doc.setFontSize(6.5);
+  const wJudul = doc.getTextWidth(String(judulHeader));
+  doc.setFont(PDF_FONT_FAMILY, "normal");
+  const wTahun = doc.getTextWidth(`Tahun Ajaran ${tahunAjaran}`);
+  const lebarTeksHeader = Math.min(innerWidth, Math.max(wSekolah, wJudul, wTahun));
 
   // ---- Header sekolah -- polos (hitam di atas putih), gaya & ukuran
   // font disamain sama kartu peserta (gambarSatuKartu) ----
@@ -548,9 +647,28 @@ function gambarSatuKartuPengawas(doc, { x, y, width, height }, { guru, jenisUjia
 
   const headerBawah = gambarGarisGanda(doc, innerLeft, innerRight, cy);
 
-  // ---- Footer: garis ganda versi terbalik (simetris sama header) ----
-  const footerAtas = y + height - padding - 1.1;
+  // ---- Footer: garis ganda versi terbalik, posisinya CERMIN dari garis
+  // header (jarak dari tepi bawah = jarak header dari tepi atas), jadi
+  // ada "band" kosong di bawahnya buat ornamen sudut bawah ----
+  const footerAtas = y + height - (headerBawah - y);
   gambarGarisGanda(doc, innerLeft, innerRight, footerAtas, false);
+
+  // ---- Ornamen hexagon 4 sudut (nempel di tepi kartu). Ukuran dinamis:
+  // maksimal r=4.2mm, mengecil otomatis kalau teks header lebar biar gak
+  // nabrak teks. Lebar gugus terlebar = 2.5 x lebar hexagon = 4.33 x r. ----
+  const sisiKosong = (width - lebarTeksHeader) / 2;
+  const rHex = Math.min(4.2, Math.max(2.2, (sisiKosong - 2) / (2.5 * Math.sqrt(3))));
+  const kartuBox = { x, y, width, height };
+  gambarGugusHexagon(doc, kartuBox, 1, 1, rHex);
+  gambarGugusHexagon(doc, kartuBox, -1, 1, rHex);
+  gambarGugusHexagon(doc, kartuBox, 1, -1, rHex);
+  gambarGugusHexagon(doc, kartuBox, -1, -1, rHex);
+
+  // Gambar ulang border kartu (garis potong) di atas ornamen, biar tetap
+  // kelihatan tegas di sudut-sudut yang ketutup hexagon.
+  doc.setDrawColor(...PDF_COLORS.border);
+  doc.setLineWidth(0.2);
+  doc.rect(x, y, width, height);
 
   // ============================================================
   // BLOK IDENTITAS -- ukur dulu semua elemen, baru di-center.
