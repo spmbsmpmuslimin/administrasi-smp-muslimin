@@ -1,9 +1,9 @@
 STRUKTUR SISTEM
-Di-download dari UI: 18 Sep 2026, 17.25
+Di-download dari UI: 19 Sep 2026, 17.01
 
 ======================================================================
 STRUKTUR PROJECT (src/)
-Terakhir di-generate: 18 Sep 2026, 17.24
+Terakhir di-generate: 19 Sep 2026, 17.01
 ======================================================================
 |-- src
 |   |-- assets
@@ -260,9 +260,14 @@ Terakhir di-generate: 18 Sep 2026, 17.24
 |   |   |   |   `-- programKerjaPdf.js
 |   |   |   |-- jadwal-pengawas
 |   |   |   |   |-- DaftarPengawasTab.js
+|   |   |   |   |-- JadwalPengawasLihatView.js
 |   |   |   |   |-- JadwalPengawasTab.js
+|   |   |   |   |-- jadwalPengawasCetak.js
+|   |   |   |   |-- jadwalPengawasExcel.js
+|   |   |   |   |-- jadwalPengawasPdf.js
 |   |   |   |   `-- jadwalPengawasSupabase.js
 |   |   |   |-- pembagian-ruangan
+|   |   |   |   |-- DenahDuduk.js
 |   |   |   |   |-- PembagianRuanganTab.js
 |   |   |   |   |-- bagiRuangan.js
 |   |   |   |   |-- bagiRuanganPerJenjang.js
@@ -366,7 +371,7 @@ Terakhir di-generate: 18 Sep 2026, 17.24
 
 ======================================================================
 STRUKTUR DATABASE
-Terakhir di-generate: 18 Sep 2026, 17.24
+Terakhir di-generate: 19 Sep 2026, 17.01
 ======================================================================
 ## Daftar Tabel Database Supabase
 academic_events : id,title,category_id,start_date,end_date,description,academic_year,semester,created_by,created_at,updated_at

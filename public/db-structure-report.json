@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-09-19T02:48:01.368Z",
-  "executionTimeMs": 598,
+  "generatedAt": "2026-09-19T10:01:24.806Z",
+  "executionTimeMs": 465,
   "totalTables": 77,
   "tables": [
     {
@@ -8001,7 +8001,7 @@
           "nullable": false,
           "isPrimaryKey": false,
           "foreignKey": null,
-          "default": "draft"
+          "default": "aktif"
         },
         {
           "name": "kapasitas_ruangan",
