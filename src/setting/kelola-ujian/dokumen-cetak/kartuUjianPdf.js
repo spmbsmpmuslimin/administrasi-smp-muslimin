@@ -456,8 +456,9 @@ function generateKartuPesertaPdf({
 // dikasih garis potong di tiap kartu). 2 sisi:
 // - Sisi depan: identitas guru (badge jabatan, nama, mapel) yang
 //   otomatis di-center secara vertikal. REVISI Sep 2026 (2): blok tanda
-//   tangan kepala sekolah DIHAPUS dari sisi depan; ditambah ornamen
-//   hexagon di 4 sudut (header & footer dibuat simetris).
+//   tangan kepala sekolah DIHAPUS dari sisi depan; ditambah bingkai biru
+//   tipis dengan motif sudut tebal (anyaman diagonal). Garis footer sisi
+//   depan dihapus.
 // - Sisi belakang: tabel rekap jadwal mengawas. REVISI Sep 2026 (2): sel
 //   "Hari / Tanggal" digabung (merge) tiap hari, jadi sesi ke-2 di hari
 //   yang sama gak makan baris/tempat sendiri. Garis footer di sisi
@@ -504,90 +505,117 @@ function gambarGarisGanda(doc, xKiri, xKanan, y, tebalDiAtas = true) {
   return y + jarak;
 }
 
-/**
- * Warna ornamen hexagon di 4 sudut sisi depan (RGB), nuansa biru kayak
- * name tag referensi. Mau versi abu-abu (hemat tinta / print hitam-putih)?
- * Ganti 3 nilai ini, contoh:
- * terang: [205, 205, 205], sedang: [140, 140, 140], gelap: [70, 70, 70]
- */
-const WARNA_HEX = {
-  terang: [140, 200, 240],
-  sedang: [72, 165, 225],
-  gelap: [30, 120, 200],
+/** Warna bingkai & motif sudut sisi depan (RGB). Mau hitam? Ganti jadi [0, 0, 0]. */
+const WARNA_BINGKAI = [24, 90, 170];
+
+/** Ukuran dasar motif sudut (mm, sebelum diskala). */
+const MOTIF = {
+  m: 2.5, // jarak tepi luar motif dari tepi kartu
+  w: 1.6, // tebal pita
+  g: 0.45, // lebar celah putih antar pita
+  K: 16.5, // panjang lengan "L"
+  jangkauan: 16.5, // seberapa jauh motif menjorok dari tepi kartu (buat skala dinamis)
 };
 
 /**
- * Potong poligon terhadap garis "koordinat sumbu >= 0" (Sutherland-Hodgman,
- * 1 sisi). Dipakai buat motong hexagon yang keluar dari tepi kartu, karena
- * jsPDF gak punya clipping yang bisa diandalin di semua versi.
- * @param {Array<[number,number]>} titik - titik-titik poligon [u, v]
- * @param {0|1} sumbu - 0 = potong di u=0, 1 = potong di v=0
+ * Motif sudut TEBAL bergaya anyaman diagonal (basket weave): 1 pita
+ * berbentuk "L" yang nempel di 2 tepi kartu, plus anyaman diagonal 2x2
+ * (2 pita "rel" sejajar diagonal sudut + 2 pita "palang" tegak lurus
+ * diagonal) yang selang-seling atas-bawah. Celah putih antar pita dibuat
+ * pakai "halo" putih di sekeliling potongan pita yang lewat DI ATAS.
+ *
+ * Semua bentuk dihitung di koordinat lokal (u,v = jarak dari tepi kartu ke
+ * arah DALAM, satuan mm sebelum diskala), lalu dipetakan ke sudut mana pun
+ * lewat sx/sy -> 4 sudut saling cermin. Koordinat (a,b) dipakai buat pita
+ * diagonal: a = jarak sepanjang diagonal sudut, b = geser tegak lurus.
+ *
+ * @param {Object} kartu - { x, y, width, height } (mm)
+ * @param {number} sx - +1 = sudut kiri, -1 = sudut kanan
+ * @param {number} sy - +1 = sudut atas, -1 = sudut bawah
+ * @param {number} k  - skala motif (1 = ukuran penuh, ~15mm dari tepi kartu)
  */
-function potongPoligon(titik, sumbu) {
-  const hasil = [];
-  for (let i = 0; i < titik.length; i++) {
-    const a = titik[i];
-    const b = titik[(i + 1) % titik.length];
-    const aDalam = a[sumbu] >= 0;
-    const bDalam = b[sumbu] >= 0;
-    if (aDalam) hasil.push(a);
-    if (aDalam !== bDalam) {
-      const t = (0 - a[sumbu]) / (b[sumbu] - a[sumbu]);
-      hasil.push([a[0] + t * (b[0] - a[0]), a[1] + t * (b[1] - a[1])]);
-    }
-  }
-  return hasil;
+function gambarMotifSudut(doc, { x, y, width, height }, sx, sy, k) {
+  const biru = WARNA_BINGKAI;
+  const putih = [255, 255, 255];
+  const S = Math.SQRT1_2;
+
+  const P = (u, v) => [
+    sx > 0 ? x + u * k : x + width - u * k,
+    sy > 0 ? y + v * k : y + height - v * k,
+  ];
+  const poligon = (titikUV, warna) => {
+    const t = titikUV.map(([u, v]) => P(u, v));
+    const segmen = t.slice(1).map(([px, py], i) => [px - t[i][0], py - t[i][1]]);
+    doc.setFillColor(...warna);
+    doc.lines(segmen, t[0][0], t[0][1], [1, 1], "F", true);
+  };
+  const AB = (a, b) => [(a + b) * S, (a - b) * S]; // (a,b) -> (u,v)
+  const kotakAB = (a1, a2, b1, b2) => [AB(a1, b1), AB(a2, b1), AB(a2, b2), AB(a1, b2)];
+
+  const { m, w, g, K } = MOTIF;
+
+  // Pita "L" di 2 tepi kartu, ujung lengan dipotong miring 45 derajat
+  poligon(
+    [
+      [m, m],
+      [K, m],
+      [K - w, m + w],
+      [m + w, m + w],
+      [m + w, K - w],
+      [m, K],
+    ],
+    biru
+  );
+
+  // Anyaman diagonal 2x2
+  const b0 = 2.6; // posisi 2 rel: b = -b0 dan +b0
+  const B = 5.2; // setengah panjang palang
+  const rel = [-b0, b0];
+  const palang = [11.4, 16.4]; // posisi a tiap palang (jarak antar palang 5mm)
+  const aMulai = palang[0] - w / 2 - g; // rel "menyelip" di bawah palang pertama (gak ada serpihan)
+  const aAkhir = 18.9;
+
+  rel.forEach((bc) => poligon(kotakAB(aMulai, aAkhir, bc - w / 2, bc + w / 2), biru));
+  palang.forEach((ak) => poligon(kotakAB(ak - w / 2, ak + w / 2, -B, B), biru));
+
+  // Over-under di 4 titik silang (papan catur): gambar ulang potongan pendek
+  // pita yang "menang", halo putih dulu biar motong pita di bawahnya.
+  const pj = w / 2 + g + 0.3;
+  rel.forEach((bc, j) =>
+    palang.forEach((ak, i) => {
+      if ((j + i) % 2 === 0) {
+        // rel di atas palang
+        poligon(kotakAB(ak - pj, ak + pj, bc - w / 2 - g, bc + w / 2 + g), putih);
+        poligon(kotakAB(ak - pj, ak + pj, bc - w / 2, bc + w / 2), biru);
+      } else {
+        // palang di atas rel
+        poligon(kotakAB(ak - w / 2 - g, ak + w / 2 + g, bc - pj, bc + pj), putih);
+        poligon(kotakAB(ak - w / 2, ak + w / 2, bc - pj, bc + pj), biru);
+      }
+    })
+  );
 }
 
 /**
- * Gugus honeycomb di 1 sudut kartu -- hexagon GEDE yang menempel di tepi
- * kartu dan KEPOTONG oleh tepi (jadi ada yang setengah hexagon / trapesium,
- * kayak name tag referensi). Ada celah putih tipis antar hexagon.
- *
- * Dihitung di koordinat lokal (u = jarak dari tepi vertikal, v = jarak dari
- * tepi horizontal, keduanya ke arah DALAM kartu), lalu dipetakan ke sudut
- * mana pun lewat sx/sy, jadi 4 sudut = cermin satu sama lain.
- *
- * @param {Object} kartu - { x, y, width, height } kartu (mm)
- * @param {number} sx - +1 = sudut kiri, -1 = sudut kanan
- * @param {number} sy - +1 = sudut atas, -1 = sudut bawah
- * @param {number} r  - jari-jari hexagon (pusat ke sudut lancip, mm)
+ * Bingkai sisi depan: garis TIPIS mengelilingi kartu + motif sudut tebal
+ * (gambarMotifSudut). Garis tipis sejajar dengan lengan L, mulai sedikit
+ * setelah ujung lengan.
  */
-function gambarGugusHexagon(doc, { x, y, width, height }, sx, sy, r) {
-  const w = Math.sqrt(3) * r; // lebar hexagon pointy-top
-  const rGambar = r * 0.9; // dikecilin -> celah putih antar hexagon
-  // u/v dalam satuan lebar (w) & tinggi baris (1.5r). Baris ganjil
-  // digeser setengah lebar (pola honeycomb).
-  const pola = [
-    { u: 0, v: 0, warna: WARNA_HEX.sedang },
-    { u: 1, v: 0, warna: WARNA_HEX.terang },
-    { u: 2, v: 0, warna: WARNA_HEX.sedang },
-    { u: 0.5, v: 1, warna: WARNA_HEX.gelap },
-    { u: 1.5, v: 1, warna: WARNA_HEX.sedang },
-    { u: 0, v: 2, warna: WARNA_HEX.terang },
-    { u: 1, v: 2, warna: WARNA_HEX.gelap },
-  ];
+function gambarBingkaiBiru(doc, kartu, k) {
+  const { x, y, width, height } = kartu;
+  gambarMotifSudut(doc, kartu, 1, 1, k);
+  gambarMotifSudut(doc, kartu, -1, 1, k);
+  gambarMotifSudut(doc, kartu, 1, -1, k);
+  gambarMotifSudut(doc, kartu, -1, -1, k);
 
-  pola.forEach(({ u, v, warna }) => {
-    const pusatU = u * w;
-    const pusatV = v * 1.5 * r;
-    let titik = [];
-    for (let k = 0; k < 6; k++) {
-      const sudut = ((-90 + 60 * k) * Math.PI) / 180;
-      titik.push([pusatU + rGambar * Math.cos(sudut), pusatV + rGambar * Math.sin(sudut)]);
-    }
-    titik = potongPoligon(potongPoligon(titik, 0), 1); // potong di tepi kartu
-    if (titik.length < 3) return;
-
-    // lokal (u,v) -> koordinat halaman
-    const halaman = titik.map(([pu, pv]) => [
-      sx > 0 ? x + pu : x + width - pu,
-      sy > 0 ? y + pv : y + height - pv,
-    ]);
-    const segmen = halaman.slice(1).map(([px, py], i) => [px - halaman[i][0], py - halaman[i][1]]);
-    doc.setFillColor(...warna);
-    doc.lines(segmen, halaman[0][0], halaman[0][1], [1, 1], "F", true);
-  });
+  const garisTengah = (MOTIF.m + MOTIF.w / 2) * k; // sejajar tengah lengan L
+  const mulai = (MOTIF.K + 1.2) * k;
+  doc.setDrawColor(...WARNA_BINGKAI);
+  doc.setLineWidth(0.4);
+  doc.line(x + mulai, y + garisTengah, x + width - mulai, y + garisTengah); // atas
+  doc.line(x + mulai, y + height - garisTengah, x + width - mulai, y + height - garisTengah); // bawah
+  doc.line(x + garisTengah, y + mulai, x + garisTengah, y + height - mulai); // kiri
+  doc.line(x + width - garisTengah, y + mulai, x + width - garisTengah, y + height - mulai); // kanan
 }
 
 /**
@@ -607,7 +635,7 @@ function gambarSatuKartuPengawas(doc, { x, y, width, height }, { guru, jenisUjia
   doc.setLineWidth(0.2);
   doc.rect(x, y, width, height);
 
-  const padding = 6;
+  const padding = 9; // lebih lega dari sisi belakang, karena ada bingkai
   const innerLeft = x + padding;
   const innerRight = x + width - padding;
   const innerWidth = innerRight - innerLeft;
@@ -647,28 +675,13 @@ function gambarSatuKartuPengawas(doc, { x, y, width, height }, { guru, jenisUjia
 
   const headerBawah = gambarGarisGanda(doc, innerLeft, innerRight, cy);
 
-  // ---- Footer: garis ganda versi terbalik, posisinya CERMIN dari garis
-  // header (jarak dari tepi bawah = jarak header dari tepi atas), jadi
-  // ada "band" kosong di bawahnya buat ornamen sudut bawah ----
-  const footerAtas = y + height - (headerBawah - y);
-  gambarGarisGanda(doc, innerLeft, innerRight, footerAtas, false);
-
-  // ---- Ornamen hexagon 4 sudut (nempel di tepi kartu). Ukuran dinamis:
-  // maksimal r=4.2mm, mengecil otomatis kalau teks header lebar biar gak
-  // nabrak teks. Lebar gugus terlebar = 2.5 x lebar hexagon = 4.33 x r. ----
+  // ---- Bingkai tipis + motif sudut tebal. Garis footer DIHAPUS (revisi
+  // Sep 2026): sisi bawah cukup garis bingkai. Skala motif dinamis (maks 1,
+  // motif penuh ~16mm dari tepi) -- mengecil kalau teks header lebar biar
+  // gak nabrak. ----
   const sisiKosong = (width - lebarTeksHeader) / 2;
-  const rHex = Math.min(4.2, Math.max(2.2, (sisiKosong - 2) / (2.5 * Math.sqrt(3))));
-  const kartuBox = { x, y, width, height };
-  gambarGugusHexagon(doc, kartuBox, 1, 1, rHex);
-  gambarGugusHexagon(doc, kartuBox, -1, 1, rHex);
-  gambarGugusHexagon(doc, kartuBox, 1, -1, rHex);
-  gambarGugusHexagon(doc, kartuBox, -1, -1, rHex);
-
-  // Gambar ulang border kartu (garis potong) di atas ornamen, biar tetap
-  // kelihatan tegas di sudut-sudut yang ketutup hexagon.
-  doc.setDrawColor(...PDF_COLORS.border);
-  doc.setLineWidth(0.2);
-  doc.rect(x, y, width, height);
+  const skalaMotif = Math.min(1, Math.max(0.6, (sisiKosong - 2) / MOTIF.jangkauan));
+  gambarBingkaiBiru(doc, { x, y, width, height }, skalaMotif);
 
   // ============================================================
   // BLOK IDENTITAS -- ukur dulu semua elemen, baru di-center.
@@ -720,7 +733,8 @@ function gambarSatuKartuPengawas(doc, { x, y, width, height }, { guru, jenisUjia
 
   // Center vertikal, digeser sedikit ke atas (45% bukan 50%) -- secara
   // visual konten yang pas-tengah matematis selalu keliatan agak turun.
-  const sisaRuang = footerAtas - headerBawah - tinggiBlok;
+  const ruangBawah = y + height - padding;
+  const sisaRuang = ruangBawah - headerBawah - tinggiBlok;
   let by = headerBawah + Math.max(4, sisaRuang * 0.45);
 
   // ---- Badge "PENGAWAS UJIAN" ----

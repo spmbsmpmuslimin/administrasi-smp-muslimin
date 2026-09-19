@@ -1,14 +1,17 @@
 // setting/kelola-ujian/jadwal-pengawas/JadwalPengawasTab.js
-// Komponen isi untuk urusan JADWAL SESI + PENGAWAS. Punya 4 tab internal:
+// Komponen isi untuk urusan JADWAL SESI + PENGAWAS. Punya 5 tab internal:
 // 1. "Jadwal Sesi"     -- kelola daftar sesi ujian (tanggal, jam, mapel).
 // 2. "Daftar Pengawas" -- kode singkat per guru (embed dari DaftarPengawasTab.js).
-// 3. "Jadwal Ngawas"   -- assign guru pengawas per ruangan untuk tiap hari.
+// 3. "Kelola Jadwal Pengawas" (key "pengawas") -- assign guru pengawas per
+//    ruangan untuk tiap hari (dulu berlabel "Jadwal Ngawas").
 // 4. "Rekap"           -- preview semua hari & sesi sekaligus.
+// 5. "Jadwal Pengawas" (key "lihat") -- tampilan lihat/cetak + export Excel &
+//    PDF landscape, plus tabel Daftar Kode Pengawas (JadwalPengawasLihatView.js).
 //
 // PENTING: sejak kartu sub-fitur disusun ulang biar isinya nyambung sama
 // judulnya, komponen ini NGGAK lagi dipakai utuh di satu layar. Yang manggil:
 //   - JadwalRuanganTab.js   (kartu "Jadwal & Pembagian Ruangan") -> tabPaksa="jadwal"
-//   - PesertaPengawasTab.js (kartu "Peserta & Pengawas")         -> tabPaksa="daftar"|"pengawas"|"rekap"
+//   - PesertaPengawasTab.js (kartu "Peserta & Pengawas")         -> tabPaksa="daftar"|"pengawas"|"rekap"|"lihat"
 // Prop `tabPaksa` bikin tab bar internal disembunyiin & tab aktif ditentuin
 // parent. Kalau `onBack` nggak dikirim, tombol balik & header jenis ujian juga
 // disembunyiin, karena kartu pemanggilnya udah punya sendiri. Tanpa dua prop
@@ -30,6 +33,7 @@ import {
   Shuffle,
   ClipboardList,
   Table2,
+  Printer,
   AlertTriangle,
 } from "lucide-react";
 import { supabase } from "../../../supabaseClient";
@@ -55,6 +59,7 @@ import {
   bersihkanPenugasanPengawasTidakValid,
 } from "./jadwalPengawasSupabase";
 import DaftarPengawasTab from "./DaftarPengawasTab";
+import JadwalPengawasLihatView from "./JadwalPengawasLihatView";
 
 const JENIS_UJIAN_LABEL = {
   PSAS: "PSAS - Penilaian Sumatif Akhir Semester",
@@ -126,7 +131,7 @@ const JadwalPengawasTab = ({ jenisUjian, showToast, onBack, tabPaksa = null }) =
   const [penugasanTidakValid, setPenugasanTidakValid] = useState([]);
   const [sedangBersihkanPenugasan, setSedangBersihkanPenugasan] = useState(false);
 
-  // Tab internal komponen ini: "jadwal" | "daftar" | "pengawas" | "rekap".
+  // Tab internal komponen ini: "jadwal" | "daftar" | "pengawas" | "rekap" | "lihat".
   // Kalau parent ngirim prop `tabPaksa`, tab bar internal disembunyiin dan
   // tab aktif ditentuin sepenuhnya sama parent -- dipakai waktu komponen ini
   // di-embed di kartu (JadwalRuanganTab / PesertaPengawasTab) yang punya tab
@@ -294,7 +299,7 @@ const JadwalPengawasTab = ({ jenisUjian, showToast, onBack, tabPaksa = null }) =
       const jumlah = await bersihkanPenugasanPengawasTidakValid(supabase, idList);
       setPenugasanTidakValid([]);
       if (jadwalPengawasAktif) await muatPengawasUntukJadwal(jadwalPengawasAktif);
-      if (tabAktif === "rekap") await muatRekapSemua();
+      if (tabAktif === "rekap" || tabAktif === "lihat") await muatRekapSemua();
       showToast?.(`${jumlah} penugasan pengawas basi berhasil dibersihkan.`, "success");
     } catch (err) {
       console.error(err);
@@ -369,10 +374,11 @@ const JadwalPengawasTab = ({ jenisUjian, showToast, onBack, tabPaksa = null }) =
   }, [daftarJadwal, showToast]);
 
   // Muat ulang tiap kali tab "Rekap" dibuka -- termasuk setelah admin
-  // baru generate/koreksi di tab "Jadwal Ngawas" lalu balik ke sini, jadi
+  // baru generate/koreksi di tab "Kelola Jadwal Pengawas" lalu balik ke sini, jadi
   // rekap selalu nunjukin data paling baru.
   useEffect(() => {
-    if (tabAktif !== "rekap") return;
+    // Tab "lihat" (Jadwal Pengawas) butuh data yang sama dengan Rekap.
+    if (tabAktif !== "rekap" && tabAktif !== "lihat") return;
     muatRekapSemua();
   }, [tabAktif, muatRekapSemua]);
 
@@ -387,7 +393,7 @@ const JadwalPengawasTab = ({ jenisUjian, showToast, onBack, tabPaksa = null }) =
     }
   }, [tabAktif, jadwalPerHari, hariAktif]);
 
-  // Sama kayak default hari aktif di tab "Jadwal Ngawas" di atas, tapi
+  // Sama kayak default hari aktif di tab "Kelola Jadwal Pengawas" di atas, tapi
   // buat state hari yang dipakai tab "Rekap" -- dipisah state-nya
   // (bukan gantian pakai hariAktif) supaya pilihan hari di 2 tab ini
   // independen satu sama lain.
@@ -773,7 +779,7 @@ const JadwalPengawasTab = ({ jenisUjian, showToast, onBack, tabPaksa = null }) =
                     : "border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
                 }`}
               >
-                <Users size={15} /> Jadwal Ngawas
+                <Users size={15} /> Kelola Jadwal Pengawas
               </button>
               <button
                 onClick={() => setTabAktif("rekap")}
@@ -784,6 +790,16 @@ const JadwalPengawasTab = ({ jenisUjian, showToast, onBack, tabPaksa = null }) =
                 }`}
               >
                 <Table2 size={15} /> Rekap
+              </button>
+              <button
+                onClick={() => setTabAktif("lihat")}
+                className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
+                  tabAktif === "lihat"
+                    ? "border-indigo-600 text-indigo-600 dark:text-indigo-400"
+                    : "border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
+                }`}
+              >
+                <Printer size={15} /> Jadwal Pengawas
               </button>
             </div>
           )}
@@ -848,16 +864,27 @@ const JadwalPengawasTab = ({ jenisUjian, showToast, onBack, tabPaksa = null }) =
                     </thead>
                     <tbody>
                       {jadwalTerurut.map((j, idx) => {
-                        const tanggalSama =
-                          idx > 0 && jadwalTerurut[idx - 1].tanggal === j.tanggal;
+                        const tanggalSama = idx > 0 && jadwalTerurut[idx - 1].tanggal === j.tanggal;
+                        // Sesi di tanggal yang sama digabung (rowSpan) jadi 1 sel
+                        // Hari/Tanggal -- ditaruh di baris pertama hari itu,
+                        // rata kiri & tengah secara vertikal. jadwalTerurut sudah
+                        // terurut per tanggal, jadi sesi 1 hari pasti berurutan.
+                        const jumlahSesiHari = jadwalTerurut.filter(
+                          (x) => x.tanggal === j.tanggal
+                        ).length;
                         return (
                           <tr
                             key={j.id}
                             className="odd:bg-white even:bg-gray-50 dark:odd:bg-gray-900 dark:even:bg-gray-800/40 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors"
                           >
-                            <td className="border border-gray-200 dark:border-gray-700 py-2.5 px-3 align-top whitespace-nowrap text-gray-700 dark:text-gray-300">
-                              {tanggalSama ? "" : formatHariTanggal(j.tanggal)}
-                            </td>
+                            {!tanggalSama && (
+                              <td
+                                rowSpan={jumlahSesiHari}
+                                className="border border-gray-200 dark:border-gray-700 py-2.5 px-3 align-middle text-left whitespace-nowrap text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-900"
+                              >
+                                {formatHariTanggal(j.tanggal)}
+                              </td>
+                            )}
                             <td className="border border-gray-200 dark:border-gray-700 py-2.5 px-3 align-top text-center text-gray-700 dark:text-gray-300">
                               {j.sesi_ke}
                             </td>
@@ -1149,6 +1176,20 @@ const JadwalPengawasTab = ({ jenisUjian, showToast, onBack, tabPaksa = null }) =
             </div>
           )}
 
+          {tabAktif === "lihat" && (
+            <JadwalPengawasLihatView
+              jenisUjian={jenisUjian}
+              tahunAjaran={opsiTahunAjaran.find((ta) => ta.id === tahunAjaranId)}
+              daftarJadwal={daftarJadwal}
+              daftarRuangan={daftarRuangan}
+              daftarGuru={daftarGuru}
+              rekapPerJadwal={rekapPerJadwal}
+              grades={gradesUjianIni}
+              loading={loadingRekap}
+              showToast={showToast}
+            />
+          )}
+
           {tabAktif === "rekap" && (
             <div>
               {daftarJadwal.length === 0 ? (
@@ -1162,7 +1203,7 @@ const JadwalPengawasTab = ({ jenisUjian, showToast, onBack, tabPaksa = null }) =
               ) : (
                 <>
                   {/* ---- Pilih hari pelaksanaan -- pola sama persis kayak
-                      selector hari di tab "Jadwal Ngawas", biar konsisten:
+                      selector hari di tab "Kelola Jadwal Pengawas", biar konsisten:
                       nama-nama hari tampil sebagai tombol di atas, lalu
                       cuma rekap hari yang dipilih yang ditampilkan di
                       bawahnya (dulu semua hari ditumpuk sekaligus). ---- */}
@@ -1250,11 +1291,15 @@ const JadwalPengawasTab = ({ jenisUjian, showToast, onBack, tabPaksa = null }) =
                                       )}
                                     </td>
                                     {sesiHariIni.map((s) => {
-                                      const pengawas = rekapPerJadwal[s.id]?.[r.nomor_ruangan] || [];
+                                      const pengawas =
+                                        rekapPerJadwal[s.id]?.[r.nomor_ruangan] || [];
                                       // Ruang ini bisa berisi >1 jenjang (versi rantai/silang),
                                       // jadi mapel yang berlaku juga bisa >1 sekaligus -- lihat
                                       // mataPelajaranUntukRuangan() di jadwalPengawasSupabase.js.
-                                      const mapelPerJenjang = mataPelajaranUntukRuangan(s, r.jenjangSet);
+                                      const mapelPerJenjang = mataPelajaranUntukRuangan(
+                                        s,
+                                        r.jenjangSet
+                                      );
                                       const adaOverride = mapelPerJenjang.some(
                                         (m) => m.mapel !== s.mata_pelajaran
                                       );

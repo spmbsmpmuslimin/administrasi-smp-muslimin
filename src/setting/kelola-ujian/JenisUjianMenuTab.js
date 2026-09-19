@@ -20,16 +20,18 @@
 // lagi sub-fitur ini di sini.
 //
 // Skema Kartu (lihat dokumentasi "dokumentasi-kelola-ujian.md"):
-// 1. Jadwal, Peserta & Pembagian Ruangan (aktif, sebelumnya bernama "Jadwal
-//    & Pembagian Ruangan" -- diganti karena Export Daftar Peserta udah
-//    pindah ke kartu ini) -- 5 tab: Jadwal Sesi, Komposisi Ruangan,
-//    Pembagian Ruangan (quota + simpan), Preview Per Ruangan, dan Export
+// 1. Peserta & Pembagian Ruangan (aktif, sebelumnya "Jadwal, Peserta &
+//    Pembagian Ruangan" -- kata "Jadwal" dibuang karena tab Jadwal Sesi
+//    sudah PINDAH ke kartu 2) -- 5 tab: Komposisi Ruangan, Pembagian
+//    Ruangan (quota + simpan), Preview Per Ruangan, Denah Duduk, dan Export
 //    Daftar Peserta. Wadahnya JadwalRuanganTab.js, isinya di-embed dari
-//    JadwalPengawasTab.js & PembagianRuanganTab.js.
-// 2. Daftar & Jadwal Pengawas (aktif, sebelumnya bernama "Peserta &
-//    Pengawas" -- diganti karena Export Daftar Peserta udah pindah ke
-//    kartu 1) -- 3 tab: Daftar Pengawas, Jadwal Ngawas, Rekap. Wadahnya
-//    PesertaPengawasTab.js.
+//    PembagianRuanganTab.js. (id kartu tetap "jadwal-ruangan" biar
+//    referensi lain gak putus.)
+// 2. Jadwal Ujian & Pengawas (aktif, sebelumnya "Daftar & Jadwal Pengawas")
+//    -- 5 tab: Jadwal Ujian (sesi: tanggal, jam, mapel), Daftar Pengawas,
+//    Kelola Jadwal Pengawas, Rekap, dan Jadwal Pengawas (lihat/cetak +
+//    export Excel & PDF). Wadahnya PesertaPengawasTab.js. (id kartu tetap
+//    "daftar-pengawas".)
 // 3. Kartu Ujian (aktif)
 // 4. Presensi & Berita Acara (aktif) -- bagian "Laporan" (rekap akhir)
 //    BELUM dibangun, cuma Daftar Hadir + Berita Acara (keduanya PDF form
@@ -80,18 +82,19 @@ const JENIS_UJIAN_LABEL = {
 const SUB_FITUR = [
   {
     id: "jadwal-ruangan",
-    title: "Jadwal, Peserta & Pembagian Ruangan",
+    title: "Peserta & Pembagian Ruangan",
     description:
-      "Atur jadwal sesi ujian per mapel, bandingkan komposisi ruangan, susun & simpan pembagian siswa ke tiap ruangan, cek previewnya, lalu export daftar pesertanya",
-    icon: CalendarClock,
+      "Bandingkan komposisi ruangan, susun & simpan pembagian siswa ke tiap ruangan, cek preview & denah duduk, lalu export daftar pesertanya",
+    icon: DoorOpen,
     status: "done",
     clickable: true,
   },
   {
     id: "daftar-pengawas",
-    title: "Daftar & Jadwal Pengawas",
-    description: "Kelola daftar pengawas, jadwal ngawas per hari, dan rekapnya",
-    icon: DoorOpen,
+    title: "Jadwal Ujian & Pengawas",
+    description:
+      "Atur jadwal sesi ujian per mapel, kelola daftar & jadwal pengawas per ruangan, lihat rekapnya, lalu cetak/export jadwal pengawas (Excel & PDF)",
+    icon: CalendarClock,
     status: "done",
     clickable: true,
   },

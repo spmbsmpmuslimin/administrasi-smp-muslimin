@@ -1,19 +1,23 @@
 // setting/kelola-ujian/JadwalRuanganTab.js
-// Kartu 1 dari Manajemen Ujian: "Jadwal, Peserta & Pembagian Ruangan"
-// (nama baru, sebelumnya "Jadwal & Pembagian Ruangan" -- diganti karena
-// Export Daftar Peserta pindah ke sini, lihat tab 5 di bawah).
+// Kartu 1 dari Manajemen Ujian: urusan PESERTA & PEMBAGIAN RUANGAN.
+//
+// PERUBAHAN: tab "Jadwal Sesi" (Jadwal Ujian) SUDAH PINDAH ke kartu
+// "Daftar & Jadwal Pengawas" (PesertaPengawasTab.js) sebagai tab "Jadwal
+// Ujian". Datanya tetap 1 (tabel ujian_jadwal), cuma tempat ngeditnya yang
+// pindah. Karena judul kartu ini sekarang nggak bahas jadwal lagi, label
+// kartunya (di daftar kartu Manajemen Ujian) sebaiknya ikut diganti, mis.
+// jadi "Peserta & Pembagian Ruangan".
 //
 // Kartu ini cuma WADAH (container) -- isinya nggak ditulis ulang di sini,
-// tapi diambil dari 2 komponen yang udah ada, masing-masing dikunci ke
-// bagian yang relevan sama judul kartu:
-//   1. "Jadwal Sesi"           -> JadwalPengawasTab (tabPaksa="jadwal")
-//   2. "Komposisi Ruangan"     -> PembagianRuanganTab (mode="ruangan", view "komposisi")
-//   3. "Pembagian Ruangan"     -> PembagianRuanganTab (mode="ruangan", tab "edit")
-//   4. "Preview Per Ruangan"   -> PembagianRuanganTab (mode="ruangan", tab "preview")
-//   5. "Denah Duduk"           -> PembagianRuanganTab (mode="ruangan", tab "denah")
-//   6. "Export Daftar Peserta" -> PembagianRuanganTab (mode="ruangan", tab "export")
+// tapi diambil dari komponen PembagianRuanganTab, dikunci ke bagian yang
+// relevan sama judul kartu:
+//   1. "Komposisi Ruangan"     -> PembagianRuanganTab (mode="ruangan", view "komposisi")
+//   2. "Pembagian Ruangan"     -> PembagianRuanganTab (mode="ruangan", tab "edit")
+//   3. "Preview Per Ruangan"   -> PembagianRuanganTab (mode="ruangan", tab "preview")
+//   4. "Denah Duduk"           -> PembagianRuanganTab (mode="ruangan", tab "denah")
+//   5. "Export Daftar Peserta" -> PembagianRuanganTab (mode="ruangan", tab "export")
 //
-// Tab 6 (Export) PINDAH dari kartu "Daftar & Jadwal Pengawas" (sebelumnya
+// Tab Export PINDAH dari kartu "Daftar & Jadwal Pengawas" (sebelumnya
 // "Peserta & Pengawas") ke sini, sengaja diletakkan PALING TERAKHIR, setelah
 // Preview & Denah Duduk -- alurnya jadi: susun -> lihat preview per ruangan
 // -> lihat denah duduk -> langsung export/cetak, tanpa pindah kartu. Karena
@@ -22,30 +26,21 @@
 // yang belum diklik "Simpan ke Database" -- beda dari behavior lama di
 // kartu sebelah yang cuma baca data tersimpan.
 //
-// Tab 5 (Denah Duduk) MURNI tampilan (baca hasilLive yang sama kayak
+// Tab Denah Duduk MURNI tampilan (baca hasilLive yang sama kayak
 // Preview & Export, cuma disusun jadi grid kursi, bukan tabel) -- lihat
 // komentar di PembagianRuanganTab.js buat detail implementasinya.
 //
-// Sisa tab yang dulu ada di sini (Daftar Pengawas, Jadwal Ngawas, Rekap)
-// tetap di kartu "Daftar & Jadwal Pengawas" (PesertaPengawasTab.js).
+// Sisa tab pengawas (Jadwal Ujian, Daftar Pengawas, Kelola Jadwal Pengawas,
+// Rekap, Jadwal Pengawas) ada di kartu "Daftar & Jadwal Pengawas"
+// (PesertaPengawasTab.js).
 //
-// CATATAN: pindah dari tab "Jadwal Sesi" ke tab ruangan (atau sebaliknya)
-// bikin komponen yang ditinggal ke-unmount, jadi quota yang BELUM disimpan
-// bakal hilang. Pindah antar 5 tab ruangan (Komposisi <-> Pembagian <->
-// Preview <-> Denah Duduk <-> Export) aman, karena kelimanya komponen yang
-// sama -- cuma ganti prop.
+// CATATAN: pindah antar 5 tab ini (Komposisi <-> Pembagian <-> Preview <->
+// Denah Duduk <-> Export) aman, karena kelimanya komponen yang sama -- cuma
+// ganti prop, jadi quota yang BELUM disimpan tidak hilang. (Dulu ada risiko
+// hilang waktu pindah ke tab "Jadwal Sesi", tapi tab itu sudah tidak di sini.)
 
 import React, { useState } from "react";
-import {
-  ChevronLeft,
-  CalendarClock,
-  LayoutGrid,
-  DoorOpen,
-  Eye,
-  Armchair,
-  FileSpreadsheet,
-} from "lucide-react";
-import JadwalPengawasTab from "./jadwal-pengawas/JadwalPengawasTab";
+import { ChevronLeft, LayoutGrid, DoorOpen, Eye, Armchair, FileSpreadsheet } from "lucide-react";
 import PembagianRuanganTab from "./pembagian-ruangan/PembagianRuanganTab";
 
 const JENIS_UJIAN_LABEL = {
@@ -55,7 +50,6 @@ const JENIS_UJIAN_LABEL = {
 };
 
 const TAB_LIST = [
-  { id: "jadwal", label: "Jadwal Sesi", icon: CalendarClock },
   { id: "komposisi", label: "Komposisi Ruangan", icon: LayoutGrid },
   { id: "pembagian", label: "Pembagian Ruangan", icon: DoorOpen },
   { id: "preview", label: "Preview Per Ruangan", icon: Eye },
@@ -64,7 +58,7 @@ const TAB_LIST = [
 ];
 
 const JadwalRuanganTab = ({ jenisUjian, showToast, onBack }) => {
-  const [tabAktif, setTabAktif] = useState("jadwal");
+  const [tabAktif, setTabAktif] = useState("komposisi");
 
   return (
     <div className="p-4 sm:p-6">
@@ -82,7 +76,7 @@ const JadwalRuanganTab = ({ jenisUjian, showToast, onBack }) => {
         </p>
       </div>
 
-      {/* flex-wrap supaya 6 tab ini nggak kepotong di layar HP sempit */}
+      {/* flex-wrap supaya 5 tab ini nggak kepotong di layar HP sempit */}
       <div className="flex flex-wrap gap-1 mb-5 border-b border-gray-200 dark:border-gray-700">
         {TAB_LIST.map((tab) => {
           const Icon = tab.icon;
@@ -102,25 +96,21 @@ const JadwalRuanganTab = ({ jenisUjian, showToast, onBack }) => {
         })}
       </div>
 
-      {tabAktif === "jadwal" ? (
-        <JadwalPengawasTab jenisUjian={jenisUjian} showToast={showToast} tabPaksa="jadwal" />
-      ) : (
-        <PembagianRuanganTab
-          jenisUjian={jenisUjian}
-          showToast={showToast}
-          mode="ruangan"
-          viewPaksa={tabAktif === "komposisi" ? "komposisi" : "pembagian"}
-          tabPaksa={
-            tabAktif === "preview"
-              ? "preview"
-              : tabAktif === "denah"
-                ? "denah"
-                : tabAktif === "export"
-                  ? "export"
-                  : "edit"
-          }
-        />
-      )}
+      <PembagianRuanganTab
+        jenisUjian={jenisUjian}
+        showToast={showToast}
+        mode="ruangan"
+        viewPaksa={tabAktif === "komposisi" ? "komposisi" : "pembagian"}
+        tabPaksa={
+          tabAktif === "preview"
+            ? "preview"
+            : tabAktif === "denah"
+              ? "denah"
+              : tabAktif === "export"
+                ? "export"
+                : "edit"
+        }
+      />
     </div>
   );
 };

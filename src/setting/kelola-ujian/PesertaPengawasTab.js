@@ -3,11 +3,15 @@
 // sebelumnya "Peserta & Pengawas" -- diganti karena isinya sekarang murni
 // Pengawas, gak ada urusan Peserta lagi di kartu ini).
 //
-// Kartu ini cuma WADAH (container) buat JadwalPengawasTab, dikunci ke 3
-// tab PENGAWAS lewat prop tabPaksa:
-//   1. "Daftar Pengawas"
-//   2. "Jadwal Ngawas"
-//   3. "Rekap"
+// Kartu ini cuma WADAH (container) buat JadwalPengawasTab, dikunci ke 5
+// tab lewat prop tabPaksa:
+//   1. "Jadwal Ujian" (key "jadwal" -- sesi ujian: tanggal, jam, mapel.
+//      PINDAHAN dari kartu Jadwal Ruangan, jadi sesi diedit di sini)
+//   2. "Daftar Pengawas"
+//   3. "Kelola Jadwal Pengawas" (dulu "Jadwal Ngawas")
+//   4. "Rekap"
+//   5. "Jadwal Pengawas" (BARU -- lihat/cetak + export Excel & PDF landscape,
+//      plus Daftar Kode Pengawas di halaman 2)
 //
 // "Export Daftar Peserta" yang dulu ada di sini SUDAH PINDAH ke kartu
 // "Jadwal, Peserta & Pembagian Ruangan" (JadwalRuanganTab.js), ditaruh sebagai tab
@@ -15,7 +19,7 @@
 // ruangannya (susun -> preview -> export), tanpa pindah kartu.
 
 import React, { useState } from "react";
-import { ChevronLeft, ClipboardList, Users, Table2 } from "lucide-react";
+import { ChevronLeft, CalendarClock, ClipboardList, Users, Table2, Printer } from "lucide-react";
 import JadwalPengawasTab from "./jadwal-pengawas/JadwalPengawasTab";
 
 const JENIS_UJIAN_LABEL = {
@@ -27,13 +31,15 @@ const JENIS_UJIAN_LABEL = {
 // id di sini nyambung ke tab internal JadwalPengawasTab.js -- dikirim apa
 // adanya lewat prop tabPaksa, jadi jangan diganti sepihak.
 const TAB_LIST = [
+  { id: "jadwal", label: "Jadwal Ujian", icon: CalendarClock },
   { id: "daftar", label: "Daftar Pengawas", icon: ClipboardList },
-  { id: "pengawas", label: "Jadwal Ngawas", icon: Users },
+  { id: "pengawas", label: "Kelola Jadwal Pengawas", icon: Users },
   { id: "rekap", label: "Rekap", icon: Table2 },
+  { id: "lihat", label: "Jadwal Pengawas", icon: Printer },
 ];
 
 const PesertaPengawasTab = ({ jenisUjian, showToast, onBack }) => {
-  const [tabAktif, setTabAktif] = useState("daftar");
+  const [tabAktif, setTabAktif] = useState("jadwal");
 
   return (
     <div className="p-4 sm:p-6">
@@ -51,7 +57,7 @@ const PesertaPengawasTab = ({ jenisUjian, showToast, onBack }) => {
         </p>
       </div>
 
-      {/* 3 tab -- flex-wrap supaya turun ke baris berikutnya di layar HP,
+      {/* 5 tab -- flex-wrap supaya turun ke baris berikutnya di layar HP,
       bukan kepotong. */}
       <div className="flex flex-wrap gap-1 mb-5 border-b border-gray-200 dark:border-gray-700">
         {TAB_LIST.map((tab) => {
