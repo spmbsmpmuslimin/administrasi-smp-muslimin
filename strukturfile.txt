@@ -1,9 +1,9 @@
 STRUKTUR SISTEM
-Di-download dari UI: 19 Sep 2026, 17.01
+Di-download dari UI: 20 Sep 2026, 12.50
 
 ======================================================================
 STRUKTUR PROJECT (src/)
-Terakhir di-generate: 19 Sep 2026, 17.01
+Terakhir di-generate: 20 Sep 2026, 12.49
 ======================================================================
 |-- src
 |   |-- assets
@@ -79,7 +79,8 @@ Terakhir di-generate: 19 Sep 2026, 17.01
 |   |   |-- PreviewNilai.js
 |   |   |-- PreviewRaport.js
 |   |   |-- RaportConfig.js
-|   |   `-- RaportPage.js
+|   |   |-- RaportPage.js
+|   |   `-- eraportLabels.js
 |   |-- konseling
 |   |   |-- home-visit
 |   |   |   |-- HomeVisit.js
@@ -249,11 +250,11 @@ Terakhir di-generate: 19 Sep 2026, 17.01
 |   |   |   |   |-- KartuUjianTab.js
 |   |   |   |   |-- LaporanRekapAkhirTab.js
 |   |   |   |   |-- PresensiBeritaAcaraTab.js
+|   |   |   |   |-- ProgramKerjaPelaksanaanTab.js
 |   |   |   |   |-- ProgramKerjaTab.js
 |   |   |   |   |-- anggaranBiayaSupabase.js
 |   |   |   |   |-- kartuUjianPdf.js
 |   |   |   |   |-- kartuUjianSupabase.js
-|   |   |   |   |-- laporanRekapAkhirPdf.js
 |   |   |   |   |-- laporanRekapAkhirSupabase.js
 |   |   |   |   |-- presensiBeritaAcaraPdf.js
 |   |   |   |   |-- presensiBeritaAcaraSupabase.js
@@ -266,6 +267,10 @@ Terakhir di-generate: 19 Sep 2026, 17.01
 |   |   |   |   |-- jadwalPengawasExcel.js
 |   |   |   |   |-- jadwalPengawasPdf.js
 |   |   |   |   `-- jadwalPengawasSupabase.js
+|   |   |   |-- laporan-lengkap
+|   |   |   |   |-- LaporanLengkapTab.js
+|   |   |   |   |-- laporanLengkapPdf.js
+|   |   |   |   `-- laporanLengkapSupabase.js
 |   |   |   |-- pembagian-ruangan
 |   |   |   |   |-- DenahDuduk.js
 |   |   |   |   |-- PembagianRuanganTab.js
@@ -371,7 +376,7 @@ Terakhir di-generate: 19 Sep 2026, 17.01
 
 ======================================================================
 STRUKTUR DATABASE
-Terakhir di-generate: 19 Sep 2026, 17.01
+Terakhir di-generate: 20 Sep 2026, 12.49
 ======================================================================
 ## Daftar Tabel Database Supabase
 academic_events : id,title,category_id,start_date,end_date,description,academic_year,semester,created_by,created_at,updated_at

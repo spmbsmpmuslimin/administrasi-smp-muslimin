@@ -33,24 +33,45 @@
 //    export Excel & PDF). Wadahnya PesertaPengawasTab.js. (id kartu tetap
 //    "daftar-pengawas".)
 // 3. Kartu Ujian (aktif)
-// 4. Presensi & Berita Acara (aktif) -- bagian "Laporan" (rekap akhir)
-//    BELUM dibangun, cuma Daftar Hadir + Berita Acara (keduanya PDF form
-//    kosong buat dicetak & diisi manual, lihat PresensiBeritaAcaraTab.js).
-// 5. Kepanitiaan & Regulasi -> sekarang "Program Kerja Pelaksanaan" (aktif) --
-//    dokumen rencana pelaksanaan (dasar hukum, susunan panitia, jadwal per
-//    sesi, pembagian ruang & pengawas reuse dari sub-fitur lain, tata
-//    tertib) untuk bahan pemeriksaan pengawas. Lihat ProgramKerjaTab.js &
-//    programKerjaPdf.js.
-// 6. Anggaran & Biaya (aktif) -- catat rencana anggaran & realisasi biaya
+// 4. Program Kerja Pelaksanaan (aktif) -- SEBELUMNYA 2 kartu terpisah
+//    ("Presensi & Berita Acara" + "Kepanitiaan & Regulasi"/"Program Kerja
+//    Pelaksanaan"), digabung jadi 1 kartu ber-2 tab lewat wrapper
+//    ProgramKerjaPelaksanaanTab.js karena keduanya sama-sama dokumen
+//    pra-ujian dan bikin grid kepenuhan/bingung kalau dipisah:
+//      - Tab "Program Kerja" -> ProgramKerjaTab.js (dasar hukum, susunan
+//        panitia, jadwal per sesi, pembagian ruang & pengawas reuse dari
+//        sub-fitur lain, tata tertib, + PDF sendiri via programKerjaPdf.js)
+//        -- bahan pemeriksaan pengawas.
+//      - Tab "Presensi & Berita Acara" -> PresensiBeritaAcaraTab.js
+//        (cetak PDF form KOSONG Daftar Hadir & Berita Acara per
+//        sesi/ruangan, diisi & TTD manual di kertas).
+//    Kedua komponen anak DIPAKAI APA ADANYA (gak diubah), wrapper cuma
+//    nambahin tab switcher. id kartu tetap "kepanitiaan" biar referensi
+//    lain (mis. ExportSemuaTab checklist) gak putus.
+// 5. Anggaran & Biaya (aktif) -- catat rencana anggaran & realisasi biaya
 //    per pos (ATK, konsumsi, honor pengawas, dst), lihat AnggaranBiayaTab.js.
-// 7. Laporan Rekap Akhir (aktif) -- kumpulan rekap dari sub-fitur lain
-//    (peserta, pengawas, anggaran) + input manual kehadiran & catatan
-//    evaluasi, bahan Laporan Pelaksanaan Ujian. Lihat LaporanRekapAkhirTab.js
-//    & laporanRekapAkhirSupabase.js.
-// 8. Export Semua (PDF) (aktif) -- tombol di kanan atas grid ini (bukan
+// 6. Rekap & Evaluasi (aktif) -- judul kartu SENGAJA gak pakai kata
+//    "Laporan" (dulu "Laporan Rekap Akhir") biar panitia gak ketuker sama
+//    sub-fitur 8 "Laporan Lengkap" -- yang satu tempat ISI data, yang
+//    satu lagi tempat CETAK PDF-nya. Isinya: kumpulan rekap dari sub-fitur
+//    lain (peserta, pengawas, anggaran) + input manual kehadiran & catatan
+//    evaluasi, bahan Laporan Pelaksanaan Ujian. TIDAK PUNYA export PDF
+//    sendiri lagi (lihat sub-fitur 8) -- murni tempat input/preview data.
+//    id internal & nama file tetap "laporan-rekap-akhir" / LaporanRekapAkhirTab.js
+//    (cuma `title` yang ditampilkan ke user yang berubah, biar minim
+//    rename di banyak tempat).
+// 7. Export Semua (PDF) (aktif) -- tombol di kanan atas grid ini (bukan
 //    kartu sub-fitur, karena bukan area kerja tersendiri). Checklist semua
-//    dokumen PDF dari sub-fitur 1-4 & 8, query ulang dari DB (bukan reuse
+//    dokumen PDF dari sub-fitur 1-4 & 6, query ulang dari DB (bukan reuse
 //    state tab lain). Lihat ExportSemuaTab.js & exportSemuaKelolaUjian.js.
+// 8. Laporan Lengkap (aktif) -- kompilasi 1 PDF resmi utuh: Sampul, Kata
+//    Pengantar, Daftar Isi, Pendahuluan, lalu rekap yang REUSE data dari
+//    sub-fitur 6 (Rekap & Evaluasi), dan Penutup dengan tanda tangan
+//    Kepsek (dari school_settings). Ini PENGGANTI export PDF yang dulu
+//    ada di sub-fitur 6 -- folder terpisah karena banyak bagian baru
+//    (Cover, Kata Pengantar, dst) yang gak ada urusannya sama input data.
+//    Lihat laporan-lengkap/LaporanLengkapTab.js, laporanLengkapSupabase.js,
+//    & laporanLengkapPdf.js.
 
 import React, { useState } from "react";
 import {
@@ -59,18 +80,18 @@ import {
   FileText,
   IdCard,
   CalendarClock,
-  FileBarChart2,
   ClipboardCheck,
   Wallet,
   FileDown,
+  FileStack,
 } from "lucide-react";
 import JadwalRuanganTab from "./JadwalRuanganTab";
 import PesertaPengawasTab from "./PesertaPengawasTab";
 import KartuUjianTab from "./dokumen-cetak/KartuUjianTab";
-import PresensiBeritaAcaraTab from "./dokumen-cetak/PresensiBeritaAcaraTab";
 import AnggaranBiayaTab from "./dokumen-cetak/AnggaranBiayaTab";
 import LaporanRekapAkhirTab from "./dokumen-cetak/LaporanRekapAkhirTab";
-import ProgramKerjaTab from "./dokumen-cetak/ProgramKerjaTab";
+import ProgramKerjaPelaksanaanTab from "./dokumen-cetak/ProgramKerjaPelaksanaanTab";
+import LaporanLengkapTab from "./laporan-lengkap/LaporanLengkapTab";
 import ExportSemuaTab from "./ExportSemuaTab";
 
 const JENIS_UJIAN_LABEL = {
@@ -107,17 +128,10 @@ const SUB_FITUR = [
     clickable: true,
   },
   {
-    id: "laporan",
-    title: "Presensi & Berita Acara",
-    description: "Cetak PDF Daftar Hadir & Berita Acara per sesi/ruangan (diisi & TTD manual)",
-    icon: FileBarChart2,
-    status: "done",
-    clickable: true,
-  },
-  {
     id: "kepanitiaan",
     title: "Program Kerja Pelaksanaan",
-    description: "Dasar hukum, susunan panitia, jadwal, tata tertib -- bahan pemeriksaan pengawas",
+    description:
+      "Disusun SEBELUM ujian -- 2 tab: Program Kerja (dasar hukum, panitia, jadwal, tata tertib) & Presensi/Berita Acara (cetak form kosong)",
     icon: FileText,
     status: "done",
     clickable: true,
@@ -125,17 +139,27 @@ const SUB_FITUR = [
   {
     id: "anggaran-biaya",
     title: "Anggaran & Biaya",
-    description: "Catat rencana anggaran & realisasi biaya per pos (ATK, konsumsi, honor, dll)",
+    description:
+      "Catat rencana anggaran & realisasi biaya per pos (ATK, konsumsi, honor, dll)",
     icon: Wallet,
     status: "done",
     clickable: true,
   },
   {
     id: "laporan-rekap-akhir",
-    title: "Laporan Rekap Akhir",
+    title: "Rekap & Evaluasi",
     description:
-      "Rekap peserta, kehadiran, pengawas, anggaran, & catatan evaluasi -- bahan Laporan Pelaksanaan Ujian",
+      "Diisi SETELAH ujian: rekap peserta, kehadiran, pengawas, anggaran, & catatan evaluasi -- PDF resminya di 'Laporan Lengkap'",
     icon: ClipboardCheck,
+    status: "done",
+    clickable: true,
+  },
+  {
+    id: "laporan-lengkap",
+    title: "Laporan Lengkap",
+    description:
+      "Compile jadi 1 PDF resmi: Sampul, Kata Pengantar, Daftar Isi, Pendahuluan, rekap dari Laporan Rekap Akhir, & Penutup ber-TTD Kepsek",
+    icon: FileStack,
     status: "done",
     clickable: true,
   },
@@ -143,7 +167,8 @@ const SUB_FITUR = [
 
 const STATUS_STYLE = {
   done: {
-    badge: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300",
+    badge:
+      "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300",
     label: "Aktif",
   },
 };
@@ -181,16 +206,6 @@ const JenisUjianMenuTab = ({ jenisUjian, showToast, onBack }) => {
     );
   }
 
-  if (activeSubFitur === "laporan") {
-    return (
-      <PresensiBeritaAcaraTab
-        jenisUjian={jenisUjian}
-        showToast={showToast}
-        onBack={() => setActiveSubFitur(null)}
-      />
-    );
-  }
-
   if (activeSubFitur === "anggaran-biaya") {
     return (
       <AnggaranBiayaTab
@@ -203,7 +218,7 @@ const JenisUjianMenuTab = ({ jenisUjian, showToast, onBack }) => {
 
   if (activeSubFitur === "kepanitiaan") {
     return (
-      <ProgramKerjaTab
+      <ProgramKerjaPelaksanaanTab
         jenisUjian={jenisUjian}
         showToast={showToast}
         onBack={() => setActiveSubFitur(null)}
@@ -214,6 +229,16 @@ const JenisUjianMenuTab = ({ jenisUjian, showToast, onBack }) => {
   if (activeSubFitur === "laporan-rekap-akhir") {
     return (
       <LaporanRekapAkhirTab
+        jenisUjian={jenisUjian}
+        showToast={showToast}
+        onBack={() => setActiveSubFitur(null)}
+      />
+    );
+  }
+
+  if (activeSubFitur === "laporan-lengkap") {
+    return (
+      <LaporanLengkapTab
         jenisUjian={jenisUjian}
         showToast={showToast}
         onBack={() => setActiveSubFitur(null)}
@@ -235,8 +260,7 @@ const JenisUjianMenuTab = ({ jenisUjian, showToast, onBack }) => {
     <div className="p-4 sm:p-6">
       <button
         onClick={onBack}
-        className="flex items-center gap-1.5 text-sm text-gray-600 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 mb-4"
-      >
+        className="flex items-center gap-1.5 text-sm text-gray-600 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 mb-4">
         <ChevronLeft size={16} /> Ganti Jenis Ujian
       </button>
 
@@ -246,8 +270,7 @@ const JenisUjianMenuTab = ({ jenisUjian, showToast, onBack }) => {
         </h2>
         <button
           onClick={() => setActiveSubFitur("export-semua")}
-          className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white transition-all active:scale-95"
-        >
+          className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white transition-all active:scale-95">
           <FileDown className="w-3.5 h-3.5" />
           Export Semua (PDF)
         </button>
@@ -262,27 +285,29 @@ const JenisUjianMenuTab = ({ jenisUjian, showToast, onBack }) => {
           return (
             <CardTag
               key={fitur.id}
-              onClick={fitur.clickable ? () => setActiveSubFitur(fitur.id) : undefined}
+              onClick={
+                fitur.clickable ? () => setActiveSubFitur(fitur.id) : undefined
+              }
               className={`text-left p-4 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 transition-all ${
                 fitur.clickable
                   ? "hover:shadow-md hover:border-indigo-300 dark:hover:border-indigo-700 cursor-pointer active:scale-95"
                   : "opacity-90"
-              }`}
-            >
+              }`}>
               <div className="flex items-start justify-between mb-2">
                 <div className="p-2 rounded-lg bg-indigo-100 dark:bg-indigo-900/40">
                   <IconComponent className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
                 </div>
                 <span
-                  className={`text-[11px] font-medium px-2 py-1 rounded-full ${statusStyle.badge}`}
-                >
+                  className={`text-[11px] font-medium px-2 py-1 rounded-full ${statusStyle.badge}`}>
                   {statusStyle.label}
                 </span>
               </div>
               <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-100">
                 {fitur.title}
               </h3>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{fitur.description}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                {fitur.description}
+              </p>
             </CardTag>
           );
         })}

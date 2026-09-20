@@ -38,8 +38,12 @@ import {
 } from "./dokumen-cetak/laporanRekapAkhirSupabase";
 import { exportDaftarPesertaUjianPdf } from "./pembagian-ruangan/daftarPesertaPdfExport";
 import { generateKartuPesertaPdf, generateKartuPengawasPdf } from "./dokumen-cetak/kartuUjianPdf";
-import { generateDaftarHadirPdf, generateBeritaAcaraPdf } from "./dokumen-cetak/presensiBeritaAcaraPdf";
-import { generateLaporanRekapAkhirPdf } from "./dokumen-cetak/laporanRekapAkhirPdf";
+import {
+  generateDaftarHadirPdf,
+  generateBeritaAcaraPdf,
+} from "./dokumen-cetak/presensiBeritaAcaraPdf";
+import { generateLaporanLengkapPdf } from "./laporan-lengkap/laporanLengkapPdf";
+import { ambilProfilSekolah } from "./laporan-lengkap/laporanLengkapSupabase";
 import { generatePetunjukPenggunaanPdf } from "./petunjuk-penggunaan/petunjukPenggunaanPdf";
 
 // Daftar & urutan item yang muncul di checklist "Export Semua". Urutan di
@@ -75,8 +79,8 @@ export const OPSI_EXPORT_SEMUA = [
   },
   {
     id: "laporan-rekap",
-    label: "Laporan Rekap Akhir",
-    deskripsi: "1 file PDF, gabungan semua rekap & catatan",
+    label: "Laporan Lengkap",
+    deskripsi: "1 file PDF, Sampul-Kata Pengantar-Daftar Isi-Pendahuluan-rekap-Penutup",
   },
   {
     id: "petunjuk",
@@ -190,17 +194,25 @@ async function jalankanSatuItem({ supabase, itemId, jenisUjian, ujianId, tahunAj
     }
 
     case "laporan-rekap": {
-      const [rekapPeserta, rekapPengawas, rekapAnggaran, kehadiran, catatanTersimpan] =
-        await Promise.all([
-          ambilRekapPeserta(supabase, ujianId),
-          ambilRekapPengawas(supabase, ujianId),
-          ambilRekapAnggaran(supabase, ujianId),
-          ambilKehadiran(supabase, ujianId),
-          ambilCatatanLaporan(supabase, ujianId),
-        ]);
-      generateLaporanRekapAkhirPdf({
+      const [
+        profilSekolah,
+        rekapPeserta,
+        rekapPengawas,
+        rekapAnggaran,
+        kehadiran,
+        catatanTersimpan,
+      ] = await Promise.all([
+        ambilProfilSekolah(supabase),
+        ambilRekapPeserta(supabase, ujianId),
+        ambilRekapPengawas(supabase, ujianId),
+        ambilRekapAnggaran(supabase, ujianId),
+        ambilKehadiran(supabase, ujianId),
+        ambilCatatanLaporan(supabase, ujianId),
+      ]);
+      generateLaporanLengkapPdf({
         jenisUjian,
         tahunAjaran,
+        profilSekolah,
         rekapPeserta,
         kehadiran,
         rekapPengawas,
@@ -209,15 +221,6 @@ async function jalankanSatuItem({ supabase, itemId, jenisUjian, ujianId, tahunAj
           keterangan_nilai: catatanTersimpan?.keterangan_nilai || "",
           evaluasi_kendala: catatanTersimpan?.evaluasi_kendala || "",
           kesimpulan_saran: catatanTersimpan?.kesimpulan_saran || "",
-        },
-        pilihan: {
-          peserta: true,
-          kehadiran: true,
-          pengawas: true,
-          anggaran: true,
-          nilai: true,
-          evaluasi: true,
-          kesimpulan: true,
         },
       });
       return 1;

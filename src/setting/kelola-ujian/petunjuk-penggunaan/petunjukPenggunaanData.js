@@ -23,7 +23,8 @@ const PANDUAN = [
     langkah: [
       {
         judul: "Pilih Tahun Ajaran",
-        deskripsi: "Buka kartu, lalu pilih Tahun Ajaran yang sama dengan Daftar & Jadwal Pengawas.",
+        deskripsi:
+          "Buka kartu, lalu pilih Tahun Ajaran yang sama dengan Daftar & Jadwal Pengawas.",
       },
       {
         judul: "Tab Jadwal Sesi",
@@ -48,7 +49,7 @@ const PANDUAN = [
       {
         judul: "Tab Export Daftar Peserta",
         deskripsi:
-          "Unduh daftar peserta per ruangan atau semua ruangan sekaligus dalam format Excel atau PDF -- untuk ditempel di pintu ruangan & pegangan pengawas. Sama seperti Preview, isinya WYSIWYG mengikuti quota yang lagi tampil di layar, termasuk yang belum diklik \"Simpan ke Database\".",
+          'Unduh daftar peserta per ruangan atau semua ruangan sekaligus dalam format Excel atau PDF -- untuk ditempel di pintu ruangan & pegangan pengawas. Sama seperti Preview, isinya WYSIWYG mengikuti quota yang lagi tampil di layar, termasuk yang belum diklik "Simpan ke Database".',
       },
       {
         judul: "Wajib Disimpan Dulu",
@@ -149,12 +150,13 @@ const PANDUAN = [
       },
       {
         judul: "Isi Surat Keputusan Panitia",
-        deskripsi: "Masukkan nomor & tanggal SK panitia -- diketik manual tiap tahun ajaran.",
+        deskripsi:
+          "Masukkan nomor & tanggal SK panitia -- diketik manual tiap tahun ajaran.",
       },
       {
         judul: "Susun Panitia",
         deskripsi:
-          'Tambah baris per jabatan (Penanggung Jawab, Ketua, Sekretaris, Bendahara, Anggota, dst) beserta nama gurunya. Data ini belum ada tabelnya di database, jadi diisi manual tiap kali generate.',
+          "Tambah baris per jabatan (Penanggung Jawab, Ketua, Sekretaris, Bendahara, Anggota, dst) beserta nama gurunya. Data ini belum ada tabelnya di database, jadi diisi manual tiap kali generate.",
       },
       {
         judul: "Isi Jadwal per Sesi",
@@ -208,7 +210,7 @@ const PANDUAN = [
   },
   {
     id: "laporan-rekap-akhir",
-    title: "Laporan Rekap Akhir",
+    title: "Rekap & Evaluasi",
     iconName: "ClipboardCheck",
     langkah: [
       {
@@ -230,14 +232,33 @@ const PANDUAN = [
         deskripsi:
           "3 catatan naratif manual: status ringkas penyerahan nilai (bukan rekap nilai detail per siswa), kendala teknis/non-teknis selama persiapan & pelaksanaan, serta kesimpulan & saran untuk periode berikutnya.",
       },
+    ],
+    catatan:
+      'Dokumen ini untuk SETELAH ujian selesai -- kebalikan dari Program Kerja Pelaksanaan yang isinya rencana sebelum ujian. Kartu ini TIDAK punya tombol cetak PDF -- setelah semua rekap & catatan di atas terisi, buka kartu "Laporan Lengkap" untuk mengunduh PDF resminya.',
+  },
+  {
+    id: "laporan-lengkap",
+    title: "Laporan Lengkap",
+    iconName: "FileStack",
+    langkah: [
       {
-        judul: "Export Laporan Lengkap (PDF)",
+        judul: "Pilih Tahun Ajaran",
         deskripsi:
-          'Klik "Export Laporan Lengkap", centang/hilangkan section yang mau diikutkan (urutannya sama seperti di dokumen), lalu unduh PDF -- bahan Laporan Pelaksanaan Ujian (Bab Pelaksanaan, Pembiayaan, Penutup).',
+          'Buka kartu, lalu pilih Tahun Ajaran yang sama dengan yang dipakai di "Rekap & Evaluasi".',
+      },
+      {
+        judul: "Cek Status Tiap Bagian",
+        deskripsi:
+          'Daftar bagian laporan ditandai "Siap" (hijau) atau "Belum diisi" (kuning). Bagian yang kuning tetap bisa dicetak, tapi isinya kosong -- isi dulu lewat kartu "Rekap & Evaluasi" kalau mau lengkap.',
+      },
+      {
+        judul: "Unduh PDF",
+        deskripsi:
+          'Klik "Generate Laporan Lengkap (PDF)" untuk mengunduh 1 file PDF resmi: Sampul, Kata Pengantar, Daftar Isi, Pendahuluan, seluruh rekap, dan Penutup dengan tanda tangan Kepala Sekolah.',
       },
     ],
     catatan:
-      "Dokumen ini untuk SETELAH ujian selesai -- kebalikan dari Program Kerja Pelaksanaan yang isinya rencana sebelum ujian.",
+      'Kartu ini cuma membaca ulang data yang sudah diisi di "Rekap & Evaluasi" -- tidak ada input data di sini, murni tempat cetak PDF resminya.',
   },
 ];
 

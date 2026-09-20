@@ -1,22 +1,29 @@
-// setting/kelola-ujian/laporanRekapAkhirPdf.js
-// Generator "Laporan Lengkap (PDF)" untuk sub-fitur Laporan Rekap Akhir --
-// menggabungkan seluruh rekap (peserta, kehadiran, pengawas, anggaran,
-// catatan naratif) jadi satu dokumen siap cetak, mengikuti sistematika
-// umum Laporan Pelaksanaan Ujian Sekolah (Sampul, Kata Pengantar, Daftar
-// Isi, Bab I Pendahuluan, Bab II Pelaksanaan, Bab III Pembiayaan, Bab IV
-// Evaluasi & Kendala, Bab V Penutup).
+// setting/kelola-ujian/laporan-lengkap/laporanLengkapPdf.js
+// Generator PDF utama untuk sub-fitur "Laporan Lengkap" -- kompilasi 1
+// dokumen resmi: Sampul, Kata Pengantar, Daftar Isi, BAB I Pendahuluan,
+// BAB II Pelaksanaan (Peserta, Kehadiran, Pengawas, Keterangan Nilai),
+// BAB III Pembiayaan, BAB IV Evaluasi & Kendala, BAB V Penutup.
 //
-// VERSI AWAL -- lampiran (SK panitia, daftar hadir, berita acara, dst)
-// SENGAJA tidak digabung ke sini, karena masing-masing sudah punya
-// generator PDF sendiri di sub-fitur terkait (Kartu Ujian, Presensi &
-// Berita Acara, dst) dan format kertasnya beda-beda. Daftar Isi juga
-// belum ada nomor halaman otomatis -- placeholder dulu, nyusul kalau
-// perlu pagination yang presisi.
+// SUMBER: file ini adalah HASIL PORTING dari
+// ../dokumen-cetak/laporanRekapAkhirPdf.js (yang sekarang OBSOLETE dan
+// boleh dihapus dari repo setelah file ini terpasang & dites) -- bukan
+// ditulis dari nol, karena struktur bab & helper-nya udah teruji jalan.
+// Perubahan dari versi lama:
+//   1. Signature "Kepala Sekolah" di halaman Penutup sekarang nyantumin
+//      NAMA ASLI dari profilSekolah.namaKepalaSekolah (dulu cuma garis
+//      kosong buat ditulis tangan).
+//   2. Cover & letterhead pakai profilSekolah.namaSekolah (dari tabel
+//      school_settings, live), fallback ke konstanta SCHOOL_NAME kalau
+//      profil belum lengkap -- BUKAN lagi hardcode SCHOOL_NAME doang.
+//   3. Konsep checkbox `pilihan` (section mana yg mau disertakan) DIHAPUS
+//      -- kesepakatannya simpel aja, semua section SELALU tampil, yang
+//      kosong ditandai "Belum diisi" (istilah disamain sama status di
+//      LaporanLengkapTab.js), bukan "-- (tidak disertakan) --".
 //
-// `pilihan` (dari LaporanRekapAkhirTab.js) menentukan section mana yang
-// isinya data asli vs placeholder "tidak disertakan" -- BAB-nya tetap
-// selalu ada semua, cuma kontennya yang berubah, biar penomoran bab tetap
-// konsisten.
+// Lampiran (Kartu Ujian, Daftar Hadir kertas, Jadwal Pengawas, dst)
+// SENGAJA TIDAK digabung ke sini -- tetap dokumen terpisah dari
+// sub-fitur masing-masing. Daftar Isi juga belum ada nomor halaman
+// otomatis (simpel dulu sesuai kesepakatan), cuma daftar section.
 
 import autoTable from "jspdf-autotable";
 import {
@@ -28,26 +35,29 @@ import {
   savePdf,
   PDF_COLORS,
   PDF_FONT_FAMILY,
-  SCHOOL_NAME,
+  SCHOOL_NAME as SCHOOL_NAME_FALLBACK,
   SCHOOL_CITY,
 } from "../../../utils/pdfExportKit";
 
-// Sama seperti file lain di sub-fitur ini -- sengaja diduplikasi, bukan
-// di-import (lihat catatan di presensiBeritaAcaraPdf.js).
 const JUDUL_UJIAN = {
   PSAS: "PENILAIAN SUMATIF AKHIR SEMESTER",
   PSAT: "PENILAIAN SUMATIF AKHIR TAHUN",
   PSAJ: "PENILAIAN SUMATIF AKHIR JENJANG",
 };
 
-const TIDAK_DISERTAKAN = "-- (tidak disertakan dalam laporan ini) --";
+const BELUM_DIISI = "Belum diisi.";
 
 function formatRupiah(angka) {
   return "Rp " + (Number(angka) || 0).toLocaleString("id-ID");
 }
 
 /** Tulis 1 paragraf dengan word-wrap otomatis + page-break. Return y baru. */
-function tulisParagraf(doc, text, y, { x = 15, maxWidth = 180, lineHeight = 5.2, fontSize = 10 } = {}) {
+function tulisParagraf(
+  doc,
+  text,
+  y,
+  { x = 15, maxWidth = 180, lineHeight = 5.2, fontSize = 10 } = {}
+) {
   doc.setFont(PDF_FONT_FAMILY, "normal");
   doc.setFontSize(fontSize);
   doc.setTextColor(0, 0, 0);
@@ -82,27 +92,29 @@ function babBaru(doc, nomor, judul) {
  * Generate & download "Laporan Lengkap (PDF)".
  *
  * @param {Object} opsi
- * @param {string} opsi.jenisUjian
- * @param {string} opsi.tahunAjaran   - label tahun ajaran, mis. "2026/2027"
- * @param {Object} opsi.rekapPeserta  - hasil ambilRekapPeserta()
- * @param {Array}  opsi.kehadiran     - hasil ambilKehadiran()
- * @param {Object} opsi.rekapPengawas - hasil ambilRekapPengawas()
- * @param {Object} opsi.rekapAnggaran - hasil ambilRekapAnggaran()
- * @param {Object} opsi.catatan       - { keterangan_nilai, evaluasi_kendala, kesimpulan_saran }
- * @param {Object} opsi.pilihan       - { peserta, kehadiran, pengawas, anggaran, nilai, evaluasi, kesimpulan }: boolean per section
- * @param {Function} [opsi.showToast]
+ * @param {string} opsi.jenisUjian     - "PSAS" | "PSAT" | "PSAJ"
+ * @param {string} opsi.tahunAjaran    - label tahun ajaran, mis. "2026/2027"
+ * @param {Object} opsi.profilSekolah  - hasil ambilProfilSekolah() (nama, alamat, namaKepalaSekolah, dst)
+ * @param {Object} opsi.rekapPeserta   - hasil ambilRekapPeserta()
+ * @param {Array}  opsi.kehadiran      - hasil ambilKehadiran()
+ * @param {Object} opsi.rekapPengawas  - hasil ambilRekapPengawas()
+ * @param {Object} opsi.rekapAnggaran  - hasil ambilRekapAnggaran()
+ * @param {Object} opsi.catatan        - { keterangan_nilai, evaluasi_kendala, kesimpulan_saran }
  */
-function generateLaporanRekapAkhirPdf(opsi) {
+function generateLaporanLengkapPdf(opsi) {
   const {
     jenisUjian,
     tahunAjaran,
+    profilSekolah,
     rekapPeserta,
     kehadiran,
     rekapPengawas,
     rekapAnggaran,
     catatan,
-    pilihan,
   } = opsi;
+
+  const namaSekolah = profilSekolah?.namaSekolah || SCHOOL_NAME_FALLBACK;
+  const namaKepsek = profilSekolah?.namaKepalaSekolah;
 
   const judul = JUDUL_UJIAN[jenisUjian] || jenisUjian;
   const doc = createPdfDocument({ orientation: "portrait" });
@@ -114,7 +126,7 @@ function generateLaporanRekapAkhirPdf(opsi) {
     year: "numeric",
   });
 
-  // ---------- HALAMAN 1: SAMPUL ----------
+  // ---------- HALAMAN 1: SAMPUL / COVER ----------
   doc.setFont(PDF_FONT_FAMILY, "bold");
   doc.setFontSize(13);
   doc.setTextColor(0, 0, 0);
@@ -123,12 +135,7 @@ function generateLaporanRekapAkhirPdf(opsi) {
   doc.text(judul, pageWidth / 2, 82, { align: "center" });
   doc.setFont(PDF_FONT_FAMILY, "normal");
   doc.setFontSize(11);
-  doc.text(
-    `TAHUN PELAJARAN ${tahunAjaran || "-"}`,
-    pageWidth / 2,
-    92,
-    { align: "center" }
-  );
+  doc.text(`TAHUN PELAJARAN ${tahunAjaran || "-"}`, pageWidth / 2, 92, { align: "center" });
 
   doc.setDrawColor(...PDF_COLORS.primary);
   doc.setLineWidth(0.8);
@@ -136,7 +143,7 @@ function generateLaporanRekapAkhirPdf(opsi) {
 
   doc.setFont(PDF_FONT_FAMILY, "bold");
   doc.setFontSize(14);
-  doc.text(SCHOOL_NAME, pageWidth / 2, pageHeight - 45, { align: "center" });
+  doc.text(namaSekolah, pageWidth / 2, pageHeight - 45, { align: "center" });
   doc.setFont(PDF_FONT_FAMILY, "normal");
   doc.setFontSize(10);
   doc.text(SCHOOL_CITY, pageWidth / 2, pageHeight - 39, { align: "center" });
@@ -148,7 +155,7 @@ function generateLaporanRekapAkhirPdf(opsi) {
   y = tulisParagraf(
     doc,
     `Laporan ini disusun sebagai bentuk pertanggungjawaban panitia atas pelaksanaan ${judul} ` +
-      `Tahun Pelajaran ${tahunAjaran || "-"} di ${SCHOOL_NAME}. Laporan memuat rekap peserta, ` +
+      `Tahun Pelajaran ${tahunAjaran || "-"} di ${namaSekolah}. Laporan memuat rekap peserta, ` +
       `kehadiran, pengawas, anggaran & realisasi biaya, serta evaluasi selama kegiatan berlangsung.`,
     y
   );
@@ -202,7 +209,7 @@ function generateLaporanRekapAkhirPdf(opsi) {
   y = tulisParagraf(
     doc,
     `${judul} merupakan salah satu bentuk penilaian sumatif yang diselenggarakan oleh ` +
-      `${SCHOOL_NAME} untuk mengukur pencapaian kompetensi peserta didik. Kegiatan ini ` +
+      `${namaSekolah} untuk mengukur pencapaian kompetensi peserta didik. Kegiatan ini ` +
       `dilaksanakan sesuai jadwal, tata tertib, dan pembagian ruangan yang telah ditetapkan panitia.`,
     y
   );
@@ -210,9 +217,11 @@ function generateLaporanRekapAkhirPdf(opsi) {
   y = checkPageBreak(doc, y);
   y = addSectionLabel(doc, "B. Maksud dan Tujuan", y);
   y += 6;
-  ["Mengukur ketercapaian kompetensi peserta didik pada mata pelajaran yang diujikan.",
-   "Menjadi bahan evaluasi pelaksanaan ujian untuk perbaikan periode berikutnya.",
-   "Menjadi bahan pertanggungjawaban panitia kepada pihak sekolah."].forEach((butir) => {
+  [
+    "Mengukur ketercapaian kompetensi peserta didik pada mata pelajaran yang diujikan.",
+    "Menjadi bahan evaluasi pelaksanaan ujian untuk perbaikan periode berikutnya.",
+    "Menjadi bahan pertanggungjawaban panitia kepada pihak sekolah.",
+  ].forEach((butir) => {
     y = checkPageBreak(doc, y);
     doc.setFont(PDF_FONT_FAMILY, "normal");
     doc.setFontSize(10);
@@ -233,10 +242,10 @@ function generateLaporanRekapAkhirPdf(opsi) {
   // ---------- BAB II: PELAKSANAAN ----------
   y = babBaru(doc, "II", "PELAKSANAAN");
 
-  // A. Peserta & Pengawas
-  y = addSectionLabel(doc, "A. Peserta & Pengawas", y);
+  // A. Peserta & Ruangan
+  y = addSectionLabel(doc, "A. Peserta & Ruangan", y);
   y += 6;
-  if (pilihan.peserta && rekapPeserta && rekapPeserta.perRuangan.length > 0) {
+  if (rekapPeserta && rekapPeserta.perRuangan?.length > 0) {
     y = tulisParagraf(
       doc,
       `Jumlah peserta seluruhnya ${rekapPeserta.totalPeserta} siswa, terbagi ke dalam ` +
@@ -253,7 +262,7 @@ function generateLaporanRekapAkhirPdf(opsi) {
     });
     y = doc.lastAutoTable.finalY + 8;
   } else {
-    y = tulisParagraf(doc, pilihan.peserta ? "Belum ada data pembagian ruangan." : TIDAK_DISERTAKAN, y);
+    y = tulisParagraf(doc, BELUM_DIISI, y);
     y += 4;
   }
 
@@ -261,7 +270,7 @@ function generateLaporanRekapAkhirPdf(opsi) {
   y = checkPageBreak(doc, y);
   y = addSectionLabel(doc, "B. Kehadiran", y);
   y += 6;
-  if (pilihan.kehadiran && kehadiran.length > 0) {
+  if (kehadiran && kehadiran.length > 0) {
     const totalHadir = kehadiran.reduce((s, k) => s + (k.jumlah_hadir || 0), 0);
     const totalTidakHadir = kehadiran.reduce((s, k) => s + (k.jumlah_tidak_hadir || 0), 0);
     autoTable(doc, {
@@ -278,7 +287,7 @@ function generateLaporanRekapAkhirPdf(opsi) {
     });
     y = doc.lastAutoTable.finalY + 8;
   } else {
-    y = tulisParagraf(doc, pilihan.kehadiran ? "Rekap kehadiran belum diisi." : TIDAK_DISERTAKAN, y);
+    y = tulisParagraf(doc, BELUM_DIISI, y);
     y += 4;
   }
 
@@ -286,7 +295,7 @@ function generateLaporanRekapAkhirPdf(opsi) {
   y = checkPageBreak(doc, y);
   y = addSectionLabel(doc, "C. Pengawas", y);
   y += 6;
-  if (pilihan.pengawas && rekapPengawas && rekapPengawas.daftarPengawas.length > 0) {
+  if (rekapPengawas && rekapPengawas.daftarPengawas?.length > 0) {
     y = tulisParagraf(
       doc,
       `Sebanyak ${rekapPengawas.jumlahPengawas} guru bertugas sebagai pengawas selama ` +
@@ -301,7 +310,7 @@ function generateLaporanRekapAkhirPdf(opsi) {
     });
     y = doc.lastAutoTable.finalY + 8;
   } else {
-    y = tulisParagraf(doc, pilihan.pengawas ? "Belum ada data pengawas." : TIDAK_DISERTAKAN, y);
+    y = tulisParagraf(doc, BELUM_DIISI, y);
     y += 4;
   }
 
@@ -309,17 +318,11 @@ function generateLaporanRekapAkhirPdf(opsi) {
   y = checkPageBreak(doc, y);
   y = addSectionLabel(doc, "D. Keterangan Nilai", y);
   y += 6;
-  y = tulisParagraf(
-    doc,
-    pilihan.nilai
-      ? catatan.keterangan_nilai?.trim() || "Belum ada keterangan."
-      : TIDAK_DISERTAKAN,
-    y
-  );
+  y = tulisParagraf(doc, catatan?.keterangan_nilai?.trim() || BELUM_DIISI, y);
 
   // ---------- BAB III: PEMBIAYAAN ----------
   y = babBaru(doc, "III", "PEMBIAYAAN");
-  if (pilihan.anggaran && rekapAnggaran && rekapAnggaran.perKategori.length > 0) {
+  if (rekapAnggaran && rekapAnggaran.perKategori?.length > 0) {
     autoTable(doc, {
       ...tableTheme(y),
       head: [["Kategori", "Anggaran", "Realisasi"]],
@@ -328,37 +331,31 @@ function generateLaporanRekapAkhirPdf(opsi) {
         formatRupiah(k.anggaran),
         formatRupiah(k.realisasi),
       ]),
-      foot: [[
-        "Total",
-        formatRupiah(rekapAnggaran.totalAnggaran),
-        formatRupiah(rekapAnggaran.totalRealisasi),
-      ]],
+      foot: [
+        [
+          "Total",
+          formatRupiah(rekapAnggaran.totalAnggaran),
+          formatRupiah(rekapAnggaran.totalRealisasi),
+        ],
+      ],
       footStyles: { fillColor: PDF_COLORS.zebra, textColor: [0, 0, 0], fontStyle: "bold" },
     });
     y = doc.lastAutoTable.finalY + 6;
     y = tulisParagraf(doc, `Sisa anggaran: ${formatRupiah(rekapAnggaran.sisa)}.`, y);
   } else {
-    y = tulisParagraf(doc, pilihan.anggaran ? "Belum ada data anggaran." : TIDAK_DISERTAKAN, y);
+    y = tulisParagraf(doc, BELUM_DIISI, y);
   }
 
   // ---------- BAB IV: EVALUASI & KENDALA ----------
   y = babBaru(doc, "IV", "EVALUASI & KENDALA");
-  y = tulisParagraf(
-    doc,
-    pilihan.evaluasi
-      ? catatan.evaluasi_kendala?.trim() || "Tidak ada kendala yang dicatat."
-      : TIDAK_DISERTAKAN,
-    y
-  );
+  y = tulisParagraf(doc, catatan?.evaluasi_kendala?.trim() || BELUM_DIISI, y);
 
   // ---------- BAB V: PENUTUP ----------
   y = babBaru(doc, "V", "PENUTUP");
   y = tulisParagraf(
     doc,
-    pilihan.kesimpulan
-      ? catatan.kesimpulan_saran?.trim() ||
-          "Pelaksanaan kegiatan berjalan sesuai rencana. Saran untuk pelaksanaan berikutnya akan disampaikan menyusul."
-      : TIDAK_DISERTAKAN,
+    catatan?.kesimpulan_saran?.trim() ||
+      "Pelaksanaan kegiatan berjalan sesuai rencana. Saran untuk pelaksanaan berikutnya akan disampaikan menyusul.",
     y
   );
   y += 4;
@@ -375,12 +372,22 @@ function generateLaporanRekapAkhirPdf(opsi) {
   y += 20;
   doc.text("Mengetahui,", 25, y);
   doc.text("Ketua Panitia,", pageWidth - 70, y);
-  y += 20;
-  doc.text("Kepala Sekolah", 25, y);
+  y += 24; // sedikit lebih tinggi dari versi lama biar muat nama Kepsek di atas garis
+  // Nama Kepsek dicetak beneran (dari school_settings) kalau ada -- versi
+  // lama cuma garis kosong buat ditulis tangan. Kalau profil belum diisi
+  // (namaKepsek undefined/"-"), fallback ke perilaku lama: garis kosong.
+  if (namaKepsek && namaKepsek !== "-") {
+    doc.setFont(PDF_FONT_FAMILY, "bold");
+    doc.text(namaKepsek, 25, y);
+    doc.setFont(PDF_FONT_FAMILY, "normal");
+  }
   doc.line(25, y + 1, 75, y + 1);
   doc.line(pageWidth - 70, y + 1, pageWidth - 20, y + 1);
+  y += 5;
+  doc.setFontSize(9);
+  doc.text("Kepala Sekolah", 25, y);
 
-  savePdf(doc, `Laporan-Rekap-Akhir-${jenisUjian}-${(tahunAjaran || "").replace(/\//g, "-")}.pdf`);
+  savePdf(doc, `Laporan-Lengkap-${jenisUjian}-${(tahunAjaran || "").replace(/\//g, "-")}.pdf`);
 }
 
-export { generateLaporanRekapAkhirPdf };
+export { generateLaporanLengkapPdf };
