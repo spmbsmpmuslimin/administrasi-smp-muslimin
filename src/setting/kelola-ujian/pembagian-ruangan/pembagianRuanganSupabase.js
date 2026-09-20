@@ -500,13 +500,14 @@ async function ambilPembagianTersimpan(supabase, ujianId) {
  *
  * Hapus peserta_ujian + SEMUA penugasan pengawas (ujian_pengawas) buat
  * ujian ini, lalu UPDATE versi_skema di tempat -- BUKAN hapus baris
- * `ujian`-nya. ujian_jadwal, anggaran_ujian, laporan_rekap_ujian, dan
- * rekap_kehadiran_ujian semua ON DELETE CASCADE ke ujian.id, jadi kalau
- * baris ujian ikut kehapus, jadwal/anggaran/laporan yang udah diisi admin
- * buat ujian itu ikut lenyap -- padahal niatnya cuma reset pembagian
- * ruangan (+ pengawas yang nempel di nomor ruangan lama) doang, bukan
- * reset seluruh ujian. Makanya ujian_jadwal (tanggal/sesi/mata pelajaran)
- * SENGAJA tidak ikut dihapus di sini.
+ * `ujian`-nya. ujian_jadwal dan rekap_kehadiran_ujian ON DELETE CASCADE
+ * ke ujian.id, jadi kalau baris ujian ikut kehapus, jadwal/rekap yang
+ * udah diisi admin buat ujian itu ikut lenyap -- padahal niatnya cuma
+ * reset pembagian ruangan (+ pengawas yang nempel di nomor ruangan
+ * lama) doang, bukan reset seluruh ujian. Makanya ujian_jadwal
+ * (tanggal/sesi/mata pelajaran) SENGAJA tidak ikut dihapus di sini.
+ * (CATATAN revisi: tabel anggaran_ujian & laporan_rekap_ujian yang dulu
+ * disebut di sini SUDAH DIHAPUS dari DB -- fiturnya dicabut dari app.)
  *
  * FIX (Sep 2026): sebelumnya ujian_pengawas TIDAK ikut dihapus di sini --
  * cuma diperingatkan lewat modal UI supaya admin "cek ulang manual".
