@@ -32,9 +32,7 @@ import {
 import {
   ambilRekapPeserta,
   ambilRekapPengawas,
-  ambilRekapAnggaran,
   ambilKehadiran,
-  ambilCatatanLaporan,
 } from "./dokumen-cetak/laporanRekapAkhirSupabase";
 import { exportDaftarPesertaUjianPdf } from "./pembagian-ruangan/daftarPesertaPdfExport";
 import { generateKartuPesertaPdf, generateKartuPengawasPdf } from "./dokumen-cetak/kartuUjianPdf";
@@ -194,20 +192,11 @@ async function jalankanSatuItem({ supabase, itemId, jenisUjian, ujianId, tahunAj
     }
 
     case "laporan-rekap": {
-      const [
-        profilSekolah,
-        rekapPeserta,
-        rekapPengawas,
-        rekapAnggaran,
-        kehadiran,
-        catatanTersimpan,
-      ] = await Promise.all([
+      const [profilSekolah, rekapPeserta, rekapPengawas, kehadiran] = await Promise.all([
         ambilProfilSekolah(supabase),
         ambilRekapPeserta(supabase, ujianId),
         ambilRekapPengawas(supabase, ujianId),
-        ambilRekapAnggaran(supabase, ujianId),
         ambilKehadiran(supabase, ujianId),
-        ambilCatatanLaporan(supabase, ujianId),
       ]);
       generateLaporanLengkapPdf({
         jenisUjian,
@@ -216,12 +205,6 @@ async function jalankanSatuItem({ supabase, itemId, jenisUjian, ujianId, tahunAj
         rekapPeserta,
         kehadiran,
         rekapPengawas,
-        rekapAnggaran,
-        catatan: {
-          keterangan_nilai: catatanTersimpan?.keterangan_nilai || "",
-          evaluasi_kendala: catatanTersimpan?.evaluasi_kendala || "",
-          kesimpulan_saran: catatanTersimpan?.kesimpulan_saran || "",
-        },
       });
       return 1;
     }

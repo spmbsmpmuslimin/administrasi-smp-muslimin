@@ -178,37 +178,6 @@ const PANDUAN = [
       "Dokumen ini untuk SEBELUM ujian berlangsung -- bahan pemeriksaan pengawas/pengawas satuan pendidikan.",
   },
   {
-    id: "anggaran-biaya",
-    title: "Anggaran & Biaya",
-    iconName: "Wallet",
-    langkah: [
-      {
-        judul: "Pilih Tahun Ajaran",
-        deskripsi: "Buka kartu, lalu pilih Tahun Ajaran.",
-      },
-      {
-        judul: "Tambah Pos Anggaran",
-        deskripsi:
-          'Klik "Tambah Pos", isi Kategori (mis. ATK, Konsumsi, Honor Pengawas), Uraian, dan nominal Anggaran yang direncanakan.',
-      },
-      {
-        judul: "Isi Realisasi Setelah Belanja",
-        deskripsi:
-          "Setelah biaya benar-benar dikeluarkan, klik ikon pensil pada pos terkait dan isi kolom Realisasi dengan nominal aktual yang terpakai.",
-      },
-      {
-        judul: "Pantau Ringkasan",
-        deskripsi:
-          "Lihat kartu ringkasan Total Anggaran, Total Realisasi, dan Sisa Anggaran di bagian atas -- angka merah berarti realisasi sudah melebihi anggaran yang direncanakan.",
-      },
-      {
-        judul: "Hapus Pos yang Salah",
-        deskripsi:
-          "Klik ikon tempat sampah pada pos yang tidak jadi/salah input. Akan ada konfirmasi sebelum data benar-benar dihapus.",
-      },
-    ],
-  },
-  {
     id: "laporan-rekap-akhir",
     title: "Rekap & Evaluasi",
     iconName: "ClipboardCheck",
@@ -218,23 +187,18 @@ const PANDUAN = [
         deskripsi: "Buka kartu, lalu pilih Tahun Ajaran.",
       },
       {
-        judul: "Rekap Otomatis (Peserta & Ruangan, Pengawas, Anggaran)",
+        judul: "Rekap Otomatis (Peserta & Ruangan, Pengawas)",
         deskripsi:
-          "3 item ini read-only di sini, datanya reuse langsung dari Jadwal, Peserta & Pembagian Ruangan, Daftar & Jadwal Pengawas, dan Anggaran & Biaya -- pastikan ketiga sub-fitur itu sudah lengkap dulu supaya rekapnya akurat.",
+          "2 item ini read-only di sini, datanya reuse langsung dari Jadwal, Peserta & Pembagian Ruangan dan Daftar & Jadwal Pengawas -- pastikan kedua sub-fitur itu sudah lengkap dulu supaya rekapnya akurat.",
       },
       {
         judul: "Isi Rekap Kehadiran",
         deskripsi:
           "Setelah ujian selesai, rekap ulang jumlah hadir/tidak hadir per ruangan ke sini berdasarkan Daftar Hadir kertas dari sub-fitur Presensi & Berita Acara, lalu klik Simpan per ruangan.",
       },
-      {
-        judul: "Isi Keterangan Nilai, Evaluasi & Kendala, Kesimpulan & Saran",
-        deskripsi:
-          "3 catatan naratif manual: status ringkas penyerahan nilai (bukan rekap nilai detail per siswa), kendala teknis/non-teknis selama persiapan & pelaksanaan, serta kesimpulan & saran untuk periode berikutnya.",
-      },
     ],
     catatan:
-      'Dokumen ini untuk SETELAH ujian selesai -- kebalikan dari Program Kerja Pelaksanaan yang isinya rencana sebelum ujian. Kartu ini TIDAK punya tombol cetak PDF -- setelah semua rekap & catatan di atas terisi, buka kartu "Laporan Lengkap" untuk mengunduh PDF resminya.',
+      'Dokumen ini untuk SETELAH ujian selesai -- kebalikan dari Program Kerja Pelaksanaan yang isinya rencana sebelum ujian. Kartu ini TIDAK punya tombol cetak PDF -- setelah semua rekap di atas terisi, buka kartu "Laporan Lengkap" untuk mengunduh PDF resminya.',
   },
   {
     id: "laporan-lengkap",

@@ -91,8 +91,8 @@ const PetunjukPenggunaanTab = ({ showToast, onBack }) => {
         <p className="text-xs text-indigo-700 dark:text-indigo-400">
           Urutan pengerjaan yang disarankan: <strong>Peserta & Pengawas</strong> lebih
           dulu, baru <strong>Jadwal & Pembagian Ruangan</strong>, <strong>Kartu Ujian</strong>,{" "}
-          <strong>Presensi & Berita Acara</strong>, dan <strong>Anggaran & Biaya</strong> bisa
-          dikerjakan kapan saja karena tidak bergantung ke data ruangan/jadwal. PDF di atas berisi
+          dan <strong>Presensi & Berita Acara</strong> bisa dikerjakan kapan saja karena tidak
+          bergantung ke data ruangan/jadwal. PDF di atas berisi
           panduan yang sama persis -- cocok buat ditempel atau dibagikan ke panitia yang tidak
           pegang akun admin.
         </p>

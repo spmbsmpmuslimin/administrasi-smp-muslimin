@@ -6,13 +6,12 @@
 // SENGAJA TIPIS: fitur ini bukan sumber data baru, cuma nyusun ulang data
 // yang udah ada di modul lain jadi 1 dokumen resmi. Jadi cuma ada 1 fungsi
 // baru di sini -- ambilProfilSekolah() -- buat Cover & Kata Pengantar.
-// Semua data lain (tahun ajaran, ujian, rekap peserta/pengawas/anggaran/
-// kehadiran/catatan) di-import LANGSUNG dari data layer aslinya, BUKAN
+// Semua data lain (tahun ajaran, ujian, rekap peserta/pengawas/
+// kehadiran) di-import LANGSUNG dari data layer aslinya, BUKAN
 // di-re-export ulang dari sini, biar gak ada 2 sumber kebenaran:
 //   - ambilDaftarTahunAjaran, cariUjian, KONFIGURASI_JENIS_UJIAN
 //       -> ../pembagian-ruangan/pembagianRuanganSupabase.js
-//   - ambilRekapPeserta, ambilRekapPengawas, ambilRekapAnggaran,
-//     ambilKehadiran, ambilCatatanLaporan
+//   - ambilRekapPeserta, ambilRekapPengawas, ambilKehadiran
 //       -> ../dokumen-cetak/laporanRekapAkhirSupabase.js
 //
 // Isi teks Cover/Kata Pengantar/Pendahuluan/Penutup MURNI TEMPLATE --

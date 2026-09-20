@@ -2,14 +2,19 @@
 // Sub-fitur "Laporan Lengkap" -- kompilasi 1 file PDF utuh: Cover, Kata
 // Pengantar, Daftar Isi (list section, TANPA nomor halaman -- simpel
 // dulu), Pendahuluan, lalu rekap (REUSE data yg udah diisi lewat "Laporan
-// Rekap Akhir" -- peserta, kehadiran, pengawas, anggaran, keterangan
-// nilai, evaluasi, kesimpulan), dan Penutup.
+// Rekap Akhir" -- peserta, kehadiran, pengawas), dan Penutup.
 //
 // PENTING: sub-fitur ini TIDAK punya form input manual sendiri. Kalau
-// Rekap Kehadiran / Keterangan Nilai / Evaluasi / Kesimpulan belum diisi,
-// isi dulu lewat sub-fitur "Laporan Rekap Akhir" -- di sini cuma preview
-// status tiap bagian + compile jadi 1 PDF resmi (lengkap dengan Cover,
-// Kata Pengantar, dst yang gak ada di Laporan Rekap Akhir).
+// Rekap Kehadiran belum diisi, isi dulu lewat sub-fitur "Laporan Rekap
+// Akhir" -- di sini cuma preview status tiap bagian + compile jadi 1 PDF
+// resmi (lengkap dengan Cover, Kata Pengantar, dst yang gak ada di
+// Laporan Rekap Akhir).
+//
+// CATATAN (revisi): section "Rekap Anggaran & Realisasi Biaya",
+// "Keterangan Nilai", "Evaluasi & Kendala", dan "Kesimpulan & Saran" SUDAH
+// DIHAPUS dari sini -- form input-nya di "Laporan Rekap Akhir" juga sudah
+// dicabut (dianggap gak kepake), jadi bab-bab itu di PDF juga sudah
+// dirapikan ulang, bukan cuma dibiarin kosong. Lihat laporanLengkapPdf.js.
 //
 // Lampiran (Kartu Ujian, Daftar Hadir kertas, Jadwal Pengawas, dst)
 // SENGAJA TIDAK digabung ke PDF ini -- tetap dokumen terpisah, dicetak
@@ -30,9 +35,7 @@ import {
 import {
   ambilRekapPeserta,
   ambilRekapPengawas,
-  ambilRekapAnggaran,
   ambilKehadiran,
-  ambilCatatanLaporan,
 } from "../dokumen-cetak/laporanRekapAkhirSupabase";
 import { ambilProfilSekolah } from "./laporanLengkapSupabase";
 import { generateLaporanLengkapPdf } from "./laporanLengkapPdf";
@@ -61,10 +64,6 @@ const DAFTAR_SECTION = [
   { id: "peserta", label: "Rekap Peserta & Ruangan", tipe: "rekap" },
   { id: "kehadiran", label: "Rekap Kehadiran", tipe: "rekap" },
   { id: "pengawas", label: "Rekap Pengawas", tipe: "rekap" },
-  { id: "anggaran", label: "Rekap Anggaran & Realisasi Biaya", tipe: "rekap" },
-  { id: "nilai", label: "Keterangan Nilai", tipe: "rekap" },
-  { id: "evaluasi", label: "Evaluasi & Kendala", tipe: "rekap" },
-  { id: "kesimpulan", label: "Kesimpulan & Saran", tipe: "rekap" },
   { id: "penutup", label: "Penutup", tipe: "template" },
 ];
 
@@ -79,9 +78,7 @@ const LaporanLengkapTab = ({ jenisUjian, showToast, onBack }) => {
   const [profilSekolah, setProfilSekolah] = useState(null);
   const [rekapPeserta, setRekapPeserta] = useState(null);
   const [rekapPengawas, setRekapPengawas] = useState(null);
-  const [rekapAnggaran, setRekapAnggaran] = useState(null);
   const [kehadiran, setKehadiran] = useState([]);
-  const [catatan, setCatatan] = useState(null);
   const [loadingData, setLoadingData] = useState(false);
   const [generatingPdf, setGeneratingPdf] = useState(false);
 
@@ -149,20 +146,16 @@ const LaporanLengkapTab = ({ jenisUjian, showToast, onBack }) => {
     if (!ujian?.id) return;
     setLoadingData(true);
     try {
-      const [profil, peserta, pengawas, anggaran, hadir, cat] = await Promise.all([
+      const [profil, peserta, pengawas, hadir] = await Promise.all([
         ambilProfilSekolah(supabase),
         ambilRekapPeserta(supabase, ujian.id),
         ambilRekapPengawas(supabase, ujian.id),
-        ambilRekapAnggaran(supabase, ujian.id),
         ambilKehadiran(supabase, ujian.id),
-        ambilCatatanLaporan(supabase, ujian.id),
       ]);
       setProfilSekolah(profil);
       setRekapPeserta(peserta);
       setRekapPengawas(pengawas);
-      setRekapAnggaran(anggaran);
       setKehadiran(hadir);
-      setCatatan(cat);
     } catch (err) {
       console.error(err);
       showToast?.("Gagal memuat data laporan: " + err.message, "error");
@@ -186,14 +179,6 @@ const LaporanLengkapTab = ({ jenisUjian, showToast, onBack }) => {
         return kehadiran.length > 0;
       case "pengawas":
         return !!rekapPengawas && rekapPengawas.jumlahPengawas > 0;
-      case "anggaran":
-        return !!rekapAnggaran && rekapAnggaran.perKategori.length > 0;
-      case "nilai":
-        return !!catatan?.keterangan_nilai;
-      case "evaluasi":
-        return !!catatan?.evaluasi_kendala;
-      case "kesimpulan":
-        return !!catatan?.kesimpulan_saran;
       default:
         return true; // section "template" selalu siap
     }
@@ -213,8 +198,6 @@ const LaporanLengkapTab = ({ jenisUjian, showToast, onBack }) => {
         rekapPeserta,
         kehadiran,
         rekapPengawas,
-        rekapAnggaran,
-        catatan: catatan || {},
         daftarSection: DAFTAR_SECTION,
       });
       showToast?.("Laporan lengkap berhasil diunduh", "success");

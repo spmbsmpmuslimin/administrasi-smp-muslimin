@@ -6,23 +6,26 @@
 // Item yang datanya reuse langsung dari sub-fitur lain (read-only di sini):
 //   1. Rekap Peserta & Ruangan   (dari Peserta & Pengawas)
 //   3. Rekap Pengawas             (dari Jadwal & Pembagian Ruangan)
-//   4. Rekap Anggaran & Realisasi (dari Anggaran & Biaya)
 //
 // Item yang butuh input manual di sini (belum ada datanya di modul lain):
 //   2. Rekap Kehadiran   -- presensi ujian full manual di kertas (lihat
 //      PresensiBeritaAcaraTab.js), jadi TU/panitia rekap ulang jumlah
 //      hadir/tidak hadir per ruangan ke sini setelah ujian selesai.
-//   5. Keterangan Nilai  -- cuma status/konfirmasi ringkas, BUKAN rekap
-//      nilai detail (itu ranah guru mapel & modul penilaian terpisah).
-//   6. Evaluasi & Kendala
-//   7. Kesimpulan & Saran
+//
+// CATATAN (revisi): item "Rekap Anggaran & Realisasi Biaya", "Keterangan
+// Nilai", "Evaluasi & Kendala", dan "Kesimpulan & Saran" SUDAH DIHAPUS dari
+// sini -- dianggap gak kepake & bikin ribet. Sub-fitur "Anggaran & Biaya"
+// dicabut total dari aplikasi (dikelola manual/terpisah di luar aplikasi).
+// Konsekuensinya di PDF "Laporan Lengkap" (../laporan-lengkap/): BAB
+// Pembiayaan, BAB Evaluasi & Kendala, dan sub-bagian "Keterangan Nilai"
+// juga sudah dicabut & bab-nya dirapikan ulang (lihat laporanLengkapPdf.js).
 //
 // CATATAN PENTING (revisi): tab ini SUDAH TIDAK punya tombol export PDF
 // sendiri. Sebelumnya ada tombol "Export Laporan Lengkap (PDF)" di sini,
 // tapi ternyata redundant sama sub-fitur baru "Laporan Lengkap"
 // (../laporan-lengkap/) yang menghasilkan PDF resmi lebih lengkap --
 // sudah termasuk Cover, Kata Pengantar, Daftar Isi, dan Pendahuluan yang
-// nggak ada di generator lama. Data 5 rekap di atas TETAP DIINPUT/DISIMPAN
+// nggak ada di generator lama. Data rekap di atas TETAP DIINPUT/DISIMPAN
 // di sini seperti biasa; sub-fitur "Laporan Lengkap" tinggal baca ulang
 // data yang sama buat di-compile jadi 1 PDF utuh.
 // -> generateLaporanRekapAkhirPdf() & file laporanRekapAkhirPdf.js SUDAH
@@ -39,10 +42,6 @@ import {
   Users,
   ClipboardCheck,
   UserCheck,
-  Wallet,
-  GraduationCap,
-  AlertTriangle,
-  FileCheck2,
   Save,
   FileText,
 } from "lucide-react";
@@ -55,11 +54,8 @@ import {
 import {
   ambilRekapPeserta,
   ambilRekapPengawas,
-  ambilRekapAnggaran,
   ambilKehadiran,
   simpanKehadiran,
-  ambilCatatanLaporan,
-  simpanCatatanLaporan,
 } from "./laporanRekapAkhirSupabase";
 
 const JENIS_UJIAN_LABEL = {
@@ -70,10 +66,6 @@ const JENIS_UJIAN_LABEL = {
 
 function labelTahunAjaran(row) {
   return row.year || row.tahun_ajaran || row.name || row.label || row.nama || `ID: ${row.id}`;
-}
-
-function formatRupiah(angka) {
-  return "Rp " + (Number(angka) || 0).toLocaleString("id-ID");
 }
 
 function SeksiCard({ icon: Icon, title, subtitle, children }) {
@@ -99,10 +91,6 @@ const DAFTAR_ITEM = [
   { id: "peserta", title: "Rekap Peserta & Ruangan", icon: Users },
   { id: "kehadiran", title: "Rekap Kehadiran", icon: ClipboardCheck },
   { id: "pengawas", title: "Rekap Pengawas", icon: UserCheck },
-  { id: "anggaran", title: "Rekap Anggaran & Realisasi Biaya", icon: Wallet },
-  { id: "nilai", title: "Keterangan Nilai", icon: GraduationCap },
-  { id: "evaluasi", title: "Evaluasi & Kendala", icon: AlertTriangle },
-  { id: "kesimpulan", title: "Kesimpulan & Saran", icon: FileCheck2 },
 ];
 
 const LaporanRekapAkhirTab = ({ jenisUjian, showToast, onBack }) => {
@@ -115,16 +103,9 @@ const LaporanRekapAkhirTab = ({ jenisUjian, showToast, onBack }) => {
 
   const [rekapPeserta, setRekapPeserta] = useState(null);
   const [rekapPengawas, setRekapPengawas] = useState(null);
-  const [rekapAnggaran, setRekapAnggaran] = useState(null);
   const [kehadiran, setKehadiran] = useState([]);
-  const [catatan, setCatatan] = useState({
-    keterangan_nilai: "",
-    evaluasi_kendala: "",
-    kesimpulan_saran: "",
-  });
   const [loadingRekap, setLoadingRekap] = useState(false);
   const [menyimpanKehadiran, setMenyimpanKehadiran] = useState(null); // nomor_ruangan yg lagi disave
-  const [menyimpanCatatan, setMenyimpanCatatan] = useState(false);
   const [activeItem, setActiveItem] = useState(null); // null = tampilkan daftar item
 
   const semesterDibutuhkan = KONFIGURASI_JENIS_UJIAN[jenisUjian]?.semester;
@@ -188,22 +169,14 @@ const LaporanRekapAkhirTab = ({ jenisUjian, showToast, onBack }) => {
     if (!ujian?.id) return;
     setLoadingRekap(true);
     try {
-      const [peserta, pengawas, anggaran, hadir, catatanTersimpan] = await Promise.all([
+      const [peserta, pengawas, hadir] = await Promise.all([
         ambilRekapPeserta(supabase, ujian.id),
         ambilRekapPengawas(supabase, ujian.id),
-        ambilRekapAnggaran(supabase, ujian.id),
         ambilKehadiran(supabase, ujian.id),
-        ambilCatatanLaporan(supabase, ujian.id),
       ]);
       setRekapPeserta(peserta);
       setRekapPengawas(pengawas);
-      setRekapAnggaran(anggaran);
       setKehadiran(hadir);
-      setCatatan({
-        keterangan_nilai: catatanTersimpan?.keterangan_nilai || "",
-        evaluasi_kendala: catatanTersimpan?.evaluasi_kendala || "",
-        kesimpulan_saran: catatanTersimpan?.kesimpulan_saran || "",
-      });
     } catch (err) {
       console.error(err);
       showToast?.("Gagal memuat rekap: " + err.message, "error");
@@ -214,9 +187,7 @@ const LaporanRekapAkhirTab = ({ jenisUjian, showToast, onBack }) => {
 
   useEffect(() => {
     muatSemuaRekap();
-  }, [muatSemuaRekap]);
-
-  // Gabungkan daftar ruangan dari rekap peserta dengan baris kehadiran yg
+  }, [muatSemuaRekap]);  // Gabungkan daftar ruangan dari rekap peserta dengan baris kehadiran yg
   // sudah tersimpan, supaya ruangan yg belum diisi tetap muncul (default 0).
   const baristKehadiran = (rekapPeserta?.perRuangan || []).map((r) => {
     const existing = kehadiran.find((k) => k.nomor_ruangan === r.nomor_ruangan);
@@ -266,20 +237,6 @@ const LaporanRekapAkhirTab = ({ jenisUjian, showToast, onBack }) => {
     }
   };
 
-  const handleSimpanCatatan = async () => {
-    if (!ujian?.id) return;
-    setMenyimpanCatatan(true);
-    try {
-      await simpanCatatanLaporan(supabase, ujian.id, catatan);
-      showToast?.("Catatan laporan tersimpan", "success");
-    } catch (err) {
-      console.error(err);
-      showToast?.("Gagal simpan catatan: " + err.message, "error");
-    } finally {
-      setMenyimpanCatatan(false);
-    }
-  };
-
   const totalHadir = kehadiran.reduce((sum, k) => sum + (k.jumlah_hadir || 0), 0);
   const totalTidakHadir = kehadiran.reduce((sum, k) => sum + (k.jumlah_tidak_hadir || 0), 0);
 
@@ -298,18 +255,6 @@ const LaporanRekapAkhirTab = ({ jenisUjian, showToast, onBack }) => {
         return rekapPengawas
           ? `${rekapPengawas.jumlahPengawas} guru bertugas di ${rekapPengawas.jumlahSesi} sesi`
           : "Belum ada data";
-      case "anggaran":
-        return rekapAnggaran
-          ? `Anggaran ${formatRupiah(rekapAnggaran.totalAnggaran)} - Realisasi ${formatRupiah(
-              rekapAnggaran.totalRealisasi
-            )}`
-          : "Belum ada data";
-      case "nilai":
-        return catatan.keterangan_nilai ? "Sudah diisi" : "Belum diisi";
-      case "evaluasi":
-        return catatan.evaluasi_kendala ? "Sudah diisi" : "Belum diisi";
-      case "kesimpulan":
-        return catatan.kesimpulan_saran ? "Sudah diisi" : "Belum diisi";
       default:
         return "";
     }
@@ -574,118 +519,6 @@ const LaporanRekapAkhirTab = ({ jenisUjian, showToast, onBack }) => {
             </SeksiCard>
           )}
 
-          {/* 4. Rekap Anggaran & Realisasi */}
-          {activeItem === "anggaran" && (
-            <SeksiCard
-              icon={Wallet}
-              title="Rekap Anggaran & Realisasi Biaya"
-              subtitle={
-                rekapAnggaran
-                  ? `Anggaran ${formatRupiah(rekapAnggaran.totalAnggaran)} - Realisasi ${formatRupiah(
-                      rekapAnggaran.totalRealisasi
-                    )}`
-                  : "Belum ada data"
-              }
-            >
-              {rekapAnggaran && rekapAnggaran.perKategori.length > 0 ? (
-                <div className="space-y-1.5">
-                  {rekapAnggaran.perKategori.map((k) => (
-                    <div
-                      key={k.kategori}
-                      className="flex justify-between px-2 py-1.5 text-xs rounded-lg bg-gray-50 dark:bg-gray-900/40"
-                    >
-                      <span className="text-gray-700 dark:text-gray-300">{k.kategori}</span>
-                      <span className="text-gray-500 dark:text-gray-400">
-                        {formatRupiah(k.anggaran)} / {formatRupiah(k.realisasi)}
-                      </span>
-                    </div>
-                  ))}
-                  <p className="text-[11px] text-gray-400 pt-1">Format: anggaran / realisasi</p>
-                </div>
-              ) : (
-                <p className="text-xs text-gray-400">
-                  Belum ada data. Catat dulu di <strong>Anggaran & Biaya</strong>.
-                </p>
-              )}
-            </SeksiCard>
-          )}
-
-          {/* 5-7. Catatan naratif manual */}
-          {activeItem === "nilai" && (
-            <SeksiCard
-              icon={GraduationCap}
-              title="Keterangan Nilai"
-              subtitle="Status/konfirmasi ringkas -- bukan rekap nilai detail (ranah guru mapel)"
-            >
-              <textarea
-                rows={2}
-                placeholder="Mis. Nilai seluruh mapel sudah diserahkan ke wali kelas/kurikulum pada tanggal ..."
-                value={catatan.keterangan_nilai}
-                onChange={(e) => setCatatan((p) => ({ ...p, keterangan_nilai: e.target.value }))}
-                className="w-full px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800"
-              />
-              <button
-                onClick={handleSimpanCatatan}
-                disabled={menyimpanCatatan}
-                className="flex items-center gap-2 px-4 py-2.5 mt-3 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-xl transition-all active:scale-95 disabled:opacity-60"
-              >
-                {menyimpanCatatan ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <Save className="w-4 h-4" />
-                )}
-                Simpan
-              </button>
-            </SeksiCard>
-          )}
-
-          {activeItem === "evaluasi" && (
-            <SeksiCard icon={AlertTriangle} title="Evaluasi & Kendala">
-              <textarea
-                rows={5}
-                placeholder="Kendala teknis/non-teknis selama persiapan & pelaksanaan ujian, beserta solusinya..."
-                value={catatan.evaluasi_kendala}
-                onChange={(e) => setCatatan((p) => ({ ...p, evaluasi_kendala: e.target.value }))}
-                className="w-full px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800"
-              />
-              <button
-                onClick={handleSimpanCatatan}
-                disabled={menyimpanCatatan}
-                className="flex items-center gap-2 px-4 py-2.5 mt-3 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-xl transition-all active:scale-95 disabled:opacity-60"
-              >
-                {menyimpanCatatan ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <Save className="w-4 h-4" />
-                )}
-                Simpan
-              </button>
-            </SeksiCard>
-          )}
-
-          {activeItem === "kesimpulan" && (
-            <SeksiCard icon={FileCheck2} title="Kesimpulan & Saran">
-              <textarea
-                rows={5}
-                placeholder="Kesimpulan pelaksanaan ujian & saran untuk periode berikutnya..."
-                value={catatan.kesimpulan_saran}
-                onChange={(e) => setCatatan((p) => ({ ...p, kesimpulan_saran: e.target.value }))}
-                className="w-full px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800"
-              />
-              <button
-                onClick={handleSimpanCatatan}
-                disabled={menyimpanCatatan}
-                className="flex items-center gap-2 px-4 py-2.5 mt-3 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-xl transition-all active:scale-95 disabled:opacity-60"
-              >
-                {menyimpanCatatan ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <Save className="w-4 h-4" />
-                )}
-                Simpan
-              </button>
-            </SeksiCard>
-          )}
         </>
       )}
     </div>

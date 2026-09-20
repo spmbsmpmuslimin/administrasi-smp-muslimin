@@ -1,8 +1,7 @@
 // setting/kelola-ujian/laporan-lengkap/laporanLengkapPdf.js
 // Generator PDF utama untuk sub-fitur "Laporan Lengkap" -- kompilasi 1
 // dokumen resmi: Sampul, Kata Pengantar, Daftar Isi, BAB I Pendahuluan,
-// BAB II Pelaksanaan (Peserta, Kehadiran, Pengawas, Keterangan Nilai),
-// BAB III Pembiayaan, BAB IV Evaluasi & Kendala, BAB V Penutup.
+// BAB II Pelaksanaan (Peserta, Kehadiran, Pengawas), BAB III Penutup.
 //
 // SUMBER: file ini adalah HASIL PORTING dari
 // ../dokumen-cetak/laporanRekapAkhirPdf.js (yang sekarang OBSOLETE dan
@@ -19,6 +18,11 @@
 //      -- kesepakatannya simpel aja, semua section SELALU tampil, yang
 //      kosong ditandai "Belum diisi" (istilah disamain sama status di
 //      LaporanLengkapTab.js), bukan "-- (tidak disertakan) --".
+//   4. (revisi) BAB "Pembiayaan" & "Evaluasi & Kendala", serta sub-bagian
+//      "Keterangan Nilai" di BAB Pelaksanaan, SUDAH DIHAPUS -- form
+//      input-nya (Anggaran & Biaya / Keterangan Nilai / Evaluasi & Kendala
+//      / Kesimpulan & Saran) dicabut dari aplikasi karena dianggap gak
+//      kepake. Sisa 3 bab: Pendahuluan, Pelaksanaan, Penutup.
 //
 // Lampiran (Kartu Ujian, Daftar Hadir kertas, Jadwal Pengawas, dst)
 // SENGAJA TIDAK digabung ke sini -- tetap dokumen terpisah dari
@@ -46,10 +50,6 @@ const JUDUL_UJIAN = {
 };
 
 const BELUM_DIISI = "Belum diisi.";
-
-function formatRupiah(angka) {
-  return "Rp " + (Number(angka) || 0).toLocaleString("id-ID");
-}
 
 /** Tulis 1 paragraf dengan word-wrap otomatis + page-break. Return y baru. */
 function tulisParagraf(
@@ -98,8 +98,6 @@ function babBaru(doc, nomor, judul) {
  * @param {Object} opsi.rekapPeserta   - hasil ambilRekapPeserta()
  * @param {Array}  opsi.kehadiran      - hasil ambilKehadiran()
  * @param {Object} opsi.rekapPengawas  - hasil ambilRekapPengawas()
- * @param {Object} opsi.rekapAnggaran  - hasil ambilRekapAnggaran()
- * @param {Object} opsi.catatan        - { keterangan_nilai, evaluasi_kendala, kesimpulan_saran }
  */
 function generateLaporanLengkapPdf(opsi) {
   const {
@@ -109,8 +107,6 @@ function generateLaporanLengkapPdf(opsi) {
     rekapPeserta,
     kehadiran,
     rekapPengawas,
-    rekapAnggaran,
-    catatan,
   } = opsi;
 
   const namaSekolah = profilSekolah?.namaSekolah || SCHOOL_NAME_FALLBACK;
@@ -156,7 +152,7 @@ function generateLaporanLengkapPdf(opsi) {
     doc,
     `Laporan ini disusun sebagai bentuk pertanggungjawaban panitia atas pelaksanaan ${judul} ` +
       `Tahun Pelajaran ${tahunAjaran || "-"} di ${namaSekolah}. Laporan memuat rekap peserta, ` +
-      `kehadiran, pengawas, anggaran & realisasi biaya, serta evaluasi selama kegiatan berlangsung.`,
+      `kehadiran, dan pengawas selama kegiatan berlangsung.`,
     y
   );
   y += 4;
@@ -184,9 +180,7 @@ function generateLaporanLengkapPdf(opsi) {
     "Daftar Isi",
     "BAB I    Pendahuluan",
     "BAB II   Pelaksanaan",
-    "BAB III  Pembiayaan",
-    "BAB IV   Evaluasi & Kendala",
-    "BAB V    Penutup",
+    "BAB III  Penutup",
   ];
   doc.setFont(PDF_FONT_FAMILY, "normal");
   doc.setFontSize(10);
@@ -234,8 +228,8 @@ function generateLaporanLengkapPdf(opsi) {
   y += 6;
   y = tulisParagraf(
     doc,
-    "Laporan ini disusun dalam 5 bab: Pendahuluan, Pelaksanaan, Pembiayaan, Evaluasi & " +
-      "Kendala, dan Penutup, sebagaimana tercantum pada Daftar Isi.",
+    "Laporan ini disusun dalam 3 bab: Pendahuluan, Pelaksanaan, dan Penutup, sebagaimana " +
+      "tercantum pada Daftar Isi.",
     y
   );
 
@@ -314,48 +308,11 @@ function generateLaporanLengkapPdf(opsi) {
     y += 4;
   }
 
-  // D. Keterangan Nilai
-  y = checkPageBreak(doc, y);
-  y = addSectionLabel(doc, "D. Keterangan Nilai", y);
-  y += 6;
-  y = tulisParagraf(doc, catatan?.keterangan_nilai?.trim() || BELUM_DIISI, y);
-
-  // ---------- BAB III: PEMBIAYAAN ----------
-  y = babBaru(doc, "III", "PEMBIAYAAN");
-  if (rekapAnggaran && rekapAnggaran.perKategori?.length > 0) {
-    autoTable(doc, {
-      ...tableTheme(y),
-      head: [["Kategori", "Anggaran", "Realisasi"]],
-      body: rekapAnggaran.perKategori.map((k) => [
-        k.kategori,
-        formatRupiah(k.anggaran),
-        formatRupiah(k.realisasi),
-      ]),
-      foot: [
-        [
-          "Total",
-          formatRupiah(rekapAnggaran.totalAnggaran),
-          formatRupiah(rekapAnggaran.totalRealisasi),
-        ],
-      ],
-      footStyles: { fillColor: PDF_COLORS.zebra, textColor: [0, 0, 0], fontStyle: "bold" },
-    });
-    y = doc.lastAutoTable.finalY + 6;
-    y = tulisParagraf(doc, `Sisa anggaran: ${formatRupiah(rekapAnggaran.sisa)}.`, y);
-  } else {
-    y = tulisParagraf(doc, BELUM_DIISI, y);
-  }
-
-  // ---------- BAB IV: EVALUASI & KENDALA ----------
-  y = babBaru(doc, "IV", "EVALUASI & KENDALA");
-  y = tulisParagraf(doc, catatan?.evaluasi_kendala?.trim() || BELUM_DIISI, y);
-
-  // ---------- BAB V: PENUTUP ----------
-  y = babBaru(doc, "V", "PENUTUP");
+  // ---------- BAB III: PENUTUP ----------
+  y = babBaru(doc, "III", "PENUTUP");
   y = tulisParagraf(
     doc,
-    catatan?.kesimpulan_saran?.trim() ||
-      "Pelaksanaan kegiatan berjalan sesuai rencana. Saran untuk pelaksanaan berikutnya akan disampaikan menyusul.",
+    "Pelaksanaan kegiatan berjalan sesuai rencana. Saran untuk pelaksanaan berikutnya akan disampaikan menyusul.",
     y
   );
   y += 4;

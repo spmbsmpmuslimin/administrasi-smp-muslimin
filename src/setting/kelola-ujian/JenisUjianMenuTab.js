@@ -48,27 +48,28 @@
 //    Kedua komponen anak DIPAKAI APA ADANYA (gak diubah), wrapper cuma
 //    nambahin tab switcher. id kartu tetap "kepanitiaan" biar referensi
 //    lain (mis. ExportSemuaTab checklist) gak putus.
-// 5. Anggaran & Biaya (aktif) -- catat rencana anggaran & realisasi biaya
-//    per pos (ATK, konsumsi, honor pengawas, dst), lihat AnggaranBiayaTab.js.
-// 6. Rekap & Evaluasi (aktif) -- judul kartu SENGAJA gak pakai kata
+// 5. Rekap & Evaluasi (aktif) -- judul kartu SENGAJA gak pakai kata
 //    "Laporan" (dulu "Laporan Rekap Akhir") biar panitia gak ketuker sama
-//    sub-fitur 8 "Laporan Lengkap" -- yang satu tempat ISI data, yang
+//    sub-fitur 7 "Laporan Lengkap" -- yang satu tempat ISI data, yang
 //    satu lagi tempat CETAK PDF-nya. Isinya: kumpulan rekap dari sub-fitur
-//    lain (peserta, pengawas, anggaran) + input manual kehadiran & catatan
+//    lain (peserta, pengawas) + input manual kehadiran & catatan
 //    evaluasi, bahan Laporan Pelaksanaan Ujian. TIDAK PUNYA export PDF
-//    sendiri lagi (lihat sub-fitur 8) -- murni tempat input/preview data.
+//    sendiri lagi (lihat sub-fitur 7) -- murni tempat input/preview data.
 //    id internal & nama file tetap "laporan-rekap-akhir" / LaporanRekapAkhirTab.js
 //    (cuma `title` yang ditampilkan ke user yang berubah, biar minim
 //    rename di banyak tempat).
-// 7. Export Semua (PDF) (aktif) -- tombol di kanan atas grid ini (bukan
+//    CATATAN (revisi): item "Rekap Anggaran & Realisasi Biaya" sudah
+//    dihapus dari sini -- sub-fitur "Anggaran & Biaya" dicabut total dari
+//    aplikasi (dikelola manual/terpisah di luar aplikasi).
+// 6. Export Semua (PDF) (aktif) -- tombol di kanan atas grid ini (bukan
 //    kartu sub-fitur, karena bukan area kerja tersendiri). Checklist semua
-//    dokumen PDF dari sub-fitur 1-4 & 6, query ulang dari DB (bukan reuse
+//    dokumen PDF dari sub-fitur 1-4 & 5, query ulang dari DB (bukan reuse
 //    state tab lain). Lihat ExportSemuaTab.js & exportSemuaKelolaUjian.js.
-// 8. Laporan Lengkap (aktif) -- kompilasi 1 PDF resmi utuh: Sampul, Kata
+// 7. Laporan Lengkap (aktif) -- kompilasi 1 PDF resmi utuh: Sampul, Kata
 //    Pengantar, Daftar Isi, Pendahuluan, lalu rekap yang REUSE data dari
-//    sub-fitur 6 (Rekap & Evaluasi), dan Penutup dengan tanda tangan
+//    sub-fitur 5 (Rekap & Evaluasi), dan Penutup dengan tanda tangan
 //    Kepsek (dari school_settings). Ini PENGGANTI export PDF yang dulu
-//    ada di sub-fitur 6 -- folder terpisah karena banyak bagian baru
+//    ada di sub-fitur 5 -- folder terpisah karena banyak bagian baru
 //    (Cover, Kata Pengantar, dst) yang gak ada urusannya sama input data.
 //    Lihat laporan-lengkap/LaporanLengkapTab.js, laporanLengkapSupabase.js,
 //    & laporanLengkapPdf.js.
@@ -81,14 +82,12 @@ import {
   IdCard,
   CalendarClock,
   ClipboardCheck,
-  Wallet,
   FileDown,
   FileStack,
 } from "lucide-react";
 import JadwalRuanganTab from "./JadwalRuanganTab";
 import PesertaPengawasTab from "./PesertaPengawasTab";
 import KartuUjianTab from "./dokumen-cetak/KartuUjianTab";
-import AnggaranBiayaTab from "./dokumen-cetak/AnggaranBiayaTab";
 import LaporanRekapAkhirTab from "./dokumen-cetak/LaporanRekapAkhirTab";
 import ProgramKerjaPelaksanaanTab from "./dokumen-cetak/ProgramKerjaPelaksanaanTab";
 import LaporanLengkapTab from "./laporan-lengkap/LaporanLengkapTab";
@@ -137,19 +136,10 @@ const SUB_FITUR = [
     clickable: true,
   },
   {
-    id: "anggaran-biaya",
-    title: "Anggaran & Biaya",
-    description:
-      "Catat rencana anggaran & realisasi biaya per pos (ATK, konsumsi, honor, dll)",
-    icon: Wallet,
-    status: "done",
-    clickable: true,
-  },
-  {
     id: "laporan-rekap-akhir",
     title: "Rekap & Evaluasi",
     description:
-      "Diisi SETELAH ujian: rekap peserta, kehadiran, pengawas, anggaran, & catatan evaluasi -- PDF resminya di 'Laporan Lengkap'",
+      "Diisi SETELAH ujian: rekap peserta, kehadiran, & pengawas -- PDF resminya di 'Laporan Lengkap'",
     icon: ClipboardCheck,
     status: "done",
     clickable: true,
@@ -199,16 +189,6 @@ const JenisUjianMenuTab = ({ jenisUjian, showToast, onBack }) => {
   if (activeSubFitur === "kartu-ujian") {
     return (
       <KartuUjianTab
-        jenisUjian={jenisUjian}
-        showToast={showToast}
-        onBack={() => setActiveSubFitur(null)}
-      />
-    );
-  }
-
-  if (activeSubFitur === "anggaran-biaya") {
-    return (
-      <AnggaranBiayaTab
         jenisUjian={jenisUjian}
         showToast={showToast}
         onBack={() => setActiveSubFitur(null)}

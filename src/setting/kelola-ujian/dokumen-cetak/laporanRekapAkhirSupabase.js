@@ -1,7 +1,7 @@
 // setting/kelola-ujian/laporanRekapAkhirSupabase.js
 // Data layer untuk sub-fitur "Laporan Rekap Akhir" -- kumpulan rekap dari
-// sub-fitur lain (Jadwal & Pembagian Ruangan, Peserta & Pengawas, Anggaran
-// & Biaya) plus 2 tabel baru khusus laporan ini:
+// sub-fitur lain (Jadwal & Pembagian Ruangan, Peserta & Pengawas) plus 1
+// tabel baru khusus laporan ini:
 //
 // rekap_kehadiran_ujian -- input manual TU/panitia setelah ujian selesai,
 //   berdasarkan Daftar Hadir kertas yang sudah ditandatangani (lihat
@@ -9,15 +9,17 @@
 //   makanya di sini baru direkap manual per ruangan, total utk seluruh
 //   periode ujian).
 //
-// laporan_rekap_ujian -- catatan naratif singleton per ujian: keterangan
-//   status nilai (bukan rekap nilai detail -- itu ranah guru mapel &
-//   modul penilaian terpisah), evaluasi & kendala, kesimpulan & saran.
+// CATATAN (revisi): tabel "laporan_rekap_ujian" (dulu nyimpen catatan
+// naratif singleton: keterangan nilai, evaluasi & kendala, kesimpulan &
+// saran) SUDAH TIDAK DIPAKAI lagi dari sisi app -- fitur input-nya dicabut
+// karena dianggap gak kepake. Fungsi ambilCatatanLaporan/simpanCatatanLaporan
+// juga sudah dihapus dari file ini. Tabelnya sendiri belum di-drop dari DB
+// (di luar cakupan revisi ini).
 //
 // Lihat migration: laporan-rekap-akhir_migration.sql
 
 import { ambilPembagianTersimpan } from "../pembagian-ruangan/pembagianRuanganSupabase";
 import { ambilJadwalSesi, ambilPengawasUntukJadwal } from "../jadwal-pengawas/jadwalPengawasSupabase";
-import { ambilAnggaran, hitungRingkasanAnggaran } from "./anggaranBiayaSupabase";
 
 /**
  * Rekap peserta & ruangan -- total siswa per ruangan + total keseluruhan.
@@ -64,25 +66,6 @@ async function ambilRekapPengawas(supabase, ujianId) {
 }
 
 /**
- * Rekap anggaran & realisasi -- ringkasan total + breakdown per kategori.
- * Reuse data dari sub-fitur "Anggaran & Biaya".
- */
-async function ambilRekapAnggaran(supabase, ujianId) {
-  const daftarPos = await ambilAnggaran(supabase, ujianId);
-  const ringkasan = hitungRingkasanAnggaran(daftarPos);
-
-  const perKategori = {};
-  for (const pos of daftarPos) {
-    const key = pos.kategori || "Lainnya";
-    if (!perKategori[key]) perKategori[key] = { kategori: key, anggaran: 0, realisasi: 0 };
-    perKategori[key].anggaran += Number(pos.anggaran) || 0;
-    perKategori[key].realisasi += Number(pos.realisasi) || 0;
-  }
-
-  return { ...ringkasan, perKategori: Object.values(perKategori) };
-}
-
-/**
  * Ambil rekap kehadiran manual (kalau sudah pernah diisi) untuk 1 ujian.
  */
 async function ambilKehadiran(supabase, ujianId) {
@@ -121,50 +104,9 @@ async function simpanKehadiran(supabase, ujianId, nomorRuangan, perubahan) {
   return data;
 }
 
-/**
- * Ambil catatan naratif laporan (keterangan nilai, evaluasi & kendala,
- * kesimpulan & saran) untuk 1 ujian. Return null kalau belum pernah diisi.
- */
-async function ambilCatatanLaporan(supabase, ujianId) {
-  const { data, error } = await supabase
-    .from("laporan_rekap_ujian")
-    .select("*")
-    .eq("ujian_id", ujianId)
-    .maybeSingle();
-
-  if (error) throw error;
-  return data;
-}
-
-/**
- * Simpan/update catatan naratif laporan (upsert berdasarkan ujian_id).
- */
-async function simpanCatatanLaporan(supabase, ujianId, perubahan) {
-  const { data, error } = await supabase
-    .from("laporan_rekap_ujian")
-    .upsert(
-      {
-        ujian_id: ujianId,
-        keterangan_nilai: perubahan.keterangan_nilai ?? null,
-        evaluasi_kendala: perubahan.evaluasi_kendala ?? null,
-        kesimpulan_saran: perubahan.kesimpulan_saran ?? null,
-        updated_at: new Date().toISOString(),
-      },
-      { onConflict: "ujian_id" }
-    )
-    .select()
-    .single();
-
-  if (error) throw error;
-  return data;
-}
-
 export {
   ambilRekapPeserta,
   ambilRekapPengawas,
-  ambilRekapAnggaran,
   ambilKehadiran,
   simpanKehadiran,
-  ambilCatatanLaporan,
-  simpanCatatanLaporan,
 };
