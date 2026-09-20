@@ -268,7 +268,13 @@ const AttendanceManagement = ({ user, onShowToast }) => {
     };
 
     fetchClasses();
-  }, [selectedSubject, teacherId, isHomeroomTeacher, homeroomClass, selectedSemester]);
+  }, [
+    selectedSubject,
+    teacherId,
+    isHomeroomTeacher,
+    homeroomClass,
+    selectedSemester,
+  ]);
 
   // Fetch ALL unique dates without pagination first
   const fetchAllUniqueDates = async () => {
@@ -366,7 +372,12 @@ const AttendanceManagement = ({ user, onShowToast }) => {
   // Fetch attendance dates with pagination
   useEffect(() => {
     const fetchAttendanceDates = async () => {
-      if (!selectedClass || !selectedSubject || !teacherId || !selectedSemester) {
+      if (
+        !selectedClass ||
+        !selectedSubject ||
+        !teacherId ||
+        !selectedSemester
+      ) {
         setAttendanceDates([]);
         setTotalDates(0);
         return;
@@ -389,7 +400,12 @@ const AttendanceManagement = ({ user, onShowToast }) => {
         const endIndex = startIndex + itemsPerPage;
         const paginatedDates = allUniqueDates.slice(startIndex, endIndex);
 
-        console.log("📅 Paginated dates:", paginatedDates.length, "out of", allUniqueDates.length);
+        console.log(
+          "📅 Paginated dates:",
+          paginatedDates.length,
+          "out of",
+          allUniqueDates.length,
+        );
 
         // Now fetch stats for paginated dates
         const [year, semester] = selectedSemester.split("-");
@@ -414,7 +430,10 @@ const AttendanceManagement = ({ user, onShowToast }) => {
               .eq("type", typeValue);
 
             if (recordsError) {
-              console.error(`Error fetching records for date ${date}:`, recordsError);
+              console.error(
+                `Error fetching records for date ${date}:`,
+                recordsError,
+              );
               return {
                 date,
                 hadir: 0,
@@ -444,7 +463,7 @@ const AttendanceManagement = ({ user, onShowToast }) => {
             });
 
             return stats;
-          })
+          }),
         );
 
         // Filter out any errored results
@@ -497,7 +516,8 @@ const AttendanceManagement = ({ user, onShowToast }) => {
 
   // Refresh data function
   const refreshData = async () => {
-    if (!selectedClass || !selectedSubject || !teacherId || !selectedSemester) return;
+    if (!selectedClass || !selectedSubject || !teacherId || !selectedSemester)
+      return;
 
     setLoading(true);
     try {
@@ -547,7 +567,7 @@ const AttendanceManagement = ({ user, onShowToast }) => {
           });
 
           return stats;
-        })
+        }),
       );
 
       setAttendanceDates(dateStats);
@@ -586,7 +606,7 @@ const AttendanceManagement = ({ user, onShowToast }) => {
             full_name,
             nis
           )
-        `
+        `,
         )
         .eq("teacher_id", teacherUser.id)
         .eq("class_id", selectedClass)
@@ -705,7 +725,7 @@ const AttendanceManagement = ({ user, onShowToast }) => {
         if (onShowToast) {
           onShowToast(
             `Presensi sudah ada pada tanggal ${newDate}! Hapus dulu atau pilih tanggal lain.`,
-            "error"
+            "error",
           );
         }
         setLoading(false);
@@ -727,7 +747,7 @@ const AttendanceManagement = ({ user, onShowToast }) => {
       if (onShowToast) {
         onShowToast(
           `Tanggal berhasil diubah dari ${selectedDateData.date} ke ${newDate}`,
-          "success"
+          "success",
         );
       }
 
@@ -775,7 +795,10 @@ const AttendanceManagement = ({ user, onShowToast }) => {
       if (error) throw error;
 
       if (onShowToast) {
-        onShowToast(`Presensi tanggal ${selectedDateData.date} berhasil dihapus!`, "success");
+        onShowToast(
+          `Presensi tanggal ${selectedDateData.date} berhasil dihapus!`,
+          "success",
+        );
       }
 
       setShowDeleteModal(false);
@@ -812,14 +835,18 @@ const AttendanceManagement = ({ user, onShowToast }) => {
             <div>
               <h2 className="text-xl font-bold">Edit Presensi</h2>
               <p className="text-blue-100 text-sm">
-                Tanggal: {formatDateToIndonesian(selectedDateData?.date)} | {selectedSubject}
+                Tanggal: {formatDateToIndonesian(selectedDateData?.date)} |{" "}
+                {selectedSubject}
               </p>
             </div>
             <button
               onClick={() => setShowEditModal(false)}
-              className="p-2 hover:bg-blue-600 rounded-lg transition"
-            >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              className="p-2 hover:bg-blue-600 rounded-lg transition">
+              <svg
+                className="w-6 h-6"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24">
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -831,22 +858,22 @@ const AttendanceManagement = ({ user, onShowToast }) => {
           </div>
 
           {/* Stats */}
-          <div className="grid grid-cols-4 gap-3 p-4 bg-slate-50">
+          <div className="grid grid-cols-4 gap-3 p-4 bg-theme-surface">
             <div className="bg-theme-bg p-3 rounded-lg shadow-sm border-l-4 border-green-500">
-              <div className="text-2xl font-bold text-slate-800">{stats.Hadir}</div>
-              <div className="text-xs text-slate-600">Hadir</div>
+              <div className="text-2xl font-bold text-theme">{stats.Hadir}</div>
+              <div className="text-xs text-theme-secondary">Hadir</div>
             </div>
             <div className="bg-theme-bg p-3 rounded-lg shadow-sm border-l-4 border-yellow-500">
-              <div className="text-2xl font-bold text-slate-800">{stats.Sakit}</div>
-              <div className="text-xs text-slate-600">Sakit</div>
+              <div className="text-2xl font-bold text-theme">{stats.Sakit}</div>
+              <div className="text-xs text-theme-secondary">Sakit</div>
             </div>
             <div className="bg-theme-bg p-3 rounded-lg shadow-sm border-l-4 border-blue-500">
-              <div className="text-2xl font-bold text-slate-800">{stats.Izin}</div>
-              <div className="text-xs text-slate-600">Izin</div>
+              <div className="text-2xl font-bold text-theme">{stats.Izin}</div>
+              <div className="text-xs text-theme-secondary">Izin</div>
             </div>
             <div className="bg-theme-bg p-3 rounded-lg shadow-sm border-l-4 border-red-500">
-              <div className="text-2xl font-bold text-slate-800">{stats.Alpa}</div>
-              <div className="text-xs text-slate-600">Alpa</div>
+              <div className="text-2xl font-bold text-theme">{stats.Alpa}</div>
+              <div className="text-xs text-theme-secondary">Alpa</div>
             </div>
           </div>
 
@@ -854,19 +881,23 @@ const AttendanceManagement = ({ user, onShowToast }) => {
           <div className="flex-1 overflow-y-auto p-4">
             <div className="space-y-3">
               {studentsAttendance.map((record, index) => (
-                <div key={record.id} className="bg-theme-bg border border-slate-200 rounded-lg p-4">
+                <div
+                  key={record.id}
+                  className="bg-theme-bg border border-theme rounded-lg p-4">
                   <div className="flex items-start justify-between mb-3">
                     <div>
-                      <div className="font-medium text-slate-900">
+                      <div className="font-medium text-theme">
                         {index + 1}. {record.students?.full_name}
                       </div>
-                      <div className="text-sm text-slate-600">NIS: {record.students?.nis}</div>
+                      <div className="text-sm text-theme-secondary">
+                        NIS: {record.students?.nis}
+                      </div>
                     </div>
                   </div>
 
                   <div className="space-y-3">
                     <div>
-                      <label className="text-xs font-medium text-slate-700 mb-2 block">
+                      <label className="text-xs font-medium text-theme mb-2 block">
                         Status Kehadiran
                       </label>
                       <div className="grid grid-cols-4 gap-2">
@@ -882,15 +913,14 @@ const AttendanceManagement = ({ user, onShowToast }) => {
                                     : status === "Izin"
                                       ? "bg-blue-500 text-white"
                                       : "bg-red-500 text-white"
-                                : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                                : "bg-theme-surface text-theme hover:bg-theme-surface-hover"
                             }`}
                             onClick={() =>
                               setEditedStatus((prev) => ({
                                 ...prev,
                                 [record.id]: status,
                               }))
-                            }
-                          >
+                            }>
                             {status === "Hadir"
                               ? "✓"
                               : status === "Sakit"
@@ -905,12 +935,12 @@ const AttendanceManagement = ({ user, onShowToast }) => {
                     </div>
 
                     <div>
-                      <label className="text-xs font-medium text-slate-700 mb-2 block">
+                      <label className="text-xs font-medium text-theme mb-2 block">
                         Keterangan
                       </label>
                       <input
                         type="text"
-                        className="w-full p-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        className="w-full p-2 text-sm bg-theme-bg text-theme border border-theme rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                         placeholder="Tambahkan keterangan..."
                         value={editedNotes[record.id] || ""}
                         onChange={(e) =>
@@ -928,18 +958,16 @@ const AttendanceManagement = ({ user, onShowToast }) => {
           </div>
 
           {/* Footer */}
-          <div className="border-t border-slate-200 p-4 bg-slate-50 flex gap-3">
+          <div className="border-t border-theme p-4 bg-theme-surface flex gap-3">
             <button
               onClick={() => setShowEditModal(false)}
-              className="flex-1 px-4 py-3 bg-theme-surface border border-theme text-theme-secondary rounded-lg hover:bg-gray-200 transition font-medium"
-            >
+              className="flex-1 px-4 py-3 bg-theme-surface border border-theme text-theme-secondary rounded-lg hover:bg-theme-surface-hover transition font-medium">
               Batal
             </button>
             <button
               onClick={handleSaveEdit}
               disabled={loading}
-              className="flex-1 px-4 py-3 bg-blue-500 border border-blue-600 text-white rounded-lg hover:bg-blue-600 transition font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-            >
+              className="flex-1 px-4 py-3 bg-blue-500 border border-blue-600 text-white rounded-lg hover:bg-blue-600 transition font-medium disabled:opacity-50 disabled:cursor-not-allowed">
               {loading ? "Menyimpan..." : "💾 Simpan Perubahan"}
             </button>
           </div>
@@ -958,13 +986,18 @@ const AttendanceManagement = ({ user, onShowToast }) => {
           <div className="bg-gradient-to-r from-orange-500 to-orange-600 text-white p-6 rounded-t-xl flex justify-between items-center">
             <div>
               <h2 className="text-xl font-bold">Ganti Tanggal</h2>
-              <p className="text-orange-100 text-sm">Ubah tanggal presensi secara batch</p>
+              <p className="text-orange-100 text-sm">
+                Ubah tanggal presensi secara batch
+              </p>
             </div>
             <button
               onClick={() => setShowChangeDateModal(false)}
-              className="p-2 hover:bg-orange-600 rounded-lg transition"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              className="p-2 hover:bg-orange-600 rounded-lg transition">
+              <svg
+                className="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24">
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -1000,14 +1033,13 @@ const AttendanceManagement = ({ user, onShowToast }) => {
               />
             </div>
 
-            <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 mb-6">
+            <div className="bg-orange-50 dark:bg-orange-900/30 border border-orange-200 dark:border-orange-800 rounded-lg p-4 mb-6">
               <div className="flex items-start gap-3">
                 <svg
-                  className="w-5 h-5 text-orange-600 flex-shrink-0 mt-0.5"
+                  className="w-5 h-5 text-orange-600 dark:text-orange-400 flex-shrink-0 mt-0.5"
                   fill="none"
                   stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
+                  viewBox="0 0 24 24">
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -1016,9 +1048,9 @@ const AttendanceManagement = ({ user, onShowToast }) => {
                   />
                 </svg>
                 <div>
-                  <p className="text-sm text-orange-700">
-                    Semua data presensi ({selectedDateData?.total} siswa) akan dipindahkan ke
-                    tanggal baru.
+                  <p className="text-sm text-orange-700 dark:text-orange-300">
+                    Semua data presensi ({selectedDateData?.total} siswa) akan
+                    dipindahkan ke tanggal baru.
                   </p>
                 </div>
               </div>
@@ -1027,15 +1059,13 @@ const AttendanceManagement = ({ user, onShowToast }) => {
             <div className="flex gap-3">
               <button
                 onClick={() => setShowChangeDateModal(false)}
-                className="flex-1 px-4 py-3 bg-theme-surface border border-theme text-theme-secondary rounded-lg hover:bg-gray-200 transition font-medium"
-              >
+                className="flex-1 px-4 py-3 bg-theme-surface border border-theme text-theme-secondary rounded-lg hover:bg-theme-surface-hover transition font-medium">
                 Batal
               </button>
               <button
                 onClick={handleSaveChangeDate}
                 disabled={loading}
-                className="flex-1 px-4 py-3 bg-orange-500 border border-orange-600 text-white rounded-lg hover:bg-orange-600 transition font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-              >
+                className="flex-1 px-4 py-3 bg-orange-500 border border-orange-600 text-white rounded-lg hover:bg-orange-600 transition font-medium disabled:opacity-50 disabled:cursor-not-allowed">
                 {loading ? "Mengubah..." : "📅 Ganti Tanggal"}
               </button>
             </div>
@@ -1055,13 +1085,18 @@ const AttendanceManagement = ({ user, onShowToast }) => {
           <div className="bg-gradient-to-r from-red-500 to-red-600 text-white p-6 rounded-t-xl flex justify-between items-center">
             <div>
               <h2 className="text-xl font-bold">Hapus Presensi</h2>
-              <p className="text-red-100 text-sm">Konfirmasi penghapusan data</p>
+              <p className="text-red-100 text-sm">
+                Konfirmasi penghapusan data
+              </p>
             </div>
             <button
               onClick={() => setShowDeleteModal(false)}
-              className="p-2 hover:bg-red-600 rounded-lg transition"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              className="p-2 hover:bg-red-600 rounded-lg transition">
+              <svg
+                className="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24">
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -1074,20 +1109,20 @@ const AttendanceManagement = ({ user, onShowToast }) => {
 
           <div className="p-6">
             <div className="mb-6">
-              <p className="text-slate-700 mb-4">
+              <p className="text-theme mb-4">
                 Apakah Anda yakin ingin menghapus semua data presensi pada:
               </p>
-              <div className="bg-slate-50 border border-slate-200 rounded-lg p-4">
+              <div className="bg-theme-surface border border-theme rounded-lg p-4">
                 <div className="grid grid-cols-2 gap-3 text-sm">
                   <div>
-                    <span className="text-slate-600">Tanggal:</span>
-                    <div className="font-semibold text-slate-900">
+                    <span className="text-theme-secondary">Tanggal:</span>
+                    <div className="font-semibold text-theme">
                       {formatDateToIndonesian(selectedDateData?.date)}
                     </div>
                   </div>
                   <div>
-                    <span className="text-slate-600">Total Siswa:</span>
-                    <div className="font-semibold text-slate-900">
+                    <span className="text-theme-secondary">Total Siswa:</span>
+                    <div className="font-semibold text-theme">
                       {selectedDateData?.total} siswa
                     </div>
                   </div>
@@ -1095,14 +1130,13 @@ const AttendanceManagement = ({ user, onShowToast }) => {
               </div>
             </div>
 
-            <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+            <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg p-4 mb-6">
               <div className="flex items-start gap-3">
                 <svg
-                  className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5"
+                  className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5"
                   fill="none"
                   stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
+                  viewBox="0 0 24 24">
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -1111,10 +1145,12 @@ const AttendanceManagement = ({ user, onShowToast }) => {
                   />
                 </svg>
                 <div>
-                  <p className="text-sm font-semibold text-red-700 mb-1">Perhatian!</p>
-                  <p className="text-sm text-red-700">
-                    Data yang dihapus tidak dapat dikembalikan. Pastikan Anda sudah yakin sebelum
-                    melanjutkan.
+                  <p className="text-sm font-semibold text-red-700 dark:text-red-300 mb-1">
+                    Perhatian!
+                  </p>
+                  <p className="text-sm text-red-700 dark:text-red-300">
+                    Data yang dihapus tidak dapat dikembalikan. Pastikan Anda
+                    sudah yakin sebelum melanjutkan.
                   </p>
                 </div>
               </div>
@@ -1123,15 +1159,13 @@ const AttendanceManagement = ({ user, onShowToast }) => {
             <div className="flex gap-3">
               <button
                 onClick={() => setShowDeleteModal(false)}
-                className="flex-1 px-4 py-3 bg-theme-surface border border-theme text-theme-secondary rounded-lg hover:bg-gray-200 transition font-medium"
-              >
+                className="flex-1 px-4 py-3 bg-theme-surface border border-theme text-theme-secondary rounded-lg hover:bg-theme-surface-hover transition font-medium">
                 Batal
               </button>
               <button
                 onClick={handleConfirmDelete}
                 disabled={loading}
-                className="flex-1 px-4 py-3 bg-red-500 border border-red-600 text-white rounded-lg hover:bg-red-600 transition font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-              >
+                className="flex-1 px-4 py-3 bg-red-500 border border-red-600 text-white rounded-lg hover:bg-red-600 transition font-medium disabled:opacity-50 disabled:cursor-not-allowed">
                 {loading ? "Menghapus..." : "🗑️ Ya, Hapus"}
               </button>
             </div>
@@ -1160,18 +1194,17 @@ const AttendanceManagement = ({ user, onShowToast }) => {
     }
 
     return (
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-6 p-4 bg-theme-bg rounded-lg border border-slate-200">
-        <div className="text-sm text-slate-600">
-          Menampilkan {attendanceDates.length} dari {totalDates} tanggal (Halaman {currentPage} dari{" "}
-          {totalPages})
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-6 p-4 bg-theme-bg rounded-lg border border-theme">
+        <div className="text-sm text-theme-secondary">
+          Menampilkan {attendanceDates.length} dari {totalDates} tanggal
+          (Halaman {currentPage} dari {totalPages})
         </div>
 
         <div className="flex items-center gap-2">
           <button
             onClick={prevPage}
             disabled={currentPage === 1}
-            className="px-3 py-2 text-sm border border-slate-300 rounded-lg hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition"
-          >
+            className="px-3 py-2 text-sm text-theme border border-theme rounded-lg hover:bg-theme-surface disabled:opacity-50 disabled:cursor-not-allowed transition">
             ← Sebelumnya
           </button>
 
@@ -1180,8 +1213,7 @@ const AttendanceManagement = ({ user, onShowToast }) => {
               <>
                 <button
                   onClick={() => goToPage(1)}
-                  className="px-3 py-2 text-sm border border-slate-300 rounded-lg hover:bg-slate-50 transition"
-                >
+                  className="px-3 py-2 text-sm text-theme border border-theme rounded-lg hover:bg-theme-surface transition">
                   1
                 </button>
                 {startPage > 2 && <span className="px-2 py-2">...</span>}
@@ -1195,20 +1227,20 @@ const AttendanceManagement = ({ user, onShowToast }) => {
                 className={`px-3 py-2 text-sm border rounded-lg transition ${
                   currentPage === page
                     ? "bg-blue-500 text-white border-blue-500"
-                    : "border-slate-300 hover:bg-slate-50"
-                }`}
-              >
+                    : "text-theme border-theme hover:bg-theme-surface"
+                }`}>
                 {page}
               </button>
             ))}
 
             {endPage < totalPages && (
               <>
-                {endPage < totalPages - 1 && <span className="px-2 py-2">...</span>}
+                {endPage < totalPages - 1 && (
+                  <span className="px-2 py-2">...</span>
+                )}
                 <button
                   onClick={() => goToPage(totalPages)}
-                  className="px-3 py-2 text-sm border border-slate-300 rounded-lg hover:bg-slate-50 transition"
-                >
+                  className="px-3 py-2 text-sm text-theme border border-theme rounded-lg hover:bg-theme-surface transition">
                   {totalPages}
                 </button>
               </>
@@ -1218,8 +1250,7 @@ const AttendanceManagement = ({ user, onShowToast }) => {
           <button
             onClick={nextPage}
             disabled={currentPage === totalPages}
-            className="px-3 py-2 text-sm border border-slate-300 rounded-lg hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition"
-          >
+            className="px-3 py-2 text-sm text-theme border border-theme rounded-lg hover:bg-theme-surface disabled:opacity-50 disabled:cursor-not-allowed transition">
             Selanjutnya →
           </button>
         </div>
@@ -1231,7 +1262,9 @@ const AttendanceManagement = ({ user, onShowToast }) => {
     return (
       <div className="p-4 sm:p-6">
         <div className="flex justify-center items-center h-64">
-          <div className="text-blue-500 text-lg">Memuat daftar guru...</div>
+          <div className="text-blue-500 dark:text-blue-400 text-lg">
+            Memuat daftar guru...
+          </div>
         </div>
       </div>
     );
@@ -1240,40 +1273,44 @@ const AttendanceManagement = ({ user, onShowToast }) => {
   if (!user) {
     return (
       <div className="p-4 sm:p-6">
-        <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
-          <p className="text-red-600 text-lg">Anda harus login untuk mengakses halaman ini</p>
+        <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg p-6 text-center">
+          <p className="text-red-600 dark:text-red-400 text-lg">
+            Anda harus login untuk mengakses halaman ini
+          </p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="p-4 sm:p-6 bg-slate-50 min-h-screen">
+    <div className="p-4 sm:p-6 bg-theme-surface min-h-screen">
       {/* Header */}
       <div className="mb-6 sm:mb-8">
-        <div className="bg-theme-bg rounded-xl shadow-sm border border-slate-200 p-4 sm:p-8">
+        <div className="bg-theme-bg rounded-xl shadow-sm border border-theme p-4 sm:p-8">
           <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4">
             <div>
-              <h1 className="text-xl sm:text-2xl font-semibold text-slate-800 mb-2">
+              <h1 className="text-xl sm:text-2xl font-semibold text-theme mb-2">
                 Management Presensi
               </h1>
-              <p className="text-sm sm:text-base text-slate-600">
-                Edit, Ubah Tanggal, atau Hapus Data Presensi yang Sudah Tersimpan
+              <p className="text-sm sm:text-base text-theme-secondary">
+                Edit, Ubah Tanggal, atau Hapus Data Presensi yang Sudah
+                Tersimpan
               </p>
             </div>
             <div className="sm:text-right">
-              <div className="text-slate-800 font-medium text-sm sm:text-base">
+              <div className="text-theme font-medium text-sm sm:text-base">
                 {user?.full_name || user?.username}
               </div>
               {teacherId && (
-                <div className="text-xs sm:text-sm text-slate-500">
+                <div className="text-xs sm:text-sm text-theme-secondary">
                   Mengelola:{" "}
-                  {teacherOptions.find((t) => t.teacher_id === teacherId)?.full_name || teacherId}
+                  {teacherOptions.find((t) => t.teacher_id === teacherId)
+                    ?.full_name || teacherId}
                 </div>
               )}
               <div className="flex gap-2 mt-2 justify-end">
                 {isHomeroomTeacher && (
-                  <span className="inline-flex items-center px-3 py-1 rounded-lg text-xs sm:text-sm font-medium bg-blue-50 text-blue-700 border border-blue-200">
+                  <span className="inline-flex items-center px-3 py-1 rounded-lg text-xs sm:text-sm font-medium bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
                     Wali Kelas {homeroomClass}
                   </span>
                 )}
@@ -1287,24 +1324,29 @@ const AttendanceManagement = ({ user, onShowToast }) => {
       <div className="bg-theme-bg p-4 sm:p-6 rounded-xl shadow-sm mb-4 sm:mb-6">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
           <div className="space-y-2">
-            <label className="block text-sm font-medium text-slate-700">Pilih Guru</label>
+            <label className="block text-sm font-medium text-theme">
+              Pilih Guru
+            </label>
             <select
               value={teacherId || ""}
               onChange={handleTeacherChange}
-              className="w-full p-2.5 sm:p-3 text-sm sm:text-base border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
-            >
+              className="w-full p-2.5 sm:p-3 text-sm sm:text-base bg-theme-bg text-theme border border-theme rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
               <option value="">-- Pilih Guru --</option>
               {teacherOptions.map((t) => (
                 <option key={t.teacher_id} value={t.teacher_id}>
                   {t.full_name}
-                  {t.homeroom_class_id ? ` (Wali Kelas ${t.homeroom_class_id})` : ""}
+                  {t.homeroom_class_id
+                    ? ` (Wali Kelas ${t.homeroom_class_id})`
+                    : ""}
                 </option>
               ))}
             </select>
           </div>
 
           <div className="space-y-2">
-            <label className="block text-sm font-medium text-slate-700">Semester</label>
+            <label className="block text-sm font-medium text-theme">
+              Semester
+            </label>
             <select
               value={selectedSemester}
               onChange={(e) => {
@@ -1315,8 +1357,7 @@ const AttendanceManagement = ({ user, onShowToast }) => {
                 setCurrentPage(1);
               }}
               disabled={loading || !teacherId}
-              className="w-full p-2.5 sm:p-3 text-sm sm:text-base border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
-            >
+              className="w-full p-2.5 sm:p-3 text-sm sm:text-base bg-theme-bg text-theme border border-theme rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
               <option value="">Pilih Semester</option>
               {semesters.map((semester, index) => (
                 <option key={index} value={semester.value}>
@@ -1327,7 +1368,9 @@ const AttendanceManagement = ({ user, onShowToast }) => {
           </div>
 
           <div className="space-y-2">
-            <label className="block text-sm font-medium text-slate-700">Mata Pelajaran</label>
+            <label className="block text-sm font-medium text-theme">
+              Mata Pelajaran
+            </label>
             <select
               value={selectedSubject}
               onChange={(e) => {
@@ -1337,8 +1380,7 @@ const AttendanceManagement = ({ user, onShowToast }) => {
                 setCurrentPage(1);
               }}
               disabled={loading || !teacherId || !selectedSemester}
-              className="w-full p-2.5 sm:p-3 text-sm sm:text-base border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
-            >
+              className="w-full p-2.5 sm:p-3 text-sm sm:text-base bg-theme-bg text-theme border border-theme rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
               <option value="">Pilih Mata Pelajaran</option>
               {subjects.map((subject, index) => (
                 <option key={index} value={subject}>
@@ -1349,7 +1391,9 @@ const AttendanceManagement = ({ user, onShowToast }) => {
           </div>
 
           <div className="space-y-2">
-            <label className="block text-sm font-medium text-slate-700">Kelas</label>
+            <label className="block text-sm font-medium text-theme">
+              Kelas
+            </label>
             <select
               value={selectedClass}
               onChange={(e) => {
@@ -1357,8 +1401,7 @@ const AttendanceManagement = ({ user, onShowToast }) => {
                 setCurrentPage(1);
               }}
               disabled={!selectedSubject || loading || isHomeroomDaily()}
-              className="w-full p-2.5 sm:p-3 text-sm sm:text-base border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition disabled:bg-slate-50"
-            >
+              className="w-full p-2.5 sm:p-3 text-sm sm:text-base bg-theme-bg text-theme border border-theme rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition disabled:bg-theme-surface">
               <option value="">Pilih Kelas</option>
               {classes.map((cls) => (
                 <option key={cls.id} value={cls.id}>
@@ -1367,14 +1410,16 @@ const AttendanceManagement = ({ user, onShowToast }) => {
               ))}
             </select>
             {isHomeroomDaily() && (
-              <p className="text-xs text-blue-600 mt-1">
+              <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
                 Kelas otomatis dipilih untuk presensi harian
               </p>
             )}
           </div>
 
           <div className="space-y-2">
-            <label className="block text-sm font-medium text-slate-700">Filter Bulan</label>
+            <label className="block text-sm font-medium text-theme">
+              Filter Bulan
+            </label>
             <select
               value={selectedMonth}
               onChange={(e) => {
@@ -1382,8 +1427,7 @@ const AttendanceManagement = ({ user, onShowToast }) => {
                 setCurrentPage(1);
               }}
               disabled={!selectedClass}
-              className="w-full p-2.5 sm:p-3 text-sm sm:text-base border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
-            >
+              className="w-full p-2.5 sm:p-3 text-sm sm:text-base bg-theme-bg text-theme border border-theme rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
               {months.map((month) => (
                 <option key={month.value} value={month.value}>
                   {month.label}
@@ -1398,7 +1442,7 @@ const AttendanceManagement = ({ user, onShowToast }) => {
       {loading && (
         <div className="bg-theme-bg p-8 rounded-xl shadow-sm text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
-          <p className="text-slate-600">Memuat data presensi...</p>
+          <p className="text-theme-secondary">Memuat data presensi...</p>
         </div>
       )}
 
@@ -1407,13 +1451,12 @@ const AttendanceManagement = ({ user, onShowToast }) => {
         selectedSubject &&
         selectedSemester &&
         attendanceDates.length === 0 && (
-          <div className="bg-theme-bg p-8 rounded-xl shadow-sm text-center text-slate-500">
+          <div className="bg-theme-bg p-8 rounded-xl shadow-sm text-center text-theme-secondary">
             <svg
-              className="w-16 h-16 mx-auto mb-4 text-slate-300"
+              className="w-16 h-16 mx-auto mb-4 text-slate-300 dark:text-slate-600"
               fill="none"
               stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
+              viewBox="0 0 24 24">
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -1431,19 +1474,22 @@ const AttendanceManagement = ({ user, onShowToast }) => {
       {!loading && attendanceDates.length > 0 && (
         <>
           <div className="bg-theme-bg rounded-xl shadow-sm overflow-hidden">
-            <div className="p-4 sm:p-6 border-b border-slate-200 flex justify-between items-center">
+            <div className="p-4 sm:p-6 border-b border-theme flex justify-between items-center">
               <div>
-                <h3 className="text-base sm:text-lg font-semibold text-slate-800">
+                <h3 className="text-base sm:text-lg font-semibold text-theme">
                   Daftar Tanggal Presensi - {selectedSubject}
-                  <span className="text-sm text-slate-600 ml-2">({totalDates} tanggal total)</span>
+                  <span className="text-sm text-theme-secondary ml-2">
+                    ({totalDates} tanggal total)
+                  </span>
                 </h3>
                 {selectedMonth && (
-                  <p className="text-sm text-slate-600 mt-1">
-                    Filter: {months.find((m) => m.value === selectedMonth)?.label}
+                  <p className="text-sm text-theme-secondary mt-1">
+                    Filter:{" "}
+                    {months.find((m) => m.value === selectedMonth)?.label}
                   </p>
                 )}
               </div>
-              <div className="text-sm text-slate-600">
+              <div className="text-sm text-theme-secondary">
                 Halaman {currentPage} dari {totalPages}
               </div>
             </div>
@@ -1451,9 +1497,9 @@ const AttendanceManagement = ({ user, onShowToast }) => {
             {/* Mobile View */}
             <div className="block sm:hidden">
               {attendanceDates.map((dateData) => (
-                <div key={dateData.date} className="border-b border-slate-100 p-4">
+                <div key={dateData.date} className="border-b border-theme p-4">
                   <div className="mb-3">
-                    <div className="font-semibold text-slate-900 mb-2">
+                    <div className="font-semibold text-theme mb-2">
                       📅 {formatDateToIndonesian(dateData.date)}
                     </div>
                     <div className="grid grid-cols-2 gap-2 text-sm">
@@ -1479,20 +1525,17 @@ const AttendanceManagement = ({ user, onShowToast }) => {
                   <div className="flex flex-col gap-2">
                     <button
                       onClick={() => handleEdit(dateData)}
-                      className="w-full px-4 py-2 bg-blue-50 border border-blue-200 text-blue-700 rounded-lg hover:bg-blue-100 transition text-sm font-medium"
-                    >
+                      className="w-full px-4 py-2 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/50 transition text-sm font-medium">
                       ✏️ Edit
                     </button>
                     <button
                       onClick={() => handleChangeDate(dateData)}
-                      className="w-full px-4 py-2 bg-orange-50 border border-orange-200 text-orange-700 rounded-lg hover:bg-orange-100 transition text-sm font-medium"
-                    >
+                      className="w-full px-4 py-2 bg-orange-50 dark:bg-orange-900/30 border border-orange-200 dark:border-orange-800 text-orange-700 dark:text-orange-300 rounded-lg hover:bg-orange-100 dark:hover:bg-orange-900/50 transition text-sm font-medium">
                       📅 Ganti Tanggal
                     </button>
                     <button
                       onClick={() => handleDelete(dateData)}
-                      className="w-full px-4 py-2 bg-red-50 border border-red-200 text-red-700 rounded-lg hover:bg-red-100 transition text-sm font-medium"
-                    >
+                      className="w-full px-4 py-2 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/50 transition text-sm font-medium">
                       🗑️ Hapus
                     </button>
                   </div>
@@ -1503,81 +1546,80 @@ const AttendanceManagement = ({ user, onShowToast }) => {
             {/* Desktop View */}
             <div className="hidden sm:block overflow-x-auto">
               <table className="w-full">
-                <thead className="bg-slate-50">
+                <thead className="bg-theme-surface">
                   <tr>
-                    <th className="px-4 py-3 text-left text-sm font-medium text-slate-700">
+                    <th className="px-4 py-3 text-left text-sm font-medium text-theme">
                       Tanggal
                     </th>
-                    <th className="px-4 py-3 text-center text-sm font-medium text-slate-700">
+                    <th className="px-4 py-3 text-center text-sm font-medium text-theme">
                       Hadir
                     </th>
-                    <th className="px-4 py-3 text-center text-sm font-medium text-slate-700">
+                    <th className="px-4 py-3 text-center text-sm font-medium text-theme">
                       Sakit
                     </th>
-                    <th className="px-4 py-3 text-center text-sm font-medium text-slate-700">
+                    <th className="px-4 py-3 text-center text-sm font-medium text-theme">
                       Izin
                     </th>
-                    <th className="px-4 py-3 text-center text-sm font-medium text-slate-700">
+                    <th className="px-4 py-3 text-center text-sm font-medium text-theme">
                       Alpa
                     </th>
-                    <th className="px-4 py-3 text-center text-sm font-medium text-slate-700">
+                    <th className="px-4 py-3 text-center text-sm font-medium text-theme">
                       Total
                     </th>
-                    <th className="px-4 py-3 text-center text-sm font-medium text-slate-700">
+                    <th className="px-4 py-3 text-center text-sm font-medium text-theme">
                       Aksi
                     </th>
                   </tr>
                 </thead>
                 <tbody>
                   {attendanceDates.map((dateData) => (
-                    <tr key={dateData.date} className="border-b border-slate-100 hover:bg-slate-50">
-                      <td className="px-4 py-3 text-sm font-medium text-slate-900">
+                    <tr
+                      key={dateData.date}
+                      className="border-b border-theme hover:bg-theme-surface">
+                      <td className="px-4 py-3 text-sm font-medium text-theme">
                         📅 {formatDateToIndonesian(dateData.date)}
                       </td>
                       <td className="px-4 py-3 text-center text-sm">
-                        <span className="inline-flex items-center px-2 py-1 rounded-full bg-green-100 text-green-700 font-medium">
+                        <span className="inline-flex items-center px-2 py-1 rounded-full bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300 font-medium">
                           {dateData.hadir}
                         </span>
                       </td>
                       <td className="px-4 py-3 text-center text-sm">
-                        <span className="inline-flex items-center px-2 py-1 rounded-full bg-yellow-100 text-yellow-700 font-medium">
+                        <span className="inline-flex items-center px-2 py-1 rounded-full bg-yellow-100 dark:bg-yellow-900/40 text-yellow-700 dark:text-yellow-300 font-medium">
                           {dateData.sakit}
                         </span>
                       </td>
                       <td className="px-4 py-3 text-center text-sm">
-                        <span className="inline-flex items-center px-2 py-1 rounded-full bg-blue-100 text-blue-700 font-medium">
+                        <span className="inline-flex items-center px-2 py-1 rounded-full bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 font-medium">
                           {dateData.izin}
                         </span>
                       </td>
                       <td className="px-4 py-3 text-center text-sm">
-                        <span className="inline-flex items-center px-2 py-1 rounded-full bg-red-100 text-red-700 font-medium">
+                        <span className="inline-flex items-center px-2 py-1 rounded-full bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300 font-medium">
                           {dateData.alpa}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-center text-sm font-semibold text-slate-900">
+                      <td className="px-4 py-3 text-center text-sm font-semibold text-theme">
                         {dateData.total}
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex justify-center gap-2">
                           <button
                             onClick={() => handleEdit(dateData)}
-                            className="px-3 py-1.5 bg-blue-50 border border-blue-200 text-blue-700 rounded-lg hover:bg-blue-100 transition text-xs font-medium"
-                            title="Edit"
-                          >
+                            className="px-3 py-1.5 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/50 transition text-xs font-medium"
+                            title="Edit">
                             ✏️ Edit
                           </button>
                           <button
                             onClick={() => handleChangeDate(dateData)}
-                            className="px-3 py-1.5 bg-orange-50 border border-orange-200 text-orange-700 rounded-lg hover:bg-orange-100 transition text-xs font-medium"
-                            title="Ganti Tanggal"
-                          >
+                            className="px-3 py-1.5 bg-orange-50 dark:bg-orange-900/30 border border-orange-200 dark:border-orange-800 text-orange-700 dark:text-orange-300 rounded-lg hover:bg-orange-100 dark:hover:bg-orange-900/50 transition text-xs font-medium"
+                            title="Ganti Tanggal">
                             📅
                           </button>
                           <button
                             onClick={() => handleDelete(dateData)}
-                            className="px-3 py-1.5 bg-red-50 border border-red-200 text-red-700 rounded-lg hover:bg-red-100 transition text-xs font-medium"
-                            title="Hapus"
-                          >
+                            className="px-3 py-1.5 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/50 transition text-xs font-medium"
+                            title="Hapus">
                             🗑️
                           </button>
                         </div>
@@ -1595,13 +1637,13 @@ const AttendanceManagement = ({ user, onShowToast }) => {
       )}
 
       {!selectedSemester && (
-        <div className="bg-theme-bg p-8 rounded-xl shadow-sm text-center text-slate-500">
+        <div className="bg-theme-bg p-8 rounded-xl shadow-sm text-center text-theme-secondary">
           <p>Pilih semester untuk memulai</p>
         </div>
       )}
 
       {selectedSemester && !selectedSubject && (
-        <div className="bg-theme-bg p-8 rounded-xl shadow-sm text-center text-slate-500">
+        <div className="bg-theme-bg p-8 rounded-xl shadow-sm text-center text-theme-secondary">
           <p>Pilih mata pelajaran untuk melanjutkan</p>
         </div>
       )}

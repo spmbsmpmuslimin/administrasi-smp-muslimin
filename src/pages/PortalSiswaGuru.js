@@ -26,49 +26,54 @@ const menuItems = [
     // (lihat menuConfig.js -- allowedRoles udah include "teacher" +
     // requireWaliKelas: true, jadi walikelas emang udah boleh masuk situ).
     path: "/data-induk-siswa",
-    color: "bg-blue-100 text-blue-600",
+    color: "bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400",
   },
   {
     title: "Catatan Siswa",
     description: "Catatan perkembangan & pelanggaran siswa",
     icon: FileEdit,
     path: "/catatan-siswa",
-    color: "bg-amber-100 text-amber-600",
+    color:
+      "bg-amber-100 dark:bg-amber-900/40 text-amber-600 dark:text-amber-400",
   },
   {
     title: "Jadwal Pelajaran",
     description: "Jadwal pelajaran per kelas",
     icon: ClipboardList,
     path: "/kelola-jadwal-pelajaran",
-    color: "bg-purple-100 text-purple-600",
+    color:
+      "bg-purple-100 dark:bg-purple-900/40 text-purple-600 dark:text-purple-400",
   },
   {
     title: "Jadwal Piket",
     description: "Jadwal piket kebersihan kelas",
     icon: ClipboardCheck,
     path: "/jadwal-piket",
-    color: "bg-green-100 text-green-600",
+    color:
+      "bg-green-100 dark:bg-green-900/40 text-green-600 dark:text-green-400",
   },
   {
     title: "Denah Duduk",
     description: "Tata letak tempat duduk siswa di kelas",
     icon: LayoutGrid,
     path: "/denah-duduk",
-    color: "bg-pink-100 text-pink-600",
+    color: "bg-pink-100 dark:bg-pink-900/40 text-pink-600 dark:text-pink-400",
   },
   {
     title: "Organigram",
     description: "Struktur organisasi kelas",
     icon: Network,
     path: "/organigram",
-    color: "bg-indigo-100 text-indigo-600",
+    color:
+      "bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400",
   },
   {
     title: "Info Pembayaran",
     description: "Rekap status SPP siswa di kelas (read-only)",
     icon: Wallet,
     path: "/keuangan-kelas",
-    color: "bg-emerald-100 text-emerald-600",
+    color:
+      "bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400",
   },
 ];
 
@@ -86,15 +91,18 @@ export default function PortalSiswaGuru({ user, onShowToast, darkMode }) {
           description: "Kelola konten materi & tips belajar siswa",
           icon: BookOpen,
           path: "/ruang-belajar-admin",
-          color: "bg-teal-100 text-teal-600",
+          color:
+            "bg-teal-100 dark:bg-teal-900/40 text-teal-600 dark:text-teal-400",
         },
       ]
     : menuItems;
 
   return (
     <div className="p-4 md:p-6">
-      <h1 className="text-xl md:text-2xl font-bold text-slate-800 mb-1">Portal Siswa</h1>
-      <p className="text-sm text-slate-500 mb-6">
+      <h1 className="text-xl md:text-2xl font-bold text-theme mb-1">
+        Portal Siswa
+      </h1>
+      <p className="text-sm text-theme-secondary mb-6">
         Akses cepat ke seluruh data dan aktivitas siswa di kelas Anda
       </p>
 
@@ -105,20 +113,20 @@ export default function PortalSiswaGuru({ user, onShowToast, darkMode }) {
             <button
               key={item.title}
               onClick={() => navigate(item.path)}
-              className="group text-left bg-white rounded-2xl border border-slate-200 p-4 shadow-sm
-                         hover:shadow-md hover:border-blue-300 hover:-translate-y-0.5
-                         transition-all duration-200 flex flex-col gap-3"
-            >
+              className="group text-left bg-theme-bg rounded-2xl border border-theme p-4 shadow-sm
+                         hover:shadow-md hover:border-blue-300 dark:hover:border-blue-500 hover:-translate-y-0.5
+                         transition-all duration-200 flex flex-col gap-3">
               <div
-                className={`w-11 h-11 rounded-xl flex items-center justify-center ${item.color}`}
-              >
+                className={`w-11 h-11 rounded-xl flex items-center justify-center ${item.color}`}>
                 <Icon size={22} />
               </div>
               <div>
-                <h3 className="font-semibold text-slate-800 text-sm md:text-base group-hover:text-blue-600">
+                <h3 className="font-semibold text-theme text-sm md:text-base group-hover:text-blue-600 dark:group-hover:text-blue-400">
                   {item.title}
                 </h3>
-                <p className="text-xs md:text-sm text-slate-500 mt-0.5">{item.description}</p>
+                <p className="text-xs md:text-sm text-theme-secondary mt-0.5">
+                  {item.description}
+                </p>
               </div>
             </button>
           );

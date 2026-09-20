@@ -1,9 +1,9 @@
 STRUKTUR SISTEM
-Di-download dari UI: 20 Sep 2026, 12.50
+Di-download dari UI: 20 Sep 2026, 21.21
 
 ======================================================================
 STRUKTUR PROJECT (src/)
-Terakhir di-generate: 20 Sep 2026, 12.49
+Terakhir di-generate: 20 Sep 2026, 21.20
 ======================================================================
 |-- src
 |   |-- assets
@@ -376,12 +376,11 @@ Terakhir di-generate: 20 Sep 2026, 12.49
 
 ======================================================================
 STRUKTUR DATABASE
-Terakhir di-generate: 20 Sep 2026, 12.49
+Terakhir di-generate: 20 Sep 2026, 21.20
 ======================================================================
 ## Daftar Tabel Database Supabase
 academic_events : id,title,category_id,start_date,end_date,description,academic_year,semester,created_by,created_at,updated_at
 academic_years : id,year,semester,start_date,end_date,is_active,created_at,updated_at
-anggaran_ujian : id,ujian_id,kategori,uraian,anggaran,realisasi,keterangan,created_at
 announcement : id,title,content,created_at,updated_at,effective_from,effective_until,target_role,is_active
 announcement_reads : id,announcement_id,user_id,read_at,created_at
 app_config : id,is_maintenance,maintenance_message,updated_at
@@ -410,7 +409,6 @@ kaldik_documents : id,academic_year,title,file_url,uploaded_by,created_at
 kelulusan_config : id,nilai_akhir_minimum,updated_at
 kkm_mapel : id,mata_pelajaran,kkm,updated_at
 konseling : id,student_id,nis,full_name,gender,class_id,tanggal,jenis_layanan,bidang_bimbingan,permasalahan,kronologi,tindakan_layanan,hasil_layanan,rencana_tindak_lanjut,status_layanan,guru_bk_id,guru_bk_name,academic_year,semester,created_at,updated_at,tingkat_urgensi,kategori_masalah,perlu_followup,tanggal_followup,academic_year_id
-laporan_rekap_ujian : id,ujian_id,keterangan_nilai,evaluasi_kendala,kesimpulan_saran,updated_at
 nilai_eraport : id,student_id,class_id,mata_pelajaran,guru_id,academic_year_id,semester,nilai_akhir,deskripsi_capaian,kkm,created_at,updated_at,created_by,updated_by
 nilai_eraport_detail : id,nilai_eraport_id,tujuan_pembelajaran_id,status_tercapai,created_at,updated_at
 notifications : id,recipient_id,type,title,message,student_id,note_id,class_id,created_by,created_by_name,is_read,read_at,created_at,student_name,category,label,note_content,action_taken

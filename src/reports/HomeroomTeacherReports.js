@@ -24,52 +24,52 @@ import {
 
 const COLOR_CLASSES = {
   indigo: {
-    bg: "bg-indigo-100",
-    text: "text-indigo-600",
-    border: "border-indigo-200",
-    hover: "hover:bg-indigo-200",
+    bg: "bg-indigo-100 dark:bg-indigo-900/40",
+    text: "text-indigo-600 dark:text-indigo-400",
+    border: "border-indigo-200 dark:border-indigo-800",
+    hover: "hover:bg-indigo-200 dark:hover:bg-indigo-900/60",
   },
   green: {
-    bg: "bg-green-100",
-    text: "text-green-600",
-    border: "border-green-200",
-    hover: "hover:bg-green-200",
+    bg: "bg-green-100 dark:bg-green-900/40",
+    text: "text-green-600 dark:text-green-400",
+    border: "border-green-200 dark:border-green-800",
+    hover: "hover:bg-green-200 dark:hover:bg-green-900/60",
   },
   blue: {
-    bg: "bg-blue-100",
-    text: "text-blue-600",
-    border: "border-blue-200",
-    hover: "hover:bg-blue-200",
+    bg: "bg-blue-100 dark:bg-blue-900/40",
+    text: "text-blue-600 dark:text-blue-400",
+    border: "border-blue-200 dark:border-blue-800",
+    hover: "hover:bg-blue-200 dark:hover:bg-blue-900/60",
   },
   yellow: {
-    bg: "bg-yellow-100",
-    text: "text-yellow-600",
-    border: "border-yellow-200",
-    hover: "hover:bg-yellow-200",
+    bg: "bg-yellow-100 dark:bg-yellow-900/40",
+    text: "text-yellow-600 dark:text-yellow-400",
+    border: "border-yellow-200 dark:border-yellow-800",
+    hover: "hover:bg-yellow-200 dark:hover:bg-yellow-900/60",
   },
   orange: {
-    bg: "bg-orange-100",
-    text: "text-orange-600",
-    border: "border-orange-200",
-    hover: "hover:bg-orange-200",
+    bg: "bg-orange-100 dark:bg-orange-900/40",
+    text: "text-orange-600 dark:text-orange-400",
+    border: "border-orange-200 dark:border-orange-800",
+    hover: "hover:bg-orange-200 dark:hover:bg-orange-900/60",
   },
   purple: {
-    bg: "bg-purple-100",
-    text: "text-purple-600",
-    border: "border-purple-200",
-    hover: "hover:bg-purple-200",
+    bg: "bg-purple-100 dark:bg-purple-900/40",
+    text: "text-purple-600 dark:text-purple-400",
+    border: "border-purple-200 dark:border-purple-800",
+    hover: "hover:bg-purple-200 dark:hover:bg-purple-900/60",
   },
   red: {
-    bg: "bg-red-100",
-    text: "text-red-600",
-    border: "border-red-200",
-    hover: "hover:bg-red-200",
+    bg: "bg-red-100 dark:bg-red-900/40",
+    text: "text-red-600 dark:text-red-400",
+    border: "border-red-200 dark:border-red-800",
+    hover: "hover:bg-red-200 dark:hover:bg-red-900/60",
   },
   teal: {
-    bg: "bg-teal-100",
-    text: "text-teal-600",
-    border: "border-teal-200",
-    hover: "hover:bg-teal-200",
+    bg: "bg-teal-100 dark:bg-teal-900/40",
+    text: "text-teal-600 dark:text-teal-400",
+    border: "border-teal-200 dark:border-teal-800",
+    hover: "hover:bg-teal-200 dark:hover:bg-teal-900/60",
   },
 };
 
@@ -147,22 +147,28 @@ const getTrendMonthOptions = () => {
 // ==================== EXTRACTED COMPONENTS ====================
 
 // 1. ReportStatCard (Formerly StatCard)
-const ReportStatCard = ({ icon: Icon, label, value, color = "indigo", alert = false }) => {
+const ReportStatCard = ({
+  icon: Icon,
+  label,
+  value,
+  color = "indigo",
+  alert = false,
+}) => {
   const colors = COLOR_CLASSES[color] || COLOR_CLASSES.indigo;
 
   return (
     <div
       className={`bg-theme-bg rounded-lg shadow-sm border ${
-        alert ? "border-red-300" : "border-slate-200"
-      } p-4 hover:shadow-md transition-shadow`}
-    >
+        alert ? "border-red-300 dark:border-red-700" : "border-theme"
+      } p-4 hover:shadow-md transition-shadow`}>
       <div className="flex items-center gap-3">
-        <div className={`w-12 h-12 ${colors.bg} rounded-lg flex items-center justify-center`}>
+        <div
+          className={`w-12 h-12 ${colors.bg} rounded-lg flex items-center justify-center`}>
           <Icon className={`w-6 h-6 ${colors.text}`} />
         </div>
         <div className="flex-1">
-          <p className="text-sm text-slate-600">{label}</p>
-          <p className="text-2xl font-bold text-slate-800">{value}</p>
+          <p className="text-sm text-theme-secondary">{label}</p>
+          <p className="text-2xl font-bold text-theme">{value}</p>
         </div>
         {alert && <AlertTriangle className="w-5 h-5 text-red-500" />}
       </div>
@@ -180,14 +186,15 @@ const AttendanceTrendChart = ({
   emptyLabel = "Belum ada data presensi untuk bulan ini.",
 }) => {
   return (
-    <div className="bg-theme-bg rounded-lg shadow-sm border border-slate-200 p-4 md:p-6 mb-6 md:mb-8">
+    <div className="bg-theme-bg rounded-lg shadow-sm border border-theme p-4 md:p-6 mb-6 md:mb-8">
       <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
-        <h3 className="text-sm font-semibold text-slate-800">Tren Kehadiran Harian</h3>
+        <h3 className="text-sm font-semibold text-theme">
+          Tren Kehadiran Harian
+        </h3>
         <select
           value={selectedMonth}
           onChange={(e) => onMonthChange(e.target.value)}
-          className="px-3 py-1.5 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-        >
+          className="px-3 py-1.5 bg-theme-bg text-theme border border-theme rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
           {monthOptions.map((opt) => (
             <option key={opt.value} value={opt.value}>
               {opt.label}
@@ -198,19 +205,38 @@ const AttendanceTrendChart = ({
       {data.length > 0 ? (
         <ResponsiveContainer width="100%" height={220}>
           <LineChart data={data}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+            <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
             <XAxis
               dataKey="label"
-              tick={{ fontSize: 11 }}
+              tick={{ fontSize: 11, fill: "var(--color-text-secondary)" }}
               interval={Math.ceil(data.length / 10) - 1}
             />
-            <YAxis domain={[0, 100]} tickFormatter={(v) => `${v}%`} tick={{ fontSize: 12 }} />
-            <Tooltip formatter={(v) => [`${v}%`, "Kehadiran"]} />
-            <Line type="monotone" dataKey="rate" stroke="#4f46e5" strokeWidth={2} dot={{ r: 3 }} />
+            <YAxis
+              domain={[0, 100]}
+              tickFormatter={(v) => `${v}%`}
+              tick={{ fontSize: 12, fill: "var(--color-text-secondary)" }}
+            />
+            <Tooltip
+              formatter={(v) => [`${v}%`, "Kehadiran"]}
+              contentStyle={{
+                backgroundColor: "var(--color-surface)",
+                border: "1px solid var(--color-border)",
+                borderRadius: 8,
+              }}
+              labelStyle={{ color: "var(--color-text)" }}
+              itemStyle={{ color: "var(--color-text)" }}
+            />
+            <Line
+              type="monotone"
+              dataKey="rate"
+              stroke="#4f46e5"
+              strokeWidth={2}
+              dot={{ r: 3 }}
+            />
           </LineChart>
         </ResponsiveContainer>
       ) : (
-        <p className="text-sm text-slate-500">{emptyLabel}</p>
+        <p className="text-sm text-theme-secondary">{emptyLabel}</p>
       )}
     </div>
   );
@@ -294,22 +320,25 @@ const StudentAlertsAndAssignments = ({
     return (
       <div className="bg-orange-50 dark:bg-orange-900/20 border-2 border-orange-200 dark:border-orange-800 rounded-lg p-4 md:p-6 mb-6 md:mb-8">
         <div className="flex items-start gap-3">
-          <AlertTriangle className="w-6 h-6 text-orange-600 mt-1 flex-shrink-0" />
+          <AlertTriangle className="w-6 h-6 text-orange-600 dark:text-orange-400 mt-1 flex-shrink-0" />
           <div className="flex-1">
             <h3 className="font-semibold text-orange-900 dark:text-orange-200 mb-2 text-sm md:text-base">
               Siswa Perlu Perhatian Khusus
             </h3>
-            <p className="text-sm text-orange-800 mb-3">
+            <p className="text-sm text-orange-800 dark:text-orange-300 mb-3">
               Siswa dengan tingkat kehadiran di bawah 75% dalam 30 hari terakhir
             </p>
             <div className="space-y-2">
               {alertStudents.map((student, idx) => (
-                <div key={idx} className="bg-theme-bg p-3 rounded-lg border border-orange-200">
-                  <p className="text-sm font-medium text-slate-800">
+                <div
+                  key={idx}
+                  className="bg-theme-bg p-3 rounded-lg border border-orange-200 dark:border-orange-800">
+                  <p className="text-sm font-medium text-theme">
                     {student.name} ({student.nis})
                   </p>
-                  <p className="text-xs text-slate-600">
-                    Kehadiran: {student.rate}% ({student.present} dari {student.total} hari)
+                  <p className="text-xs text-theme-secondary">
+                    Kehadiran: {student.rate}% ({student.present} dari{" "}
+                    {student.total} hari)
                   </p>
                 </div>
               ))}
@@ -323,27 +352,34 @@ const StudentAlertsAndAssignments = ({
   // ✅ Disederhanakan: tab Guru Mapel sekarang fokus ke kehadiran siswa di
   // kelas+mapel yang dipilih, samain gaya dengan alert tab Wali Kelas di atas
   // (bukan lagi grid ringkasan semua kelas yang diampu).
-  if (activeTab === "teacher" && teacherAssignments.length > 0 && teacherAlertStudents.length > 0) {
+  if (
+    activeTab === "teacher" &&
+    teacherAssignments.length > 0 &&
+    teacherAlertStudents.length > 0
+  ) {
     return (
       <div className="bg-orange-50 dark:bg-orange-900/20 border-2 border-orange-200 dark:border-orange-800 rounded-lg p-4 md:p-6 mb-6 md:mb-8">
         <div className="flex items-start gap-3">
-          <AlertTriangle className="w-6 h-6 text-orange-600 mt-1 flex-shrink-0" />
+          <AlertTriangle className="w-6 h-6 text-orange-600 dark:text-orange-400 mt-1 flex-shrink-0" />
           <div className="flex-1">
             <h3 className="font-semibold text-orange-900 dark:text-orange-200 mb-2 text-sm md:text-base">
               Siswa Perlu Perhatian Khusus
             </h3>
-            <p className="text-sm text-orange-800 mb-3">
-              Siswa dengan tingkat kehadiran di bawah 75% dalam 30 hari terakhir, untuk kelas &
-              mapel ini
+            <p className="text-sm text-orange-800 dark:text-orange-300 mb-3">
+              Siswa dengan tingkat kehadiran di bawah 75% dalam 30 hari
+              terakhir, untuk kelas & mapel ini
             </p>
             <div className="space-y-2">
               {teacherAlertStudents.map((student, idx) => (
-                <div key={idx} className="bg-theme-bg p-3 rounded-lg border border-orange-200">
-                  <p className="text-sm font-medium text-slate-800">
+                <div
+                  key={idx}
+                  className="bg-theme-bg p-3 rounded-lg border border-orange-200 dark:border-orange-800">
+                  <p className="text-sm font-medium text-theme">
                     {student.name} ({student.nis})
                   </p>
-                  <p className="text-xs text-slate-600">
-                    Kehadiran: {student.rate}% ({student.present} dari {student.total} hari)
+                  <p className="text-xs text-theme-secondary">
+                    Kehadiran: {student.rate}% ({student.present} dari{" "}
+                    {student.total} hari)
                   </p>
                 </div>
               ))}
@@ -358,14 +394,14 @@ const StudentAlertsAndAssignments = ({
     return (
       <div className="bg-yellow-50 dark:bg-yellow-900/20 border-2 border-yellow-200 dark:border-yellow-800 rounded-lg p-4 md:p-6 mb-6 md:mb-8">
         <div className="flex items-start gap-3">
-          <AlertTriangle className="w-6 h-6 text-yellow-600 mt-1 flex-shrink-0" />
+          <AlertTriangle className="w-6 h-6 text-yellow-600 dark:text-yellow-400 mt-1 flex-shrink-0" />
           <div className="flex-1">
             <h3 className="font-semibold text-yellow-900 dark:text-yellow-200 mb-2 text-sm md:text-base">
               Belum Ada Penugasan Kelas
             </h3>
-            <p className="text-sm text-yellow-800">
-              Anda belum memiliki penugasan mata pelajaran. Silakan hubungi admin untuk setup
-              penugasan kelas dan mata pelajaran.
+            <p className="text-sm text-yellow-800 dark:text-yellow-300">
+              Anda belum memiliki penugasan mata pelajaran. Silakan hubungi
+              admin untuk setup penugasan kelas dan mata pelajaran.
             </p>
           </div>
         </div>
@@ -449,7 +485,7 @@ const HomeroomTeacherReports = ({ user }) => {
     opts.sort(
       (a, b) =>
         a.class_id.localeCompare(b.class_id, "id", { numeric: true }) ||
-        a.subject.localeCompare(b.subject, "id")
+        a.subject.localeCompare(b.subject, "id"),
     );
     return opts;
   }, [teacherAssignments]);
@@ -459,7 +495,9 @@ const HomeroomTeacherReports = ({ user }) => {
       if (!user?.homeroom_class_id) {
         // Allow teacher role to proceed even if not homeroom, only throw specific error if activeTab is homeroom
         if (activeTab === "homeroom") {
-          setError("Data user tidak lengkap. Pastikan Anda sudah ditugaskan sebagai wali kelas.");
+          setError(
+            "Data user tidak lengkap. Pastikan Anda sudah ditugaskan sebagai wali kelas.",
+          );
         }
       }
 
@@ -468,7 +506,10 @@ const HomeroomTeacherReports = ({ user }) => {
         setError(null);
 
         // Use Promise.allSettled for robust initial loading
-        const results = await Promise.allSettled([fetchStats(), fetchTeacherAssignments()]);
+        const results = await Promise.allSettled([
+          fetchStats(),
+          fetchTeacherAssignments(),
+        ]);
 
         const failures = results.filter((r) => r.status === "rejected");
         if (failures.length > 0) {
@@ -502,9 +543,12 @@ const HomeroomTeacherReports = ({ user }) => {
       if (data && data.length > 0) {
         try {
           // Fetch teacher stats using RPC
-          const { data: stats, error: statsError } = await supabase.rpc("get_teacher_stats", {
-            p_teacher_uuid: user.id,
-          });
+          const { data: stats, error: statsError } = await supabase.rpc(
+            "get_teacher_stats",
+            {
+              p_teacher_uuid: user.id,
+            },
+          );
 
           if (statsError) throw statsError;
 
@@ -561,7 +605,10 @@ const HomeroomTeacherReports = ({ user }) => {
       setStats({
         totalStudents,
         presentToday,
-        attendanceRate: totalStudents > 0 ? Math.round((presentToday / totalStudents) * 100) : 0,
+        attendanceRate:
+          totalStudents > 0
+            ? Math.round((presentToday / totalStudents) * 100)
+            : 0,
         alerts: data?.alert_students?.length || 0,
         className: user.homeroom_class_id,
       });
@@ -594,8 +641,12 @@ const HomeroomTeacherReports = ({ user }) => {
         const year = parseInt(yearStr, 10);
         const month = parseInt(monthStr, 10) - 1; // 0-indexed
 
-        const monthStart = new Date(Date.UTC(year, month, 1)).toISOString().split("T")[0];
-        const monthEnd = new Date(Date.UTC(year, month + 1, 0)).toISOString().split("T")[0];
+        const monthStart = new Date(Date.UTC(year, month, 1))
+          .toISOString()
+          .split("T")[0];
+        const monthEnd = new Date(Date.UTC(year, month + 1, 0))
+          .toISOString()
+          .split("T")[0];
         const todayStr = getWIBDateString();
         // Kalau bulan yang dipilih adalah bulan berjalan, jangan query melewati hari ini
         const effectiveEnd = monthEnd > todayStr ? todayStr : monthEnd;
@@ -614,19 +665,27 @@ const HomeroomTeacherReports = ({ user }) => {
         // Kelompokkan per tanggal (satu titik data = satu hari sekolah)
         const dayBuckets = {};
         (data || []).forEach((row) => {
-          if (!dayBuckets[row.date]) dayBuckets[row.date] = { total: 0, hadir: 0 };
+          if (!dayBuckets[row.date])
+            dayBuckets[row.date] = { total: 0, hadir: 0 };
           dayBuckets[row.date].total += 1;
-          if (row.status?.toLowerCase() === "hadir") dayBuckets[row.date].hadir += 1;
+          if (row.status?.toLowerCase() === "hadir")
+            dayBuckets[row.date].hadir += 1;
         });
 
         const sortedDays = Object.keys(dayBuckets).sort();
         const trend = sortedDays.map((dateKey) => {
           const bucket = dayBuckets[dateKey];
-          const rate = bucket.total > 0 ? Math.round((bucket.hadir / bucket.total) * 100) : 0;
-          const label = new Date(dateKey + "T00:00:00").toLocaleDateString("id-ID", {
-            day: "numeric",
-            month: "numeric",
-          });
+          const rate =
+            bucket.total > 0
+              ? Math.round((bucket.hadir / bucket.total) * 100)
+              : 0;
+          const label = new Date(dateKey + "T00:00:00").toLocaleDateString(
+            "id-ID",
+            {
+              day: "numeric",
+              month: "numeric",
+            },
+          );
           return { label, rate };
         });
 
@@ -636,7 +695,7 @@ const HomeroomTeacherReports = ({ user }) => {
         setDailyAttendance([]);
       }
     },
-    [user?.homeroom_class_id]
+    [user?.homeroom_class_id],
   );
 
   useEffect(() => {
@@ -664,8 +723,12 @@ const HomeroomTeacherReports = ({ user }) => {
         const year = parseInt(yearStr, 10);
         const month = parseInt(monthStr, 10) - 1;
 
-        const monthStart = new Date(Date.UTC(year, month, 1)).toISOString().split("T")[0];
-        const monthEnd = new Date(Date.UTC(year, month + 1, 0)).toISOString().split("T")[0];
+        const monthStart = new Date(Date.UTC(year, month, 1))
+          .toISOString()
+          .split("T")[0];
+        const monthEnd = new Date(Date.UTC(year, month + 1, 0))
+          .toISOString()
+          .split("T")[0];
         const todayStr = getWIBDateString();
         const effectiveEnd = monthEnd > todayStr ? todayStr : monthEnd;
 
@@ -684,19 +747,27 @@ const HomeroomTeacherReports = ({ user }) => {
 
         const dayBuckets = {};
         (data || []).forEach((row) => {
-          if (!dayBuckets[row.date]) dayBuckets[row.date] = { total: 0, hadir: 0 };
+          if (!dayBuckets[row.date])
+            dayBuckets[row.date] = { total: 0, hadir: 0 };
           dayBuckets[row.date].total += 1;
-          if (row.status?.toLowerCase() === "hadir") dayBuckets[row.date].hadir += 1;
+          if (row.status?.toLowerCase() === "hadir")
+            dayBuckets[row.date].hadir += 1;
         });
 
         const sortedDays = Object.keys(dayBuckets).sort();
         const trend = sortedDays.map((dateKey) => {
           const bucket = dayBuckets[dateKey];
-          const rate = bucket.total > 0 ? Math.round((bucket.hadir / bucket.total) * 100) : 0;
-          const label = new Date(dateKey + "T00:00:00").toLocaleDateString("id-ID", {
-            day: "numeric",
-            month: "numeric",
-          });
+          const rate =
+            bucket.total > 0
+              ? Math.round((bucket.hadir / bucket.total) * 100)
+              : 0;
+          const label = new Date(dateKey + "T00:00:00").toLocaleDateString(
+            "id-ID",
+            {
+              day: "numeric",
+              month: "numeric",
+            },
+          );
           return { label, rate };
         });
 
@@ -706,7 +777,7 @@ const HomeroomTeacherReports = ({ user }) => {
         setTeacherDailyAttendance([]);
       }
     },
-    [user?.id]
+    [user?.id],
   );
 
   useEffect(() => {
@@ -714,10 +785,14 @@ const HomeroomTeacherReports = ({ user }) => {
       fetchTeacherDailyAttendanceTrend(
         selectedClassSubject.class_id,
         selectedClassSubject.subject,
-        selectedTeacherMonth
+        selectedTeacherMonth,
       );
     }
-  }, [selectedClassSubject, selectedTeacherMonth, fetchTeacherDailyAttendanceTrend]);
+  }, [
+    selectedClassSubject,
+    selectedTeacherMonth,
+    fetchTeacherDailyAttendanceTrend,
+  ]);
 
   // ✅ NEW: Stats kehadiran — Guru Mapel, buat kelas+mapel yang dipilih.
   // Diadaptasi dari fetchTeacherMapelStats di TeacherReports.js, disesuaikan
@@ -746,7 +821,9 @@ const HomeroomTeacherReports = ({ user }) => {
         const totalStudents = students?.length || 0;
 
         const wibNow = new Date(Date.now() + WIB_OFFSET_MS);
-        const monthStart = new Date(Date.UTC(wibNow.getUTCFullYear(), wibNow.getUTCMonth(), 1))
+        const monthStart = new Date(
+          Date.UTC(wibNow.getUTCFullYear(), wibNow.getUTCMonth(), 1),
+        )
           .toISOString()
           .split("T")[0];
         const todayStr = getWIBDateString();
@@ -764,9 +841,12 @@ const HomeroomTeacherReports = ({ user }) => {
         if (monthlyError) throw monthlyError;
         const monthlyTotal = monthlyAtt?.length || 0;
         const monthlyHadir =
-          monthlyAtt?.filter((a) => a.status?.toLowerCase() === "hadir").length || 0;
+          monthlyAtt?.filter((a) => a.status?.toLowerCase() === "hadir")
+            .length || 0;
         const monthlyAttendanceRate =
-          monthlyTotal > 0 ? Math.round((monthlyHadir / monthlyTotal) * 100) : 0;
+          monthlyTotal > 0
+            ? Math.round((monthlyHadir / monthlyTotal) * 100)
+            : 0;
 
         const { startDate: semesterStart } = getCurrentSemesterRange();
 
@@ -783,9 +863,12 @@ const HomeroomTeacherReports = ({ user }) => {
         if (semesterError) throw semesterError;
         const semesterTotal = semesterAtt?.length || 0;
         const semesterHadir =
-          semesterAtt?.filter((a) => a.status?.toLowerCase() === "hadir").length || 0;
+          semesterAtt?.filter((a) => a.status?.toLowerCase() === "hadir")
+            .length || 0;
         const semesterAttendanceRate =
-          semesterTotal > 0 ? Math.round((semesterHadir / semesterTotal) * 100) : 0;
+          semesterTotal > 0
+            ? Math.round((semesterHadir / semesterTotal) * 100)
+            : 0;
 
         const thirtyDaysAgo = new Date(wibNow);
         thirtyDaysAgo.setUTCDate(thirtyDaysAgo.getUTCDate() - 30);
@@ -805,12 +888,15 @@ const HomeroomTeacherReports = ({ user }) => {
         const alertList = [];
         if (students && recentAtt) {
           students.forEach((student) => {
-            const studentAtt = recentAtt.filter((a) => a.student_id === student.id);
+            const studentAtt = recentAtt.filter(
+              (a) => a.student_id === student.id,
+            );
             const totalDays = studentAtt.length;
             const presentDays = studentAtt.filter(
-              (a) => a.status?.toLowerCase() === "hadir"
+              (a) => a.status?.toLowerCase() === "hadir",
             ).length;
-            const rate = totalDays > 0 ? Math.round((presentDays / totalDays) * 100) : 0;
+            const rate =
+              totalDays > 0 ? Math.round((presentDays / totalDays) * 100) : 0;
 
             if (totalDays > 0 && rate < 75) {
               alertList.push({
@@ -842,23 +928,26 @@ const HomeroomTeacherReports = ({ user }) => {
         setTeacherAlertStudents([]);
       }
     },
-    [user?.id]
+    [user?.id],
   );
 
   useEffect(() => {
     if (selectedClassSubject) {
-      fetchTeacherMapelStats(selectedClassSubject.class_id, selectedClassSubject.subject);
+      fetchTeacherMapelStats(
+        selectedClassSubject.class_id,
+        selectedClassSubject.subject,
+      );
     }
   }, [selectedClassSubject, fetchTeacherMapelStats]);
 
   if (loading && !dataLoaded) {
     return (
-      <div className="min-h-screen bg-slate-50 p-4 md:p-6">
+      <div className="min-h-screen bg-theme-surface p-4 md:p-6">
         <div className="max-w-7xl mx-auto">
           <div className="flex items-center justify-center h-64">
             <div className="text-center">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
-              <p className="text-slate-600">Memuat data...</p>
+              <p className="text-theme-secondary">Memuat data...</p>
             </div>
           </div>
         </div>
@@ -869,18 +958,18 @@ const HomeroomTeacherReports = ({ user }) => {
   // Error state for Homeroom tab if not assigned
   if (!user?.homeroom_class_id && activeTab === "homeroom") {
     return (
-      <div className="min-h-screen bg-slate-50 p-4 md:p-6">
+      <div className="min-h-screen bg-theme-surface p-4 md:p-6">
         <div className="max-w-7xl mx-auto">
           <div className="bg-yellow-50 dark:bg-yellow-900/20 border-2 border-yellow-200 dark:border-yellow-800 rounded-lg p-4 md:p-6">
             <div className="flex items-start gap-3">
-              <AlertTriangle className="w-6 h-6 text-yellow-600 mt-1 flex-shrink-0" />
+              <AlertTriangle className="w-6 h-6 text-yellow-600 dark:text-yellow-400 mt-1 flex-shrink-0" />
               <div className="flex-1">
                 <h3 className="font-semibold text-yellow-900 dark:text-yellow-200 mb-2 text-sm md:text-base">
                   Belum Ditugaskan Sebagai Wali Kelas
                 </h3>
-                <p className="text-sm text-yellow-800">
-                  Anda belum memiliki penugasan sebagai wali kelas. Silakan hubungi admin untuk
-                  setup penugasan kelas.
+                <p className="text-sm text-yellow-800 dark:text-yellow-300">
+                  Anda belum memiliki penugasan sebagai wali kelas. Silakan
+                  hubungi admin untuk setup penugasan kelas.
                 </p>
               </div>
             </div>
@@ -892,44 +981,44 @@ const HomeroomTeacherReports = ({ user }) => {
 
   // ==================== MAIN RENDER ====================
   return (
-    <div className="min-h-screen bg-slate-50 p-4 md:p-6 transition-colors">
+    <div className="min-h-screen bg-theme-surface p-4 md:p-6 transition-colors">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-6 md:mb-8">
           <div className="flex items-center gap-3 mb-4">
-            <FileText className="w-8 h-8 text-indigo-600 flex-shrink-0" />
+            <FileText className="w-8 h-8 text-indigo-600 dark:text-indigo-400 flex-shrink-0" />
             <div>
-              <h1 className="text-2xl md:text-3xl font-bold text-slate-800">
+              <h1 className="text-2xl md:text-3xl font-bold text-theme">
                 Laporan - Wali Kelas & Guru Mapel
               </h1>
-              <p className="text-sm text-slate-500 mt-1">
-                {user?.full_name || "User"} - Wali Kelas {user?.homeroom_class_id || "-"}
+              <p className="text-sm text-theme-secondary mt-1">
+                {user?.full_name || "User"} - Wali Kelas{" "}
+                {user?.homeroom_class_id || "-"}
               </p>
             </div>
           </div>
-          <p className="text-slate-600 text-sm md:text-base">
+          <p className="text-theme-secondary text-sm md:text-base">
             Kelola laporan sebagai wali kelas dan guru mata pelajaran
           </p>
         </div>
 
         {/* Success/Error Alerts */}
         {success && (
-          <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded-lg mb-6 flex items-center justify-between">
+          <div className="bg-green-100 dark:bg-green-900/30 border border-green-400 dark:border-green-700 text-green-700 dark:text-green-300 px-4 py-3 rounded-lg mb-6 flex items-center justify-between">
             <span className="flex items-center gap-2">
               <CheckCircle className="w-5 h-5" />
               {success}
             </span>
             <button
               onClick={() => setSuccess(null)}
-              className="text-green-800 dark:text-green-400 hover:text-green-900 dark:hover:text-green-300 font-bold"
-            >
+              className="text-green-800 dark:text-green-400 hover:text-green-900 dark:hover:text-green-300 font-bold">
               ×
             </button>
           </div>
         )}
 
         {error && (
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg mb-6">
+          <div className="bg-red-100 dark:bg-red-900/30 border border-red-400 dark:border-red-700 text-red-700 dark:text-red-300 px-4 py-3 rounded-lg mb-6">
             <div className="flex justify-between items-center">
               <span className="flex items-center gap-2">
                 <AlertTriangle className="w-5 h-5" />
@@ -937,8 +1026,7 @@ const HomeroomTeacherReports = ({ user }) => {
               </span>
               <button
                 onClick={() => setError(null)}
-                className="text-red-800 dark:text-red-400 hover:text-red-900 dark:hover:text-red-300 font-bold"
-              >
+                className="text-red-800 dark:text-red-400 hover:text-red-900 dark:hover:text-red-300 font-bold">
                 ×
               </button>
             </div>
@@ -946,20 +1034,19 @@ const HomeroomTeacherReports = ({ user }) => {
         )}
 
         {/* Tab Navigation */}
-        <div className="bg-theme-bg rounded-lg shadow-sm border border-slate-200 mb-6">
-          <div className="flex border-b border-slate-200">
+        <div className="bg-theme-bg rounded-lg shadow-sm border border-theme mb-6">
+          <div className="flex border-b border-theme">
             <button
               onClick={() => setActiveTab("homeroom")}
               className={`flex-1 px-4 md:px-6 py-3 md:py-4 font-semibold text-xs md:text-sm transition-colors flex items-center justify-center gap-2 min-h-[52px] touch-manipulation ${
                 activeTab === "homeroom"
-                  ? "bg-indigo-50 text-indigo-600 border-b-2 border-indigo-600"
-                  : "text-slate-600 hover:bg-slate-50"
-              }`}
-            >
+                  ? "bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-300 border-b-2 border-indigo-600 dark:border-indigo-400"
+                  : "text-theme-secondary hover:bg-theme-surface"
+              }`}>
               <Users className="w-5 h-5" />
               <span className="hidden sm:inline">Laporan Wali Kelas</span>
               <span className="sm:hidden">Wali Kelas</span>
-              <span className="ml-2 bg-slate-200 text-slate-700 px-2 py-0.5 rounded-full text-xs">
+              <span className="ml-2 bg-slate-200 dark:bg-slate-700 text-theme dark:text-slate-200 px-2 py-0.5 rounded-full text-xs">
                 Kelas {user?.homeroom_class_id || "-"}
               </span>
             </button>
@@ -967,14 +1054,13 @@ const HomeroomTeacherReports = ({ user }) => {
               onClick={() => setActiveTab("teacher")}
               className={`flex-1 px-4 md:px-6 py-3 md:py-4 font-semibold text-xs md:text-sm transition-colors flex items-center justify-center gap-2 min-h-[52px] touch-manipulation ${
                 activeTab === "teacher"
-                  ? "bg-indigo-50 text-indigo-600 border-b-2 border-indigo-600"
-                  : "text-slate-600 hover:bg-slate-50"
-              }`}
-            >
+                  ? "bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-300 border-b-2 border-indigo-600 dark:border-indigo-400"
+                  : "text-theme-secondary hover:bg-theme-surface"
+              }`}>
               <BookOpen className="w-5 h-5" />
               <span className="hidden sm:inline">Laporan Guru Mapel</span>
               <span className="sm:hidden">Guru Mapel</span>
-              <span className="ml-2 bg-slate-200 text-slate-700 px-2 py-0.5 rounded-full text-xs">
+              <span className="ml-2 bg-slate-200 dark:bg-slate-700 text-theme dark:text-slate-200 px-2 py-0.5 rounded-full text-xs">
                 {teacherStats.totalClasses || 0} Kelas
               </span>
             </button>
@@ -999,8 +1085,8 @@ const HomeroomTeacherReports = ({ user }) => {
         ) : (
           classSubjectOptions.length > 0 && (
             <>
-              <div className="bg-theme-bg rounded-lg shadow-sm border border-slate-200 p-4 mb-6">
-                <label className="block text-sm font-medium text-slate-700 mb-2">
+              <div className="bg-theme-bg rounded-lg shadow-sm border border-theme p-4 mb-6">
+                <label className="block text-sm font-medium text-theme mb-2">
                   Kelas & Mata Pelajaran (untuk tren kehadiran)
                 </label>
                 <select
@@ -1013,13 +1099,11 @@ const HomeroomTeacherReports = ({ user }) => {
                     const [class_id, subject] = e.target.value.split("||");
                     setSelectedClassSubject({ class_id, subject });
                   }}
-                  className="w-full md:w-96 px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                >
+                  className="w-full md:w-96 px-3 py-2 bg-theme-bg text-theme border border-theme rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
                   {classSubjectOptions.map((opt) => (
                     <option
                       key={`${opt.class_id}||${opt.subject}`}
-                      value={`${opt.class_id}||${opt.subject}`}
-                    >
+                      value={`${opt.class_id}||${opt.subject}`}>
                       Kelas {opt.class_id} - {opt.subject}
                     </option>
                   ))}
@@ -1055,12 +1139,16 @@ const HomeroomTeacherReports = ({ user }) => {
             sudah tidak ada di halaman ini, jadi sudah tidak relevan lagi. */}
 
         {/* Tips */}
-        <div className="mt-6 bg-indigo-50 border border-indigo-200 rounded-lg p-4">
+        <div className="mt-6 bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800 rounded-lg p-4">
           <div className="flex gap-3">
-            <div className="text-indigo-600 text-xl">💡</div>
+            <div className="text-indigo-600 dark:text-indigo-400 text-xl">
+              💡
+            </div>
             <div>
-              <h4 className="font-medium text-indigo-900 dark:text-indigo-200 mb-1 text-sm md:text-base">Tips:</h4>
-              <p className="text-sm text-indigo-700">
+              <h4 className="font-medium text-indigo-900 dark:text-indigo-200 mb-1 text-sm md:text-base">
+                Tips:
+              </h4>
+              <p className="text-sm text-indigo-700 dark:text-indigo-300">
                 {activeTab === "homeroom"
                   ? "Export laporan presensi dan nilai secara berkala untuk monitoring performa siswa. Nilai Akademik menampilkan NILAI AKHIR (NA) yang dihitung dari: NH×40% + PSTS×30% + PSAS×30%."
                   : 'Pilih kelas & mata pelajaran di atas untuk memantau tren dan tingkat kehadiran siswa. Siswa dengan kehadiran di bawah 75% dalam 30 hari terakhir akan otomatis muncul di daftar "Perlu Perhatian Khusus".'}

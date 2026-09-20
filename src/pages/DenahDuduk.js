@@ -67,7 +67,9 @@ export default function DenahDuduk({ currentUser }) {
   // ===== LOAD DATA =====
   useEffect(() => {
     if (!classId) {
-      setError("Anda belum memiliki kelas yang di-assign. Hubungi administrator.");
+      setError(
+        "Anda belum memiliki kelas yang di-assign. Hubungi administrator.",
+      );
       setLoading(false);
       return;
     }
@@ -83,10 +85,12 @@ export default function DenahDuduk({ currentUser }) {
       // manual, biar auto-fix duplikat is_active & fallback-nya konsisten
       // sama halaman lain).
       const activeYear = await getActiveAcademicYear();
-      if (!activeYear) throw new Error("Tidak ada tahun ajaran aktif ditemukan.");
+      if (!activeYear)
+        throw new Error("Tidak ada tahun ajaran aktif ditemukan.");
 
       const yearStr = activeYear.year;
-      const semesterStr = Number(activeYear.activeSemester) === 1 ? "ganjil" : "genap";
+      const semesterStr =
+        Number(activeYear.activeSemester) === 1 ? "ganjil" : "genap";
       setAcademicYear(yearStr);
       setSemester(semesterStr);
 
@@ -138,7 +142,7 @@ export default function DenahDuduk({ currentUser }) {
   const assignedIds = useMemo(() => new Set(Object.values(layout)), [layout]);
   const unassignedStudents = useMemo(
     () => students.filter((s) => !assignedIds.has(s.id)),
-    [students, assignedIds]
+    [students, assignedIds],
   );
   const studentMap = useMemo(() => {
     const map = {};
@@ -150,7 +154,8 @@ export default function DenahDuduk({ currentUser }) {
   useEffect(() => {
     const checkFit = () => {
       if (scrollWrapRef.current && chartRef.current) {
-        const fits = chartRef.current.scrollWidth <= scrollWrapRef.current.clientWidth;
+        const fits =
+          chartRef.current.scrollWidth <= scrollWrapRef.current.clientWidth;
         setFitsContainer(fits);
       }
     };
@@ -187,7 +192,7 @@ export default function DenahDuduk({ currentUser }) {
       setDirty(true);
       setDraggedId(null);
     },
-    [draggedId]
+    [draggedId],
   );
 
   const handleDropOnUnassigned = useCallback(
@@ -198,7 +203,7 @@ export default function DenahDuduk({ currentUser }) {
       setDirty(true);
       setDraggedId(null);
     },
-    [draggedId]
+    [draggedId],
   );
 
   const allowDrop = (e) => e.preventDefault();
@@ -286,7 +291,8 @@ export default function DenahDuduk({ currentUser }) {
       });
       const imgData = canvas.toDataURL("image/png");
 
-      const orientation = canvas.width > canvas.height ? "landscape" : "portrait";
+      const orientation =
+        canvas.width > canvas.height ? "landscape" : "portrait";
       const pdf = new jsPDF({ orientation, unit: "mm", format: "a4" });
 
       const pageWidth = pdf.internal.pageSize.getWidth();
@@ -304,14 +310,19 @@ export default function DenahDuduk({ currentUser }) {
       pdf.setFont(undefined, "normal");
       let y = margin + 8;
       pdf.text(`Kelas: ${classId}`, margin, y);
-      pdf.text(`Wali Kelas: ${currentUser?.full_name || "-"}`, pageWidth - margin, y, {
-        align: "right",
-      });
+      pdf.text(
+        `Wali Kelas: ${currentUser?.full_name || "-"}`,
+        pageWidth - margin,
+        y,
+        {
+          align: "right",
+        },
+      );
       y += 6;
       pdf.text(
         `Tahun Ajaran: ${academicYear} - Semester ${semester === "ganjil" ? "Ganjil" : "Genap"}`,
         margin,
-        y
+        y,
       );
       y += 8;
 
@@ -344,9 +355,15 @@ export default function DenahDuduk({ currentUser }) {
       pdf.setFontSize(10);
       pdf.text(`............., ${today}`, signX, signY);
       pdf.text("Wali Kelas,", signX, signY + 5);
-      pdf.text(currentUser?.full_name || "___________________", signX, signY + 25);
+      pdf.text(
+        currentUser?.full_name || "___________________",
+        signX,
+        signY + 25,
+      );
 
-      pdf.save(`Denah_Duduk_${classId}_${academicYear.replace("/", "-")}_${semester}.pdf`);
+      pdf.save(
+        `Denah_Duduk_${classId}_${academicYear.replace("/", "-")}_${semester}.pdf`,
+      );
     } catch (err) {
       console.error("Error export PDF:", err);
       setError("Gagal export PDF: " + err.message);
@@ -358,19 +375,19 @@ export default function DenahDuduk({ currentUser }) {
   // ===== RENDER STATES =====
   if (loading) {
     return (
-      <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
-        <Loader2 className="w-8 h-8 text-blue-600 animate-spin mx-auto mb-3" />
-        <p className="text-gray-500 text-sm">Memuat denah duduk...</p>
+      <div className="bg-theme-bg rounded-xl border border-theme p-12 text-center">
+        <Loader2 className="w-8 h-8 text-blue-600 dark:text-blue-400 animate-spin mx-auto mb-3" />
+        <p className="text-theme-secondary text-sm">Memuat denah duduk...</p>
       </div>
     );
   }
 
   if (error && students.length === 0) {
     return (
-      <div className="bg-white rounded-xl border border-gray-200 p-8 text-center">
+      <div className="bg-theme-bg rounded-xl border border-theme p-8 text-center">
         <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-3" />
-        <p className="text-gray-700 font-medium mb-1">Tidak Dapat Memuat Data</p>
-        <p className="text-gray-500 text-sm">{error}</p>
+        <p className="text-theme font-medium mb-1">Tidak Dapat Memuat Data</p>
+        <p className="text-theme-secondary text-sm">{error}</p>
       </div>
     );
   }
@@ -378,92 +395,100 @@ export default function DenahDuduk({ currentUser }) {
   return (
     <div className="space-y-4">
       {/* Header */}
-      <div className="bg-white rounded-xl border border-gray-200 p-6">
+      <div className="bg-theme-bg rounded-xl border border-theme p-6">
         <div className="flex items-center justify-between flex-wrap gap-4">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center">
-              <LayoutGrid size={20} className="text-blue-600" />
+            <div className="w-10 h-10 bg-blue-50 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">
+              <LayoutGrid
+                size={20}
+                className="text-blue-600 dark:text-blue-400"
+              />
             </div>
             <div>
-              <h2 className="text-lg font-semibold text-gray-900">Denah Duduk</h2>
-              <p className="text-sm text-gray-500">
-                Kelas {classId} • {academicYear} ({semester === "ganjil" ? "Ganjil" : "Genap"})
+              <h2 className="text-lg font-semibold text-theme">Denah Duduk</h2>
+              <p className="text-sm text-theme-secondary">
+                Kelas {classId} • {academicYear} (
+                {semester === "ganjil" ? "Ganjil" : "Genap"})
               </p>
             </div>
           </div>
 
           <div className="flex items-center gap-2 flex-wrap">
             <div className="flex items-center gap-1 text-sm">
-              <label className="text-gray-500">Baris</label>
+              <label className="text-theme-secondary">Baris</label>
               <input
                 type="number"
                 min={1}
                 max={10}
                 value={rows}
                 onChange={(e) => handleRowsChange(e.target.value)}
-                className="w-14 px-2 py-1 border border-gray-300 rounded-lg text-center"
+                className="w-14 px-2 py-1 bg-theme-bg text-theme border border-theme rounded-lg text-center"
               />
             </div>
             <div className="flex items-center gap-1 text-sm">
-              <label className="text-gray-500">Meja/Baris</label>
+              <label className="text-theme-secondary">Meja/Baris</label>
               <input
                 type="number"
                 min={1}
                 max={10}
                 value={cols}
                 onChange={(e) => handleColsChange(e.target.value)}
-                className="w-14 px-2 py-1 border border-gray-300 rounded-lg text-center"
+                className="w-14 px-2 py-1 bg-theme-bg text-theme border border-theme rounded-lg text-center"
               />
             </div>
             <div className="flex items-center gap-1 text-sm">
-              <label className="text-gray-500">Siswa/Meja</label>
+              <label className="text-theme-secondary">Siswa/Meja</label>
               <input
                 type="number"
                 min={1}
                 max={4}
                 value={seatsPerDesk}
                 onChange={(e) => handleSeatsPerDeskChange(e.target.value)}
-                className="w-14 px-2 py-1 border border-gray-300 rounded-lg text-center"
+                className="w-14 px-2 py-1 bg-theme-bg text-theme border border-theme rounded-lg text-center"
               />
             </div>
 
             <button
               onClick={handleShuffle}
-              className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-gray-700 bg-gray-50 hover:bg-gray-100 border border-gray-300 rounded-lg transition"
-            >
+              className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-theme bg-theme-surface hover:bg-theme-surface-hover border border-theme rounded-lg transition">
               <Shuffle size={15} />
               Acak
             </button>
             <button
               onClick={handleClear}
-              className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-gray-700 bg-gray-50 hover:bg-gray-100 border border-gray-300 rounded-lg transition"
-            >
+              className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-theme bg-theme-surface hover:bg-theme-surface-hover border border-theme rounded-lg transition">
               <Trash2 size={15} />
               Kosongkan
             </button>
             <button
               onClick={handleExportPDF}
               disabled={exporting}
-              className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-gray-700 bg-gray-50 hover:bg-gray-100 border border-gray-300 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {exporting ? <Loader2 size={15} className="animate-spin" /> : <Download size={15} />}
+              className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-theme bg-theme-surface hover:bg-theme-surface-hover border border-theme rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed">
+              {exporting ? (
+                <Loader2 size={15} className="animate-spin" />
+              ) : (
+                <Download size={15} />
+              )}
               Export PDF
             </button>
             <button
               onClick={handleSave}
               disabled={saving || !dirty}
-              className="flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {saving ? <Loader2 size={15} className="animate-spin" /> : <Save size={15} />}
+              className="flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed">
+              {saving ? (
+                <Loader2 size={15} className="animate-spin" />
+              ) : (
+                <Save size={15} />
+              )}
               {dirty ? "Simpan Perubahan" : "Tersimpan"}
             </button>
           </div>
         </div>
 
         {error && (
-          <div className="mt-4 bg-red-50 border-l-4 border-red-500 p-3 rounded flex items-center gap-2">
-            <AlertCircle className="w-4 h-4 text-red-600 shrink-0" />
-            <p className="text-sm text-red-800">{error}</p>
+          <div className="mt-4 bg-red-50 dark:bg-red-900/30 border-l-4 border-red-500 p-3 rounded flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 text-red-600 dark:text-red-400 shrink-0" />
+            <p className="text-sm text-red-800 dark:text-red-300">{error}</p>
           </div>
         )}
       </div>
@@ -472,14 +497,18 @@ export default function DenahDuduk({ currentUser }) {
         {/* Grid meja */}
         <div
           ref={scrollWrapRef}
-          className={`lg:col-span-3 bg-white rounded-xl border border-gray-200 p-6 overflow-x-auto flex flex-col ${
+          className={`lg:col-span-3 bg-theme-bg rounded-xl border border-theme p-6 overflow-x-auto flex flex-col ${
             fitsContainer ? "items-center" : "items-start"
-          }`}
-        >
-          <div className="mb-1 text-[10px] text-gray-400 text-center">
+          }`}>
+          <div className="mb-1 text-[10px] text-theme-secondary text-center">
             💡 Geser ke kanan untuk lihat meja lainnya
           </div>
-          <div ref={chartRef} className="inline-block bg-white p-2">
+          {/* Area yang di-export ke PDF (html2canvas, background putih) -- sengaja TETAP
+              terang di dark mode biar hasil PDF-nya gak berubah. text-gray-900 biar teks
+              yang gak punya warna eksplisit gak ikut jadi terang. */}
+          <div
+            ref={chartRef}
+            className="inline-block bg-white text-gray-900 p-2">
             <div className="mb-4 text-xs text-gray-400 text-center">
               — Papan Tulis / Depan Kelas —
             </div>
@@ -487,7 +516,9 @@ export default function DenahDuduk({ currentUser }) {
               {/* Meja Guru - di depan, rata kanan sejajar meja siswa paling kanan */}
               <div className="flex gap-3">
                 {Array.from({ length: cols - 1 }).map((_, i) => (
-                  <div key={`spacer-${i}`} className="invisible flex flex-col items-center gap-1">
+                  <div
+                    key={`spacer-${i}`}
+                    className="invisible flex flex-col items-center gap-1">
                     <span className="text-[10px]">&nbsp;</span>
                     <div className="flex gap-1 p-1.5">
                       {Array.from({ length: seatsPerDesk }).map((_, s) => (
@@ -503,10 +534,11 @@ export default function DenahDuduk({ currentUser }) {
                       className="h-[72px] flex flex-col items-center justify-center gap-1"
                       style={{
                         width: `${seatsPerDesk * 96 + (seatsPerDesk - 1) * 4}px`,
-                      }}
-                    >
+                      }}>
                       <User size={20} className="text-emerald-600" />
-                      <span className="text-[9px] font-medium text-emerald-700">Guru</span>
+                      <span className="text-[9px] font-medium text-emerald-700">
+                        Guru
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -516,12 +548,16 @@ export default function DenahDuduk({ currentUser }) {
                 <div key={r} className="flex gap-3">
                   {Array.from({ length: cols }).map((_, c) => (
                     <div key={c} className="flex flex-col items-center gap-1">
-                      <span className="text-[10px] text-gray-300">Meja {r * cols + c + 1}</span>
+                      <span className="text-[10px] text-gray-300">
+                        Meja {r * cols + c + 1}
+                      </span>
                       <div className="flex gap-1 bg-amber-50 border-2 border-amber-200 rounded-lg p-1.5">
                         {Array.from({ length: seatsPerDesk }).map((_, slot) => {
                           const key = `${r}-${c}-${slot}`;
                           const studentId = layout[key];
-                          const student = studentId ? studentMap[studentId] : null;
+                          const student = studentId
+                            ? studentMap[studentId]
+                            : null;
 
                           return (
                             <div
@@ -529,19 +565,22 @@ export default function DenahDuduk({ currentUser }) {
                               onDragOver={allowDrop}
                               onDrop={(e) => handleDropOnSeat(e, key)}
                               draggable={!!student}
-                              onDragStart={() => student && handleDragStart(student.id)}
+                              onDragStart={() =>
+                                student && handleDragStart(student.id)
+                              }
                               className={`w-[96px] h-[72px] rounded-md border-2 border-dashed flex flex-col items-center justify-center p-1 text-center cursor-grab active:cursor-grabbing transition ${
                                 student
                                   ? "bg-blue-50 border-blue-300"
                                   : "bg-white border-gray-200 hover:border-gray-300"
-                              }`}
-                            >
+                              }`}>
                               {student ? (
                                 <span className="text-[11px] font-semibold text-blue-900 leading-tight line-clamp-3">
                                   {student.full_name}
                                 </span>
                               ) : (
-                                <span className="text-[9px] text-gray-300">Kosong</span>
+                                <span className="text-[9px] text-gray-300">
+                                  Kosong
+                                </span>
                               )}
                             </div>
                           );
@@ -557,19 +596,18 @@ export default function DenahDuduk({ currentUser }) {
 
         {/* Daftar siswa belum ditempatkan */}
         <div
-          className="bg-white rounded-xl border border-gray-200 p-4"
+          className="bg-theme-bg rounded-xl border border-theme p-4"
           onDragOver={allowDrop}
-          onDrop={handleDropOnUnassigned}
-        >
+          onDrop={handleDropOnUnassigned}>
           <div className="flex items-center gap-2 mb-3">
-            <Users size={16} className="text-gray-500" />
-            <h3 className="text-sm font-semibold text-gray-800">
+            <Users size={16} className="text-theme-secondary" />
+            <h3 className="text-sm font-semibold text-theme">
               Belum Ditempatkan ({unassignedStudents.length})
             </h3>
           </div>
 
           {unassignedStudents.length === 0 ? (
-            <p className="text-xs text-gray-400 text-center py-6">
+            <p className="text-xs text-theme-secondary text-center py-6">
               Semua siswa sudah ditempatkan 🎉
             </p>
           ) : (
@@ -579,10 +617,11 @@ export default function DenahDuduk({ currentUser }) {
                   key={s.id}
                   draggable
                   onDragStart={() => handleDragStart(s.id)}
-                  className="px-3 py-2 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-lg text-sm cursor-grab active:cursor-grabbing transition"
-                >
-                  <p className="font-medium text-gray-800 leading-tight">{s.full_name}</p>
-                  <p className="text-xs text-gray-400">{s.nis}</p>
+                  className="px-3 py-2 bg-theme-surface hover:bg-theme-surface-hover border border-theme rounded-lg text-sm cursor-grab active:cursor-grabbing transition">
+                  <p className="font-medium text-theme leading-tight">
+                    {s.full_name}
+                  </p>
+                  <p className="text-xs text-theme-secondary">{s.nis}</p>
                 </div>
               ))}
             </div>

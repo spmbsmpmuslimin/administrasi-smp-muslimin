@@ -132,7 +132,7 @@ export default function TeachingJournal({ user }) {
       unique.sort((a, b) =>
         a.class_id === b.class_id
           ? a.subject.localeCompare(b.subject)
-          : a.class_id.localeCompare(b.class_id)
+          : a.class_id.localeCompare(b.class_id),
       );
 
       setAssignments(unique);
@@ -201,7 +201,10 @@ export default function TeachingJournal({ user }) {
   const handleDelete = async (id) => {
     if (!window.confirm("Hapus entri jurnal ini?")) return;
     try {
-      const { error: delError } = await supabase.from("jurnal_harian").delete().eq("id", id);
+      const { error: delError } = await supabase
+        .from("jurnal_harian")
+        .delete()
+        .eq("id", id);
       if (delError) throw delError;
       setEntries((prev) => prev.filter((e) => e.id !== id));
       if (editingId === id) resetForm();
@@ -243,7 +246,9 @@ export default function TeachingJournal({ user }) {
           .eq("id", editingId);
         if (updError) throw updError;
       } else {
-        const { error: insError } = await supabase.from("jurnal_harian").insert(payload);
+        const { error: insError } = await supabase
+          .from("jurnal_harian")
+          .insert(payload);
         if (insError) throw insError;
       }
 
@@ -262,17 +267,27 @@ export default function TeachingJournal({ user }) {
     if (!selected || entries.length === 0) return;
     setExporting(true);
     try {
-      const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
+      const doc = new jsPDF({
+        orientation: "landscape",
+        unit: "mm",
+        format: "a4",
+      });
       const pageWidth = doc.internal.pageSize.getWidth();
 
       doc.setFontSize(13);
-      doc.text("Jurnal Harian Mengajar", pageWidth / 2, 14, { align: "center" });
+      doc.text("Jurnal Harian Mengajar", pageWidth / 2, 14, {
+        align: "center",
+      });
 
       doc.setFontSize(9);
       doc.setTextColor(90);
       const guru = user?.full_name || user?.username || "-";
       doc.text(`Guru: ${guru}`, 14, 22);
-      doc.text(`Kelas: ${selected.class_id}   |   Mapel: ${selected.subject}`, 14, 27);
+      doc.text(
+        `Kelas: ${selected.class_id}   |   Mapel: ${selected.subject}`,
+        14,
+        27,
+      );
       doc.text(`Tahun Ajaran: ${academicYear || "-"}`, 14, 32);
       doc.text(
         `Dicetak: ${new Date().toLocaleDateString("id-ID", {
@@ -282,7 +297,7 @@ export default function TeachingJournal({ user }) {
         })}`,
         pageWidth - 14,
         22,
-        { align: "right" }
+        { align: "right" },
       );
 
       const rows = [...entries]
@@ -310,7 +325,11 @@ export default function TeachingJournal({ user }) {
         ],
         body: rows,
         styles: { fontSize: 8, cellPadding: 2, valign: "top" },
-        headStyles: { fillColor: [37, 99, 235], textColor: 255, fontStyle: "bold" },
+        headStyles: {
+          fillColor: [37, 99, 235],
+          textColor: 255,
+          fontStyle: "bold",
+        },
         alternateRowStyles: { fillColor: [245, 247, 250] },
         columnStyles: {
           0: { cellWidth: 30 },
@@ -322,9 +341,10 @@ export default function TeachingJournal({ user }) {
         },
       });
 
-      const fileName = `Jurnal_${selected.class_id}_${selected.subject}_${academicYear || ""}`
-        .replace(/[^a-zA-Z0-9_-]/g, "_")
-        .replace(/_+/g, "_");
+      const fileName =
+        `Jurnal_${selected.class_id}_${selected.subject}_${academicYear || ""}`
+          .replace(/[^a-zA-Z0-9_-]/g, "_")
+          .replace(/_+/g, "_");
       doc.save(`${fileName}.pdf`);
     } catch (err) {
       console.error("Error exporting PDF:", err);
@@ -343,7 +363,7 @@ export default function TeachingJournal({ user }) {
       "bg-rose-50 dark:bg-rose-950/40 border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300",
       "bg-cyan-50 dark:bg-cyan-950/40 border-cyan-200 dark:border-cyan-800 text-cyan-700 dark:text-cyan-300",
     ],
-    []
+    [],
   );
 
   // ===== RENDER =====
@@ -368,7 +388,9 @@ export default function TeachingJournal({ user }) {
               Jurnal Mengajar
             </h2>
             <p className="text-xs sm:text-sm text-theme-secondary truncate">
-              {academicYear ? `Tahun Ajaran ${academicYear}` : "Catatan harian kegiatan mengajar"}
+              {academicYear
+                ? `Tahun Ajaran ${academicYear}`
+                : "Catatan harian kegiatan mengajar"}
             </p>
           </div>
         </div>
@@ -383,7 +405,9 @@ export default function TeachingJournal({ user }) {
 
       {/* Pilih Kelas & Mapel */}
       <div className="bg-theme-bg rounded-xl border border-theme p-4 sm:p-5">
-        <h3 className="text-sm font-semibold text-theme mb-3">Pilih Kelas & Mata Pelajaran</h3>
+        <h3 className="text-sm font-semibold text-theme mb-3">
+          Pilih Kelas & Mata Pelajaran
+        </h3>
         {assignments.length === 0 ? (
           <p className="text-xs text-gray-400">
             Belum ada penugasan kelas/mapel untuk tahun ajaran ini.
@@ -391,7 +415,9 @@ export default function TeachingJournal({ user }) {
         ) : (
           <div className="grid grid-cols-3 sm:grid-cols-6 gap-1.5 sm:gap-2">
             {assignments.map((a, idx) => {
-              const isActive = selected?.class_id === a.class_id && selected?.subject === a.subject;
+              const isActive =
+                selected?.class_id === a.class_id &&
+                selected?.subject === a.subject;
               const color = cardColors[idx % cardColors.length];
               return (
                 <button
@@ -404,12 +430,13 @@ export default function TeachingJournal({ user }) {
                     isActive
                       ? "border-blue-500 bg-blue-50 dark:bg-blue-950/40 ring-2 ring-blue-200 dark:ring-blue-800"
                       : `border-theme hover:border-theme ${color.split(" ")[0]}`
-                  }`}
-                >
+                  }`}>
                   <div className="flex items-center gap-1 mb-0.5">
                     <BookOpen
                       size={11}
-                      className={isActive ? "text-blue-600 shrink-0" : "shrink-0"}
+                      className={
+                        isActive ? "text-blue-600 shrink-0" : "shrink-0"
+                      }
                     />
                     <span className="text-[10px] font-medium text-theme-secondary truncate">
                       Kelas
@@ -435,14 +462,13 @@ export default function TeachingJournal({ user }) {
           <div className="bg-theme-bg rounded-xl border border-theme p-4 sm:p-5">
             <div className="flex items-start sm:items-center justify-between gap-2 mb-3">
               <h3 className="text-sm font-semibold text-theme min-w-0 break-words">
-                {editingId ? "Edit Entri" : "Tambah Entri"} — {selected.class_id} •{" "}
-                {selected.subject}
+                {editingId ? "Edit Entri" : "Tambah Entri"} —{" "}
+                {selected.class_id} • {selected.subject}
               </h3>
               {editingId && (
                 <button
                   onClick={resetForm}
-                  className="text-gray-400 hover:text-theme-secondary shrink-0 p-1 -m-1"
-                >
+                  className="text-gray-400 hover:text-theme-secondary shrink-0 p-1 -m-1">
                   <X size={16} />
                 </button>
               )}
@@ -457,7 +483,9 @@ export default function TeachingJournal({ user }) {
                   <input
                     type="date"
                     value={form.tanggal}
-                    onChange={(e) => handleFormChange("tanggal", e.target.value)}
+                    onChange={(e) =>
+                      handleFormChange("tanggal", e.target.value)
+                    }
                     className="w-full px-3 py-2.5 sm:py-2 text-base sm:text-sm bg-theme-bg text-theme border border-theme rounded-lg"
                   />
                 </div>
@@ -494,7 +522,9 @@ export default function TeachingJournal({ user }) {
                 </label>
                 <textarea
                   value={form.tujuan_pembelajaran}
-                  onChange={(e) => handleFormChange("tujuan_pembelajaran", e.target.value)}
+                  onChange={(e) =>
+                    handleFormChange("tujuan_pembelajaran", e.target.value)
+                  }
                   rows={2}
                   placeholder="Opsional — tujuan/KD/CP"
                   className="w-full px-3 py-2.5 sm:py-2 text-base sm:text-sm bg-theme-bg text-theme border border-theme rounded-lg resize-none"
@@ -507,7 +537,9 @@ export default function TeachingJournal({ user }) {
                 </label>
                 <textarea
                   value={form.kegiatan_pembelajaran}
-                  onChange={(e) => handleFormChange("kegiatan_pembelajaran", e.target.value)}
+                  onChange={(e) =>
+                    handleFormChange("kegiatan_pembelajaran", e.target.value)
+                  }
                   rows={2}
                   placeholder="Ringkasan kegiatan pembelajaran"
                   className="w-full px-3 py-2.5 sm:py-2 text-base sm:text-sm bg-theme-bg text-theme border border-theme rounded-lg resize-none"
@@ -520,7 +552,9 @@ export default function TeachingJournal({ user }) {
                 </label>
                 <textarea
                   value={form.kendala_catatan}
-                  onChange={(e) => handleFormChange("kendala_catatan", e.target.value)}
+                  onChange={(e) =>
+                    handleFormChange("kendala_catatan", e.target.value)
+                  }
                   rows={2}
                   placeholder="Refleksi, kendala, tindak lanjut"
                   className="w-full px-3 py-2.5 sm:py-2 text-base sm:text-sm bg-theme-bg text-theme border border-theme rounded-lg resize-none"
@@ -530,9 +564,12 @@ export default function TeachingJournal({ user }) {
               <button
                 onClick={handleSave}
                 disabled={saving}
-                className="w-full flex items-center justify-center gap-1.5 px-4 py-3 sm:py-2.5 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition disabled:opacity-50"
-              >
-                {saving ? <Loader2 size={15} className="animate-spin" /> : <Save size={15} />}
+                className="w-full flex items-center justify-center gap-1.5 px-4 py-3 sm:py-2.5 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition disabled:opacity-50">
+                {saving ? (
+                  <Loader2 size={15} className="animate-spin" />
+                ) : (
+                  <Save size={15} />
+                )}
                 {editingId ? "Simpan Perubahan" : "Simpan Data"}
               </button>
             </div>
@@ -541,12 +578,13 @@ export default function TeachingJournal({ user }) {
           {/* Daftar entri */}
           <div className="bg-theme-bg rounded-xl border border-theme p-4 sm:p-5">
             <div className="flex items-center justify-between gap-2 mb-3">
-              <h3 className="text-sm font-semibold text-theme">Riwayat Jurnal</h3>
+              <h3 className="text-sm font-semibold text-theme">
+                Riwayat Jurnal
+              </h3>
               <button
                 onClick={handleExportPDF}
                 disabled={exporting || entries.length === 0}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-lg transition disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
-              >
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-lg transition disabled:opacity-40 disabled:cursor-not-allowed shrink-0">
                 {exporting ? (
                   <Loader2 size={13} className="animate-spin" />
                 ) : (
@@ -569,8 +607,7 @@ export default function TeachingJournal({ user }) {
                 {entries.map((entry) => (
                   <div
                     key={entry.id}
-                    className="bg-theme-bg text-theme border border-theme rounded-lg p-3 bg-theme-surface"
-                  >
+                    className="bg-theme-bg text-theme border border-theme rounded-lg p-3 bg-theme-surface">
                     <div className="flex flex-wrap items-start justify-between gap-x-2 gap-y-1">
                       <div className="flex items-center gap-1.5 text-xs text-theme-secondary min-w-0">
                         <Calendar size={12} className="shrink-0" />
@@ -582,14 +619,12 @@ export default function TeachingJournal({ user }) {
                       <div className="flex items-center gap-2 sm:gap-1 shrink-0">
                         <button
                           onClick={() => handleEdit(entry)}
-                          className="text-gray-400 hover:text-blue-600 transition p-1 -m-1"
-                        >
+                          className="text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition p-1 -m-1">
                           <Pencil size={14} />
                         </button>
                         <button
                           onClick={() => handleDelete(entry.id)}
-                          className="text-gray-400 hover:text-red-600 transition p-1 -m-1"
-                        >
+                          className="text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition p-1 -m-1">
                           <Trash2 size={14} />
                         </button>
                       </div>

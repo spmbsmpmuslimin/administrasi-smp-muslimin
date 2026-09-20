@@ -10,8 +10,9 @@
  *   2. Orphan files           - file dibikin tapi gak pernah di-import
  *   3. Menu/Sidebar mismatch  - sidebarConfig nunjuk ke page yang gak
  *                               terdaftar di menuConfig (link mati)
- *   4. Dark mode regression   - class warna Tailwind hardcoded yang
- *                               kelewat gak di-convert ke token theme-*
+ *   4. Dark mode regression   - class warna netral Tailwind hardcoded yang
+ *                               belum punya padanan dark (dark: variant,
+ *                               token theme-*, atau ternary darkMode)
  *   5. Supabase embedded join - query yang diam-diam pake embedded
  *                               join (`select('*, table(...)')`) —
  *                               pattern yang udah lo hindari total
@@ -39,7 +40,11 @@ const ROOT = path.resolve(__dirname, "..");
 const SRC_DIR = path.join(ROOT, "src");
 const STRUKTUR_FILE = path.join(ROOT, "strukturfile.txt");
 const OUTPUT_FILE = path.join(ROOT, "public", "audit-report.json");
-const STRUCTURE_OUTPUT_FILE = path.join(ROOT, "public", "structure-report.json");
+const STRUCTURE_OUTPUT_FILE = path.join(
+  ROOT,
+  "public",
+  "structure-report.json",
+);
 
 const CODE_EXT = [".js", ".jsx", ".ts", ".tsx"];
 
@@ -103,7 +108,8 @@ const SUPABASE_CALL_RE = /\.from\(\s*["'`]/;
 // beneran ngitung dari kalender, bukan cuma nampilin string tahun ajaran
 // yang udah didapat dari tempat lain (misal `selectedYear.year`).
 const GET_MONTH_CALL_RE = /\.getMonth\(\)/;
-const HARDCODED_YEAR_TEMPLATE_RE = /`\$\{[^`]*?[Yy]ear[^`]*?\}\s*\/\s*\$\{[^`]*?[Yy]ear[^`]*?\}`/;
+const HARDCODED_YEAR_TEMPLATE_RE =
+  /`\$\{[^`]*?[Yy]ear[^`]*?\}\s*\/\s*\$\{[^`]*?[Yy]ear[^`]*?\}`/;
 
 // Pattern backup/restore: query academic_years yang muncul cuma sebagai
 // bagian dari operasi bulk multi-tabel (backup/restore/cleanup seluruh
@@ -235,7 +241,9 @@ function readFileLines(filePath) {
 // tetap dijaga biar nomor baris gak geser), line comment // dihapus
 // kecuali nempel langsung setelah ':' (biar gak ke-mutilasi "https://").
 function stripComments(content) {
-  let out = content.replace(/\/\*[\s\S]*?\*\//g, (block) => block.replace(/[^\n]/g, " "));
+  let out = content.replace(/\/\*[\s\S]*?\*\//g, (block) =>
+    block.replace(/[^\n]/g, " "),
+  );
   out = out
     .split(/\r?\n/)
     .map((line) => {
@@ -298,7 +306,9 @@ function checkImportsAndOrphans(allFiles) {
         // cari nomor baris approx
         const upTo = content.slice(0, match.index);
         const lineNo = upTo.split(/\r?\n/).length;
-        brokenDetails.push(`${toRel(file)}:${lineNo} → import "${importPath}" (target gak ketemu)`);
+        brokenDetails.push(
+          `${toRel(file)}:${lineNo} → import "${importPath}" (target gak ketemu)`,
+        );
       }
     }
   }
@@ -309,7 +319,7 @@ function checkImportsAndOrphans(allFiles) {
       "critical",
       `${brokenCount} broken import ditemukan`,
       "Import nunjuk ke file yang gak ada di disk. Ini bakal bikin build gagal atau blank screen kalau route-nya diakses.",
-      brokenDetails.slice(0, 50)
+      brokenDetails.slice(0, 50),
     );
   }
 
@@ -330,7 +340,7 @@ function checkImportsAndOrphans(allFiles) {
       "info",
       `${orphans.length} file gak pernah di-import di mana pun (dead file candidate)`,
       "File-file ini gak ketemu di-import statis dari file lain. Kemungkinan sisa refactor / fitur lama. Cek manual dulu sebelum dihapus — bisa aja dipake lewat dynamic import atau string reference yang gak kebaca regex.",
-      orphans.slice(0, 80)
+      orphans.slice(0, 80),
     );
   }
 
@@ -358,7 +368,7 @@ function checkMenuSidebarConsistency() {
       "warning",
       "menuConfig.js atau sidebarConfig.js gak ketemu",
       "Skip pengecekan konsistensi menu/sidebar.",
-      []
+      [],
     );
     return { issues };
   }
@@ -367,7 +377,9 @@ function checkMenuSidebarConsistency() {
   const sidebarContent = fs.readFileSync(sidebarConfigPath, "utf8");
 
   const menuKeys = new Set(
-    [...menuContent.matchAll(/path:\s*["'`]\/([a-zA-Z0-9_-]*)["'`]/g)].map((m) => m[1])
+    [...menuContent.matchAll(/path:\s*["'`]\/([a-zA-Z0-9_-]*)["'`]/g)].map(
+      (m) => m[1],
+    ),
   );
 
   // Parse alias langsung dari handleNavigate() di Layout.js: setiap
@@ -379,7 +391,9 @@ function checkMenuSidebarConsistency() {
   const knownAliases = new Set();
   if (fs.existsSync(layoutPath)) {
     const layoutContent = fs.readFileSync(layoutPath, "utf8");
-    for (const m of layoutContent.matchAll(/page\s*===\s*["'`]([a-zA-Z0-9_-]+)["'`]/g)) {
+    for (const m of layoutContent.matchAll(
+      /page\s*===\s*["'`]([a-zA-Z0-9_-]+)["'`]/g,
+    )) {
       knownAliases.add(m[1]);
     }
   } else {
@@ -388,16 +402,16 @@ function checkMenuSidebarConsistency() {
       "info",
       "Layout.js gak ketemu di src/components/ -- skip pengecekan alias",
       "checkMenuSidebarConsistency gak bisa parse alias dari handleNavigate() (misal 'settings-profile'), jadi kemungkinan ada false positive broken link kalau ada alias yang sengaja gak match langsung ke menuConfig.js. Cek lokasi Layout.js kalau ini muncul.",
-      []
+      [],
     );
   }
 
-  const sidebarPages = [...sidebarContent.matchAll(/page:\s*["'`]([a-zA-Z0-9_-]+)["'`]/g)].map(
-    (m) => m[1]
-  );
+  const sidebarPages = [
+    ...sidebarContent.matchAll(/page:\s*["'`]([a-zA-Z0-9_-]+)["'`]/g),
+  ].map((m) => m[1]);
 
   const brokenLinks = [...new Set(sidebarPages)].filter(
-    (page) => !menuKeys.has(page) && !knownAliases.has(page)
+    (page) => !menuKeys.has(page) && !knownAliases.has(page),
   );
 
   if (brokenLinks.length > 0) {
@@ -406,7 +420,7 @@ function checkMenuSidebarConsistency() {
       "critical",
       `${brokenLinks.length} item sidebar nunjuk ke page yang gak ada di menuConfig`,
       "Item sidebar ini bakal ke-klik tapi gak nyambung ke route mana pun (atau nyasar ke halaman lain / 404). Cek sidebarConfig.js dan pastiin 'page' cocok sama 'path' (tanpa leading slash) di menuConfig.js.",
-      brokenLinks
+      brokenLinks,
     );
   }
 
@@ -420,6 +434,32 @@ function checkMenuSidebarConsistency() {
 // ---------------------------------------------------------------------
 // 4: DARK MODE HARDCODED COLOR HEURISTIC
 // ---------------------------------------------------------------------
+//
+// Yang dicari: class warna NETRAL Tailwind (bg/text/border x gray, slate,
+// zinc, neutral, stone, white, black) di baris className yang belum punya
+// penanganan dark sama sekali. Sebuah class dianggap AMAN kalau salah satu
+// ini benar:
+//   1. udah di-override global lewat `.dark .nama-class` di index.css
+//   2. dia sendiri varian dark (`dark:bg-gray-800`, `dark:hover:bg-gray-700`)
+//   3. di baris yang sama ada varian `dark:` untuk kombinasi (state + tipe)
+//      yang sama, WARNANYA BOLEH BEDA:
+//        bg-white dark:bg-gray-800            -> bg-white aman
+//        hover:bg-gray-50 dark:hover:bg-gray-700 -> hover:bg-gray-50 aman
+//      (prefix responsif sm:/md:/lg: gak dihitung sebagai state)
+//   4. di baris yang sama ada token theme-* untuk tipe yang sama
+//      (bg-theme-surface nutup bg-*, text-theme-secondary nutup text-*,
+//      border-theme nutup border-*; card-theme / btn-theme nutup semuanya)
+//   5. baris itu pake ternary `darkMode` / `isDark` (di-handle lewat JS)
+//
+// Sengaja GAK dihitung (bukan kelewatan, memang gak butuh varian dark):
+//   - bg-black / bg-black/xx  : overlay & backdrop modal
+//   - text-white, border-white: biasanya nangkring di atas warna solid
+//   - bg-white/10 .. bg-white/40: efek "kaca" transparan di banner berwarna
+//     (bg-white/50 ke atas tetap dihitung, itu chip/kartu terang beneran)
+//
+// Batasan yang masih ada: cuma baris yang mengandung `className` yang
+// dicek, jadi string class di baris lanjutan (ternary multi-baris, konstanta
+// peta warna) belum ke-scan. Ini heuristik regex, review manual tetep perlu.
 
 function getGloballyDarkOverriddenClasses() {
   const cssPath = path.join(SRC_DIR, "index.css");
@@ -434,35 +474,97 @@ function getGloballyDarkOverriddenClasses() {
   return overridden;
 }
 
+// File yang gak perlu dicek dark mode-nya: salinan lama/backup (bukan
+// kode yang dipake) dan file test. Tambahin pattern di sini kalau ada
+// komponen yang memang sengaja terang terus (misal khusus print/PDF).
+const DARK_MODE_IGNORE_PATTERNS = [
+  /-(backup|revisi|asli)\.jsx?$/i,
+  /=bak\.jsx?$/i,
+  /\.bak\.jsx?$/i,
+  ...ORPHAN_IGNORE_PATTERNS,
+];
+
+const DARK_NEUTRAL_TOKEN_RE =
+  /(?<![\w-])((?:[a-z0-9-]+:)*)(bg|text|border)-(gray|slate|zinc|neutral|stone|white|black)(?:-(\d{2,3}))?(?:\/(\d{1,3}))?(?![\w-])/g;
+const DARK_ANY_TOKEN_RE =
+  /(?<![\w-])((?:[a-z0-9-]+:)*dark:(?:[a-z0-9-]+:)*)(bg|text|border)-[\w[]/g;
+const THEME_TOKEN_RE =
+  /(?<![\w-])((?:[a-z0-9-]+:)*)(bg|text|border)-theme(?!\w)(?!-(?:xs|sm|base|lg|xl|2xl|3xl)\b)/g;
+const RESPONSIVE_VARIANTS = new Set(["xs", "sm", "md", "lg", "xl", "2xl"]);
+
+// "dark:hover:" -> "hover", "md:hover:" -> "hover", "" -> "" (state doang;
+// dark & breakpoint dibuang biar `md:bg-white` ketemu pasangan `dark:bg-...`)
+function normalizeVariantChain(chain) {
+  return chain
+    .split(":")
+    .filter((v) => v && v !== "dark" && !RESPONSIVE_VARIANTS.has(v))
+    .join(":");
+}
+
+function collectKeys(line, re) {
+  const keys = new Set();
+  re.lastIndex = 0;
+  let m;
+  while ((m = re.exec(line)) !== null) {
+    keys.add(`${normalizeVariantChain(m[1])}|${m[2]}`);
+  }
+  return keys;
+}
+
 function checkDarkModeRegression(allFiles) {
   const issues = [];
   const overridden = getGloballyDarkOverriddenClasses();
   const perFileCount = new Map();
   let totalFlagged = 0;
 
-  // class warna "polos" tanpa dark: variant yang berpotensi kelewat
-  const COLOR_CLASS_RE =
-    /\b(bg|text|border)-(gray|slate|zinc|neutral|stone|white|black)-?\d{0,3}\b/g;
-
   for (const file of allFiles) {
     const rel = toRel(file);
     if (rel.includes("/system/") && rel.includes("checkers/")) continue;
+    if (DARK_MODE_IGNORE_PATTERNS.some((re) => re.test(rel))) continue;
 
     const stripped = stripComments(fs.readFileSync(file, "utf8"));
     const lines = stripped.split(/\r?\n/);
     let fileCount = 0;
+
     lines.forEach((line) => {
       if (!line.includes("className")) return;
+      // dark mode di-handle lewat JS (ternary darkMode / isDark)
+      if (/\b(darkMode|isDarkMode|isDark)\b/.test(line)) return;
+
+      const darkKeys = collectKeys(line, DARK_ANY_TOKEN_RE);
+      const themeKeys = collectKeys(line, THEME_TOKEN_RE);
+      const usesThemeComponent = /\b(card|btn)-theme/.test(line);
+
+      DARK_NEUTRAL_TOKEN_RE.lastIndex = 0;
       let m;
-      COLOR_CLASS_RE.lastIndex = 0;
-      while ((m = COLOR_CLASS_RE.exec(line)) !== null) {
-        const cls = m[0];
-        if (overridden.has(cls)) continue; // udah di-handle global .dark override
-        const darkVariantRe = new RegExp(`dark:${cls}\\b`);
-        if (darkVariantRe.test(line)) continue;
+      while ((m = DARK_NEUTRAL_TOKEN_RE.exec(line)) !== null) {
+        const [, chain, type, color, shade, opacity] = m;
+        if (chain.includes("dark:")) continue; // dia sendiri varian dark
+
+        // gak butuh varian dark (overlay, teks di atas warna solid, efek kaca)
+        if (color === "black" && type === "bg") continue;
+        if (color === "white" && (type === "text" || type === "border"))
+          continue;
+        if (
+          color === "white" &&
+          type === "bg" &&
+          opacity &&
+          Number(opacity) <= 40
+        )
+          continue;
+
+        // udah di-override global di index.css (`.dark .bg-gray-900 {...}`)
+        const baseCls = `${type}-${color}${shade ? "-" + shade : ""}`;
+        if (!chain && !opacity && overridden.has(baseCls)) continue;
+
+        const key = `${normalizeVariantChain(chain)}|${type}`;
+        if (darkKeys.has(key)) continue;
+        if (themeKeys.has(key) || usesThemeComponent) continue;
+
         fileCount++;
       }
     });
+
     if (fileCount > 0) {
       perFileCount.set(rel, fileCount);
       totalFlagged += fileCount;
@@ -473,14 +575,16 @@ function checkDarkModeRegression(allFiles) {
     const sorted = [...perFileCount.entries()].sort((a, b) => b[1] - a[1]);
     const details = sorted
       .slice(0, 40)
-      .map(([file, count]) => `${file} — ${count} class belum ada dark: variant`);
+      .map(
+        ([file, count]) => `${file} — ${count} class belum ada dark: variant`,
+      );
 
     pushIssue(
       issues,
       "info",
       `${totalFlagged} class warna (di ${perFileCount.size} file) kemungkinan belum dark-mode-aware`,
-      "Ini backlog, bukan berarti semua salah — bisa aja file itu emang belum kena giliran migrasi theme-*, atau sengaja gak butuh dark mode (misal komponen buat print/PDF). Diurutin dari file paling banyak class polos-nya, biar keliatan mana yang paling worth dibenerin duluan. Heuristik regex, review manual tetep perlu.",
-      details
+      "Ini backlog, bukan berarti semua salah — bisa aja file itu emang belum kena giliran migrasi theme-*, atau sengaja gak butuh dark mode (misal komponen buat print/PDF; tambahin ke DARK_MODE_IGNORE_PATTERNS di scripts/audit-kode.js kalau memang disengaja). Class dianggap aman kalau ada padanan dark: di baris yang sama (warnanya boleh beda, termasuk dark:hover:), token theme-*, atau ternary darkMode. Overlay bg-black, text-white, dan bg-white transparan tipis gak dihitung. Diurutin dari file paling banyak class polos-nya. Heuristik regex, cuma baris className yang dicek, review manual tetep perlu.",
+      details,
     );
   }
 
@@ -575,7 +679,8 @@ function checkEmbeddedJoins(allFiles, fkMap = null) {
     /([a-zA-Z_][a-zA-Z0-9_]*)\s*:\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*\(|([a-zA-Z_][a-zA-Z0-9_]*)\s*!\s*[a-zA-Z_][a-zA-Z0-9_]*\s*\(|\b([a-zA-Z_][a-zA-Z0-9_]*)\s*\(/g;
 
   function findNearestParentTable(content, beforeIdx) {
-    const FROM_BEFORE_RE = /\.from\(\s*["'`]([a-zA-Z_][a-zA-Z0-9_]*)["'`]\s*\)/g;
+    const FROM_BEFORE_RE =
+      /\.from\(\s*["'`]([a-zA-Z_][a-zA-Z0-9_]*)["'`]\s*\)/g;
     const windowStart = Math.max(0, beforeIdx - 600);
     const windowStr = content.slice(windowStart, beforeIdx);
     let lastMatch = null;
@@ -636,7 +741,7 @@ function checkEmbeddedJoins(allFiles, fkMap = null) {
 
         if (hasRealAmbiguity) {
           riskyDetails.push(
-            `${line} ⚠️ KETEMU 2+ FK asli antara tabel ini di skema live — WAJIB dikasih hint`
+            `${line} ⚠️ KETEMU 2+ FK asli antara tabel ini di skema live — WAJIB dikasih hint`,
           );
           continue;
         }
@@ -656,7 +761,7 @@ function checkEmbeddedJoins(allFiles, fkMap = null) {
       "critical",
       `${riskyDetails.length} embedded join yang KETEMU 2+ FK asli tanpa hint (beneran rawan PGRST200)`,
       "Ini bukan tebakan lagi -- udah di-cross-check ke skema live Supabase (via RPC get_foreign_key_map) dan kepastian ada 2 kolom FK atau lebih antara 2 tabel yang di-embed. Query ini WAJIB dikasih hint (`!inner`, `!nama_fk_constraint`, atau `alias:table`), soalnya kalau enggak, query ini bisa gagal kapan aja dengan error PGRST200.",
-      riskyDetails.slice(0, 50)
+      riskyDetails.slice(0, 50),
     );
   }
 
@@ -666,7 +771,7 @@ function checkEmbeddedJoins(allFiles, fkMap = null) {
       "info",
       `${confirmedSafeDetails.length} embedded join tanpa hint TAPI udah dicek ke skema live, FK-nya cuma 1 (aman)`,
       "Udah di-cross-check ke skema live Supabase (via RPC get_foreign_key_map): antara 2 tabel yang di-embed di sini cuma ada 1 FK, jadi PostgREST ngga akan pernah bingung nentuin relasinya. Ngga perlu ditambahin hint.",
-      confirmedSafeDetails.slice(0, 50)
+      confirmedSafeDetails.slice(0, 50),
     );
   }
 
@@ -678,7 +783,7 @@ function checkEmbeddedJoins(allFiles, fkMap = null) {
       fkMap
         ? "Query ini pake relational select tanpa hint, dan gagal di-cross-check ke skema live (kemungkinan parent table-nya gak ke-detect otomatis dari pola .from(), atau relasinya bukan lewat FK langsung). Cek manual satu-satu."
         : "Query ini pake relational select (`select('*, table(...)')`) tanpa hint kayak `!inner`, `!nama_fk`, atau `alias:table`. Ini yang paling rawan kena PGRST200 kalau ada lebih dari satu foreign key antar 2 tabel itu. Worth di-cek satu-satu. (Setup RPC get_foreign_key_map -- lihat FK_MAP_RPC_SETUP_SQL di script ini -- biar checker ini bisa cross-check ke skema live & lebih presisi.)",
-      nakedDetails.slice(0, 50)
+      nakedDetails.slice(0, 50),
     );
   }
 
@@ -688,7 +793,7 @@ function checkEmbeddedJoins(allFiles, fkMap = null) {
       "info",
       `${hintedDetails.length} embedded join yang UDAH pake disambiguation hint`,
       "FYI aja — ternyata di banyak file (CetakRaport, ReportHelpers, AdminReports, dll) project ini sebenernya pake embedded join Supabase, bukan resolve manual semua di JS. Yang ini kelihatannya udah aman karena udah ada hint (`!inner`, `!nama_fk`, atau `alias:table`) yang secara eksplisit nunjuk relasi mana yang dimaksud — itu emang cara resmi Supabase buat ngehindarin PGRST200. Kalau ternyata ini emang pattern yang lo pake sengaja, gue bakal update catatan gue soal ini.",
-      hintedDetails.slice(0, 50)
+      hintedDetails.slice(0, 50),
     );
   }
 
@@ -727,7 +832,7 @@ function checkTableDrift(allFiles) {
       "info",
       "strukturfile.txt gak ketemu / gak ada daftar tabel",
       "Skip pengecekan table name drift.",
-      []
+      [],
     );
     return { issues };
   }
@@ -758,7 +863,7 @@ function checkTableDrift(allFiles) {
       "critical",
       `${unknownDetails.length} query .from() nunjuk ke tabel yang gak ada di strukturfile.txt`,
       "Kemungkinan typo nama tabel, atau tabel udah direname/dihapus tapi kodenya belum di-update, atau strukturfile.txt-nya yang basi. Query ini bakal error di runtime.",
-      unknownDetails.slice(0, 50)
+      unknownDetails.slice(0, 50),
     );
   }
 
@@ -769,7 +874,7 @@ function checkTableDrift(allFiles) {
       "info",
       `${neverUsed.length} tabel di schema gak pernah dipanggil lewat .from() di kode`,
       "Belum tentu masalah — bisa aja view, tabel yang diakses cuma dari Supabase function/edge function, atau memang belum dipakai. Sekedar info.",
-      neverUsed.slice(0, 50)
+      neverUsed.slice(0, 50),
     );
   }
 
@@ -825,18 +930,21 @@ function checkAcademicYearServiceUsage(allFiles) {
             ? " (kayaknya juga nentuin 'tahun aktif' sendiri — cek pola is_active)"
             : "";
           reimplementDetails.push(
-            `${rel}:${idx + 1} → query tabel academic_years langsung${extra}`
+            `${rel}:${idx + 1} → query tabel academic_years langsung${extra}`,
           );
         }
       });
     }
 
     // --- Sinyal kuat #2: hardcode tahun ajaran dari kalender ---
-    if (GET_MONTH_CALL_RE.test(content) && HARDCODED_YEAR_TEMPLATE_RE.test(content)) {
+    if (
+      GET_MONTH_CALL_RE.test(content) &&
+      HARDCODED_YEAR_TEMPLATE_RE.test(content)
+    ) {
       lines.forEach((line, idx) => {
         if (HARDCODED_YEAR_TEMPLATE_RE.test(line)) {
           hardcodedCalendarDetails.push(
-            `${rel}:${idx + 1} → hardcode tahun ajaran dari kalender (pola \`\${...year...}/\${...year...}\`), gak lewat DB/service — bisa gak sinkron kalau tahun aktif di-override manual`
+            `${rel}:${idx + 1} → hardcode tahun ajaran dari kalender (pola \`\${...year...}/\${...year...}\`), gak lewat DB/service — bisa gak sinkron kalau tahun aktif di-override manual`,
           );
         }
       });
@@ -848,9 +956,12 @@ function checkAcademicYearServiceUsage(allFiles) {
     // isu yang beda (hardcode kalender vs filter-by-id).
     if (!matchedStrongTableSignal) {
       lines.forEach((line, idx) => {
-        if (ACADEMIC_YEAR_FIELD_RE.test(line) && SUPABASE_CALL_RE.test(content)) {
+        if (
+          ACADEMIC_YEAR_FIELD_RE.test(line) &&
+          SUPABASE_CALL_RE.test(content)
+        ) {
           fieldUsageDetails.push(
-            `${rel}:${idx + 1} → filter pakai academic_year_id (cek: ID-nya didapat dari mana — kalau dikasih via parameter/prop, ini WAJAR & gak perlu import service)`
+            `${rel}:${idx + 1} → filter pakai academic_year_id (cek: ID-nya didapat dari mana — kalau dikasih via parameter/prop, ini WAJAR & gak perlu import service)`,
           );
         }
       });
@@ -863,7 +974,7 @@ function checkAcademicYearServiceUsage(allFiles) {
       "warning",
       `${reimplementDetails.length} lokasi query tabel academic_years langsung tanpa academicYearService`,
       "File ini query tabel academic_years sendiri (biasanya buat ambil daftar tahun ajaran dan/atau nentuin mana yang aktif) tanpa lewat academicYearService. Kalau logic 'tahun ajaran aktif itu yang mana' berubah di masa depan, tempat ini gampang kelewat sinkron. Worth dipertimbangkan buat dipindah ke service.",
-      reimplementDetails.slice(0, 50)
+      reimplementDetails.slice(0, 50),
     );
   }
 
@@ -873,7 +984,7 @@ function checkAcademicYearServiceUsage(allFiles) {
       "warning",
       `${hardcodedCalendarDetails.length} lokasi kemungkinan hardcode tahun ajaran dari kalender, bukan dari DB/service`,
       "File ini ngitung tahun ajaran sendiri dari tanggal hari ini (pola `.getMonth()` + template literal semacam `${currentYear}/${currentYear + 1}`), gak pernah nyentuh tabel academic_years atau academicYearService sama sekali. Ini lebih riskan daripada sekadar 'belum pake service' — kalau tahun ajaran aktif di database di-override manual (misal kalender akademik meleset dari asumsi kode), nilai di file ini gak bakal pernah ikut berubah. Cek manual apakah ini emang disengaja (misal fallback pas query gagal) atau beneran jadi sumber utama.",
-      hardcodedCalendarDetails.slice(0, 50)
+      hardcodedCalendarDetails.slice(0, 50),
     );
   }
 
@@ -883,7 +994,7 @@ function checkAcademicYearServiceUsage(allFiles) {
       "info",
       `${fieldUsageDetails.length} lokasi filter pakai academic_year_id tanpa import academicYearService`,
       "Sekadar FYI, BUKAN otomatis berarti salah. File ini filter query pakai academic_year_id tapi gak import academicYearService — ini sah-sah aja kalau ID-nya emang diterima dari luar (parameter fungsi / prop komponen) dan file ini cuma 'consumer', bukan yang nentuin tahun aktif. Cek manual satu-satu.",
-      fieldUsageDetails.slice(0, 50)
+      fieldUsageDetails.slice(0, 50),
     );
   }
 
@@ -934,7 +1045,12 @@ function checkAcademicYearServiceUsage(allFiles) {
 // checker ini.
 // ---------------------------------------------------------------------
 
-const ENV_FILES = [".env.local", ".env.development.local", ".env.production.local", ".env"];
+const ENV_FILES = [
+  ".env.local",
+  ".env.development.local",
+  ".env.production.local",
+  ".env",
+];
 
 // Kandidat nama env var buat URL & API key Supabase, urutan = prioritas
 // (yang duluan ketemu yang dipake). Service role key didahuluin drpd anon
@@ -1004,7 +1120,7 @@ function loadSupabaseCredentials() {
 async function fetchLiveSchema(url, key) {
   if (typeof fetch !== "function") {
     throw new Error(
-      "global fetch() gak tersedia -- butuh Node 18+ buat checker alignment ini jalan tanpa dependency tambahan."
+      "global fetch() gak tersedia -- butuh Node 18+ buat checker alignment ini jalan tanpa dependency tambahan.",
     );
   }
   const endpoint = `${url.replace(/\/$/, "")}/rest/v1/`;
@@ -1012,10 +1128,13 @@ async function fetchLiveSchema(url, key) {
     headers: { apikey: key, Authorization: `Bearer ${key}` },
   });
   if (!res.ok) {
-    throw new Error(`Supabase REST introspection gagal: HTTP ${res.status} ${res.statusText}`);
+    throw new Error(
+      `Supabase REST introspection gagal: HTTP ${res.status} ${res.statusText}`,
+    );
   }
   const spec = await res.json();
-  const raw = spec.definitions || (spec.components && spec.components.schemas) || {};
+  const raw =
+    spec.definitions || (spec.components && spec.components.schemas) || {};
 
   const schema = new Map(); // table -> Set(columns)
   for (const [tableName, def] of Object.entries(raw)) {
@@ -1086,7 +1205,14 @@ function extractBalancedBlock(content, startIdx, maxLen = 6000) {
 // (misal ternary "kondisi ? null : Number(x)" -- "null" diikuti ":" persis
 // kayak pola "key:"), tapi hampir mustahil beneran jadi nama kolom
 // Supabase. Di-exclude biar gak jadi false positive "unknown column".
-const JS_RESERVED_NON_KEYS = new Set(["null", "true", "false", "undefined", "this", "NaN"]);
+const JS_RESERVED_NON_KEYS = new Set([
+  "null",
+  "true",
+  "false",
+  "undefined",
+  "this",
+  "NaN",
+]);
 
 function extractObjectKeys(blockContent) {
   const keys = [];
@@ -1111,7 +1237,7 @@ async function checkFrontendBackendAlignment(allFiles) {
       "info",
       "Skip cek alignment frontend<->Supabase: credential gak ketemu",
       `Checker ini butuh URL + API key Supabase buat narik skema live. Gak ketemu satupun dari kombinasi env var berikut di .env*/.env.local/process.env: URL (${SUPABASE_URL_ENV_CANDIDATES.join(", ")}) / KEY (${SUPABASE_KEY_ENV_CANDIDATES.join(", ")}). Tambahin salah satu pasangan itu kalau mau checker ini aktif.`,
-      []
+      [],
     );
     return { issues };
   }
@@ -1125,7 +1251,7 @@ async function checkFrontendBackendAlignment(allFiles) {
       "warning",
       "Gagal narik skema live dari Supabase -- cek alignment di-skip",
       `Error: ${err.message}. Pastiin URL/key di .env bener dan project Supabase-nya lagi ACTIVE (bukan paused). Dipake: ${creds.keySource || "(unknown key source)"}.`,
-      []
+      [],
     );
     return { issues };
   }
@@ -1136,7 +1262,7 @@ async function checkFrontendBackendAlignment(allFiles) {
       "warning",
       "Skema live Supabase kosong / gak ke-parse",
       "Introspection endpoint /rest/v1/ berhasil di-fetch tapi gak ketemu definisi tabel apapun. Kemungkinan format response OpenAPI-nya beda dari yang diantisipasi checker ini, atau API key-nya gak punya akses ke skema public sama sekali.",
-      []
+      [],
     );
     return { issues };
   }
@@ -1158,11 +1284,17 @@ async function checkFrontendBackendAlignment(allFiles) {
       const m = fromMatches[idx];
       const table = m[1];
       if (!usage.has(table))
-        usage.set(table, { usedAsFrom: true, columns: new Set(), usesStar: false });
+        usage.set(table, {
+          usedAsFrom: true,
+          columns: new Set(),
+          usesStar: false,
+        });
       usage.get(table).usedAsFrom = true;
 
       const chainStart = m.index + m[0].length;
-      const nextFromIdx = fromMatches[idx + 1] ? fromMatches[idx + 1].index : content.length;
+      const nextFromIdx = fromMatches[idx + 1]
+        ? fromMatches[idx + 1].index
+        : content.length;
       // Potong window di titik mana pun yang PALING DEKAT duluan: .from()
       // berikutnya, semicolon pertama (= akhir statement chain ini), atau
       // cap 3000 karakter (fallback kalau gak ada ";" -- misal gaya kode
@@ -1176,7 +1308,7 @@ async function checkFrontendBackendAlignment(allFiles) {
       const chainEnd = Math.min(
         chainStart + 3000,
         nextFromIdx,
-        semicolonIdx === -1 ? Infinity : semicolonIdx + 1
+        semicolonIdx === -1 ? Infinity : semicolonIdx + 1,
       );
       const window = content.slice(chainStart, chainEnd);
       const upTo = content.slice(0, m.index);
@@ -1195,7 +1327,7 @@ async function checkFrontendBackendAlignment(allFiles) {
           entry.columns.add(c);
           if (schemaCols && !schemaCols.has(c)) {
             unknownColumnDetails.push(
-              `${rel}:${lineNo} → .from("${table}").select(...) pake kolom "${c}" yang gak ada di skema Supabase`
+              `${rel}:${lineNo} → .from("${table}").select(...) pake kolom "${c}" yang gak ada di skema Supabase`,
             );
           }
         });
@@ -1212,7 +1344,7 @@ async function checkFrontendBackendAlignment(allFiles) {
           entry.columns.add(c);
           if (schemaCols && !schemaCols.has(c)) {
             unknownColumnDetails.push(
-              `${rel}:${lineNo} → .from("${table}").${wm[1]}(...) pake kolom "${c}" yang gak ada di skema Supabase`
+              `${rel}:${lineNo} → .from("${table}").${wm[1]}(...) pake kolom "${c}" yang gak ada di skema Supabase`,
             );
           }
         });
@@ -1226,7 +1358,7 @@ async function checkFrontendBackendAlignment(allFiles) {
         entry.columns.add(c);
         if (schemaCols && !schemaCols.has(c)) {
           unknownColumnDetails.push(
-            `${rel}:${lineNo} → .from("${table}").${fm[1]}("${c}", ...) pake kolom yang gak ada di skema Supabase`
+            `${rel}:${lineNo} → .from("${table}").${fm[1]}("${c}", ...) pake kolom yang gak ada di skema Supabase`,
           );
         }
       }
@@ -1245,7 +1377,9 @@ async function checkFrontendBackendAlignment(allFiles) {
     if (!schemaCols) continue; // tabel dipake tapi gak ada di skema -> udah kena checkTableDrift
     const unused = [...schemaCols].filter((c) => !entry.columns.has(c)).sort();
     if (unused.length > 0) {
-      deadColumnDetails.push(`${table} → kolom gak pernah disebut: ${unused.join(", ")}`);
+      deadColumnDetails.push(
+        `${table} → kolom gak pernah disebut: ${unused.join(", ")}`,
+      );
     }
   }
 
@@ -1255,7 +1389,7 @@ async function checkFrontendBackendAlignment(allFiles) {
       "warning",
       `${deadTables.length} tabel di Supabase gak pernah dipanggil lewat .from() di frontend`,
       "Ditarik langsung dari skema live Supabase (bukan strukturfile.txt), lalu dicocokin ke SEMUA file src/. Kandidat tabel 'mati' -- fitur yang udah dihapus/dipindah, atau tabel yang emang cuma diakses lewat Supabase Edge Function/RPC/database function (gak kelihatan dari static analysis kode frontend ini, jadi cek dulu manual sebelum drop tabelnya).",
-      deadTables.slice(0, 80)
+      deadTables.slice(0, 80),
     );
   }
 
@@ -1265,7 +1399,7 @@ async function checkFrontendBackendAlignment(allFiles) {
       "info",
       `${deadColumnDetails.length} tabel punya kolom yang gak pernah disebut eksplisit di frontend`,
       "Tabelnya DIPAKE, tapi ada kolom yang gak pernah muncul di select/insert/update/filter manapun (dan gak ada select(\"*\") buat tabel ini yang bisa 'nyembunyiin' pemakaian implisit). Bisa jadi kolom peninggalan fitur lama, atau kolom yang emang cuma diisi lewat trigger/default value di DB. Cek manual, terutama kalau ada kolom NOT NULL tanpa default yang gak pernah di-insert dari frontend.",
-      deadColumnDetails.slice(0, 50)
+      deadColumnDetails.slice(0, 50),
     );
   }
 
@@ -1275,7 +1409,7 @@ async function checkFrontendBackendAlignment(allFiles) {
       "critical",
       `${unknownColumnDetails.length} pemakaian kolom di frontend gak ketemu di skema Supabase`,
       "Kolom ini disebut eksplisit di select/insert/update/filter tapi gak ada di skema live Supabase -- kemungkinan besar typo nama kolom, atau kolom udah direname/dihapus dari database tapi kodenya belum diupdate. Query ini bakal error (PGRST204 / 400) atau diem-diem gagal nyimpen data itu, tergantung method-nya.",
-      unknownColumnDetails.slice(0, 50)
+      unknownColumnDetails.slice(0, 50),
     );
   }
 
@@ -1422,13 +1556,21 @@ function buildProjectStructure(allFiles) {
         if (a.type !== b.type) return a.type === "folder" ? -1 : 1;
         return a.name.localeCompare(b.name);
       });
-    return { name: node.name, path: node.path, type: "folder", children: childArr };
+    return {
+      name: node.name,
+      path: node.path,
+      type: "folder",
+      children: childArr,
+    };
   }
 
   return {
     tree: toArrayTree(tree),
     totalFiles: Object.keys(nodes).length,
-    totalFunctions: Object.values(nodes).reduce((sum, n) => sum + n.functions.length, 0),
+    totalFunctions: Object.values(nodes).reduce(
+      (sum, n) => sum + n.functions.length,
+      0,
+    ),
     orphanCount: Object.values(nodes).filter((n) => n.isOrphan).length,
     byType: Object.values(nodes).reduce((acc, n) => {
       acc[n.type] = (acc[n.type] || 0) + 1;
@@ -1447,7 +1589,9 @@ async function main() {
   const startTime = Date.now();
 
   if (!fs.existsSync(SRC_DIR)) {
-    console.error("❌ Folder src/ gak ketemu. Jalankan script ini dari root project.");
+    console.error(
+      "❌ Folder src/ gak ketemu. Jalankan script ini dari root project.",
+    );
     process.exit(1);
   }
 
@@ -1456,14 +1600,16 @@ async function main() {
 
   const importResult = checkImportsAndOrphans(allFiles);
   console.log(
-    `   → import & orphan check selesai (${importResult.brokenCount} broken import, ${importResult.orphanCount} orphan file)`
+    `   → import & orphan check selesai (${importResult.brokenCount} broken import, ${importResult.orphanCount} orphan file)`,
   );
 
   const menuResult = checkMenuSidebarConsistency();
   console.log(`   → menu/sidebar consistency check selesai`);
 
   const darkModeResult = checkDarkModeRegression(allFiles);
-  console.log(`   → dark mode heuristic selesai (${darkModeResult.flaggedCount} flagged)`);
+  console.log(
+    `   → dark mode heuristic selesai (${darkModeResult.flaggedCount} flagged)`,
+  );
 
   // ✅ Narik peta FK asli dari skema live (kalau credential Supabase ada
   // & RPC get_foreign_key_map udah di-setup) -- biar checkEmbeddedJoins
@@ -1476,12 +1622,12 @@ async function main() {
   console.log(
     fkMap
       ? `   → peta FK live berhasil ditarik (${fkMap.size} pasangan tabel)`
-      : `   → peta FK live gak ke-ambil (credential gak ada / RPC get_foreign_key_map belum di-setup) -- embedded join check bakal fallback ke mode tebak-pola`
+      : `   → peta FK live gak ke-ambil (credential gak ada / RPC get_foreign_key_map belum di-setup) -- embedded join check bakal fallback ke mode tebak-pola`,
   );
 
   const joinResult = checkEmbeddedJoins(allFiles, fkMap);
   console.log(
-    `   → embedded join check selesai (${joinResult.riskyCount} BENERAN rawan, ${joinResult.nakedCount} gak ke-cross-check, ${joinResult.confirmedSafeCount} udah dicek & aman, ${joinResult.hintedCount} udah ada hint)`
+    `   → embedded join check selesai (${joinResult.riskyCount} BENERAN rawan, ${joinResult.nakedCount} gak ke-cross-check, ${joinResult.confirmedSafeCount} udah dicek & aman, ${joinResult.hintedCount} udah ada hint)`,
   );
 
   const tableResult = checkTableDrift(allFiles);
@@ -1489,13 +1635,13 @@ async function main() {
 
   const academicYearResult = checkAcademicYearServiceUsage(allFiles);
   console.log(
-    `   → academicYearService usage check selesai (${academicYearResult.reimplementCount} reimplement langsung, ${academicYearResult.hardcodedCalendarCount} hardcode kalender, ${academicYearResult.fieldUsageCount} sekadar filter field, ${academicYearResult.bulkBackupExcludedCount} di-exclude karena bulk backup/restore)`
+    `   → academicYearService usage check selesai (${academicYearResult.reimplementCount} reimplement langsung, ${academicYearResult.hardcodedCalendarCount} hardcode kalender, ${academicYearResult.fieldUsageCount} sekadar filter field, ${academicYearResult.bulkBackupExcludedCount} di-exclude karena bulk backup/restore)`,
   );
 
   const alignmentResult = await checkFrontendBackendAlignment(allFiles);
   if (alignmentResult.tablesInSchema !== undefined) {
     console.log(
-      `   → frontend<->Supabase alignment check selesai (${alignmentResult.tablesInSchema} tabel di skema live, ${alignmentResult.tablesUsedInFrontend} dipake di frontend, ${alignmentResult.deadTableCount} dead table, ${alignmentResult.deadColumnGroupCount} tabel punya dead column, ${alignmentResult.unknownColumnCount} kolom gak dikenal)`
+      `   → frontend<->Supabase alignment check selesai (${alignmentResult.tablesInSchema} tabel di skema live, ${alignmentResult.tablesUsedInFrontend} dipake di frontend, ${alignmentResult.deadTableCount} dead table, ${alignmentResult.deadColumnGroupCount} tabel punya dead column, ${alignmentResult.unknownColumnCount} kolom gak dikenal)`,
     );
   } else {
     console.log(`   → frontend<->Supabase alignment check di-skip`);
@@ -1543,10 +1689,11 @@ async function main() {
       if (issue.severity === "critical") critical++;
       else if (issue.severity === "warning") warning++;
       else info++;
-    })
+    }),
   );
 
-  const overallStatus = critical > 0 ? "critical" : warning > 0 ? "warning" : "healthy";
+  const overallStatus =
+    critical > 0 ? "critical" : warning > 0 ? "warning" : "healthy";
 
   const report = {
     generatedAt: new Date().toISOString(),
@@ -1568,10 +1715,12 @@ async function main() {
 
   console.log(`\n✅ Selesai dalam ${report.executionTimeMs}ms`);
   console.log(
-    `   Status: ${overallStatus.toUpperCase()} | Critical: ${critical} | Warning: ${warning} | Info: ${info}`
+    `   Status: ${overallStatus.toUpperCase()} | Critical: ${critical} | Warning: ${warning} | Info: ${info}`,
   );
   console.log(`   Laporan disimpan ke: ${toRel(OUTPUT_FILE)}`);
-  console.log(`   Buka app -> Monitor Sistem -> tab "Code Audit" buat liat hasilnya.\n`);
+  console.log(
+    `   Buka app -> Monitor Sistem -> tab "Code Audit" buat liat hasilnya.\n`,
+  );
 
   // --- Project Structure Analyzer (file terpisah, ditampilin di tab
   // "Struktur Project") ---
@@ -1587,12 +1736,20 @@ async function main() {
     asciiTree,
     totalAllFiles: allFilesUnfiltered.length, // termasuk asset non-kode (gambar, html, dll)
   };
-  fs.writeFileSync(STRUCTURE_OUTPUT_FILE, JSON.stringify(structureReport, null, 2), "utf8");
-  console.log(
-    `   → ${structure.totalFiles} file kode, ${allFilesUnfiltered.length} total file (termasuk asset), ${structure.totalFunctions} fungsi/component, ${structure.orphanCount} kemungkinan orphan`
+  fs.writeFileSync(
+    STRUCTURE_OUTPUT_FILE,
+    JSON.stringify(structureReport, null, 2),
+    "utf8",
   );
-  console.log(`   Laporan struktur disimpan ke: ${toRel(STRUCTURE_OUTPUT_FILE)}`);
-  console.log(`   Buka app -> Monitor Sistem -> tab "Struktur Project" buat liat hasilnya.\n`);
+  console.log(
+    `   → ${structure.totalFiles} file kode, ${allFilesUnfiltered.length} total file (termasuk asset), ${structure.totalFunctions} fungsi/component, ${structure.orphanCount} kemungkinan orphan`,
+  );
+  console.log(
+    `   Laporan struktur disimpan ke: ${toRel(STRUCTURE_OUTPUT_FILE)}`,
+  );
+  console.log(
+    `   Buka app -> Monitor Sistem -> tab "Struktur Project" buat liat hasilnya.\n`,
+  );
 }
 
 if (require.main === module) {

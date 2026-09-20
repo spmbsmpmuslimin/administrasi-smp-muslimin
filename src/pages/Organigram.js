@@ -75,7 +75,8 @@ export default function Organigram({ currentUser }) {
       // manual, biar auto-fix duplikat is_active & fallback-nya konsisten
       // sama halaman lain).
       const activeYear = await getActiveAcademicYear();
-      if (!activeYear) throw new Error("Tidak ada tahun ajaran aktif ditemukan.");
+      if (!activeYear)
+        throw new Error("Tidak ada tahun ajaran aktif ditemukan.");
       const yearStr = activeYear.year;
       setAcademicYear(yearStr);
 
@@ -330,24 +331,22 @@ export default function Organigram({ currentUser }) {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
+        <Loader2 className="w-6 h-6 animate-spin text-blue-600 dark:text-blue-400" />
       </div>
     );
   }
 
   return (
     <div className="space-y-4">
-      <div className="bg-white rounded-xl border border-gray-200 p-5">
+      <div className="bg-theme-bg rounded-xl border border-theme p-5">
         <div className="flex items-center justify-between flex-wrap gap-3">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center">
-              <Network size={20} className="text-blue-600" />
+            <div className="w-10 h-10 bg-blue-50 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">
+              <Network size={20} className="text-blue-600 dark:text-blue-400" />
             </div>
             <div>
-              <h2 className="text-lg font-semibold text-gray-900">
-                Organigram
-              </h2>
-              <p className="text-sm text-gray-500">
+              <h2 className="text-lg font-semibold text-theme">Organigram</h2>
+              <p className="text-sm text-theme-secondary">
                 Kelas {classId} • {academicYear}
               </p>
             </div>
@@ -355,13 +354,13 @@ export default function Organigram({ currentUser }) {
 
           <div className="flex items-center gap-2 flex-wrap">
             {/* Toggle Edit / Preview */}
-            <div className="flex items-center bg-gray-100 rounded-lg p-1">
+            <div className="flex items-center bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
               <button
                 onClick={() => setViewMode("edit")}
                 className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md transition ${
                   viewMode === "edit"
-                    ? "bg-white text-gray-900 shadow-sm"
-                    : "text-gray-500 hover:text-gray-700"
+                    ? "bg-white dark:bg-gray-600 text-gray-900 dark:text-gray-100 shadow-sm"
+                    : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
                 }`}>
                 <Pencil size={14} />
                 Edit
@@ -370,8 +369,8 @@ export default function Organigram({ currentUser }) {
                 onClick={() => setViewMode("preview")}
                 className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md transition ${
                   viewMode === "preview"
-                    ? "bg-white text-gray-900 shadow-sm"
-                    : "text-gray-500 hover:text-gray-700"
+                    ? "bg-white dark:bg-gray-600 text-gray-900 dark:text-gray-100 shadow-sm"
+                    : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
                 }`}>
                 <Eye size={14} />
                 Preview Bagan
@@ -382,7 +381,7 @@ export default function Organigram({ currentUser }) {
               <>
                 <button
                   onClick={handleAddRow}
-                  className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-gray-700 bg-gray-50 hover:bg-gray-100 border border-gray-300 rounded-lg transition">
+                  className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-theme bg-theme-surface hover:bg-theme-surface-hover border border-theme rounded-lg transition">
                   <Plus size={15} />
                   Tambah Posisi
                 </button>
@@ -415,36 +414,36 @@ export default function Organigram({ currentUser }) {
         </div>
 
         {viewMode === "edit" && dirty && (
-          <p className="mt-3 text-xs text-amber-600">
+          <p className="mt-3 text-xs text-amber-600 dark:text-amber-400">
             Ada perubahan yang belum disimpan. Pindah ke tab Preview tidak akan
             menghapusnya, tapi jangan lupa klik "Simpan Perubahan".
           </p>
         )}
 
         {error && (
-          <div className="mt-4 bg-red-50 border-l-4 border-red-500 p-3 rounded flex items-center gap-2">
-            <AlertCircle className="w-4 h-4 text-red-600 shrink-0" />
-            <p className="text-sm text-red-800">{error}</p>
+          <div className="mt-4 bg-red-50 dark:bg-red-900/30 border-l-4 border-red-500 p-3 rounded flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 text-red-600 dark:text-red-400 shrink-0" />
+            <p className="text-sm text-red-800 dark:text-red-300">{error}</p>
           </div>
         )}
       </div>
 
       {viewMode === "edit" && (
-        <div className="bg-white rounded-xl border border-gray-200 p-6">
+        <div className="bg-theme-bg rounded-xl border border-theme p-6">
           {/* Walikelas - selalu di atas */}
           <div className="flex justify-center mb-6">
-            <div className="flex flex-col items-center gap-1 bg-emerald-50 border-2 border-emerald-300 rounded-lg px-6 py-3">
-              <span className="text-[10px] text-emerald-600 font-medium">
+            <div className="flex flex-col items-center gap-1 bg-emerald-50 dark:bg-emerald-900/30 border-2 border-emerald-300 dark:border-emerald-700 rounded-lg px-6 py-3">
+              <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium">
                 Wali Kelas
               </span>
-              <span className="text-sm font-semibold text-emerald-800">
+              <span className="text-sm font-semibold text-emerald-800 dark:text-emerald-300">
                 {currentUser?.full_name || "-"}
               </span>
             </div>
           </div>
 
           {rows.length === 0 ? (
-            <p className="text-xs text-gray-400 text-center py-10">
+            <p className="text-xs text-theme-secondary text-center py-10">
               Belum ada posisi. Klik "Tambah Posisi" untuk mulai.
             </p>
           ) : (
@@ -456,7 +455,7 @@ export default function Organigram({ currentUser }) {
                 return (
                   <div
                     key={row.id}
-                    className="border border-gray-200 rounded-lg p-3 bg-gray-50 flex flex-col gap-2">
+                    className="border border-theme rounded-lg p-3 bg-theme-surface flex flex-col gap-2">
                     <div className="flex items-center gap-2">
                       <GripVertical
                         size={14}
@@ -469,17 +468,17 @@ export default function Organigram({ currentUser }) {
                           handlePositionChange(row.id, e.target.value)
                         }
                         placeholder="Nama posisi (mis. Seksi Kebersihan)"
-                        className="flex-1 px-2 py-1.5 text-sm border border-gray-300 rounded-md bg-white"
+                        className="flex-1 px-2 py-1.5 text-sm border border-theme rounded-md bg-theme-bg text-theme"
                       />
                       <button
                         onClick={() => handleRemoveRow(row)}
-                        className="text-gray-400 hover:text-red-600 transition shrink-0">
+                        className="text-theme-secondary hover:text-red-600 dark:hover:text-red-400 transition shrink-0">
                         <Trash2 size={15} />
                       </button>
                     </div>
 
                     <div className="flex items-center gap-2">
-                      <label className="text-[11px] text-gray-500 shrink-0">
+                      <label className="text-[11px] text-theme-secondary shrink-0">
                         Tingkat
                       </label>
                       <select
@@ -487,7 +486,7 @@ export default function Organigram({ currentUser }) {
                         onChange={(e) =>
                           handleLevelChange(row.id, e.target.value)
                         }
-                        className="px-2 py-1 text-xs border border-gray-300 rounded-md bg-white">
+                        className="px-2 py-1 text-xs border border-theme rounded-md bg-theme-bg text-theme">
                         {Array.from({ length: MAX_LEVEL }, (_, i) => i + 1).map(
                           (lvl) => (
                             <option key={lvl} value={lvl}>
@@ -503,7 +502,7 @@ export default function Organigram({ currentUser }) {
                       onChange={(e) =>
                         handleStudentChange(row.id, e.target.value)
                       }
-                      className="px-2 py-1.5 text-sm border border-gray-300 rounded-md bg-white">
+                      className="px-2 py-1.5 text-sm border border-theme rounded-md bg-theme-bg text-theme">
                       <option value="">— Belum dipilih —</option>
                       {students
                         .filter(
@@ -518,7 +517,7 @@ export default function Organigram({ currentUser }) {
                     </select>
 
                     {student && (
-                      <p className="text-[11px] text-gray-400 truncate">
+                      <p className="text-[11px] text-theme-secondary truncate">
                         {student.full_name}
                       </p>
                     )}
@@ -531,8 +530,14 @@ export default function Organigram({ currentUser }) {
       )}
 
       {viewMode === "preview" && (
-        <div className="bg-white rounded-xl border border-gray-200 p-6 overflow-x-auto">
-          <div ref={chartRef} className="min-w-[640px] py-6 px-4 bg-white">
+        <div className="bg-theme-bg rounded-xl border border-theme p-6 overflow-x-auto">
+          {/* Area yang di-export ke PDF (html2canvas, background putih) -- sengaja TETAP
+              terang di dark mode biar hasil PDF-nya gak berubah. Ini juga berlaku buat
+              OrgBox & Connector di bawah. text-gray-900 biar teks tanpa warna eksplisit
+              gak ikut jadi terang. */}
+          <div
+            ref={chartRef}
+            className="min-w-[640px] py-6 px-4 bg-white text-gray-900">
             {/* Judul chart, ikut ter-export ke PDF */}
             <div className="text-center mb-8">
               <h3 className="text-base font-semibold text-gray-900">

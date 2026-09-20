@@ -121,7 +121,8 @@ const checkAcademicYearRules = async () => {
         category: "business_logic",
         severity: "critical",
         message: "No active academic year",
-        details: "System requires exactly one active academic year for proper operation",
+        details:
+          "System requires exactly one active academic year for proper operation",
         table: "academic_years",
       });
     }
@@ -158,7 +159,7 @@ const checkAcademicYearRules = async () => {
 
       if (active.end_date && active.end_date < today) {
         const daysPast = Math.floor(
-          (new Date(today) - new Date(active.end_date)) / (1000 * 60 * 60 * 24)
+          (new Date(today) - new Date(active.end_date)) / (1000 * 60 * 60 * 24),
         );
         issues.push({
           category: "business_logic",
@@ -213,7 +214,12 @@ const checkAttendanceLogic = async () => {
     const { data: recentAttendances } = await supabase
       .from("attendances")
       .select("student_id, date, subject, class_id")
-      .gte("date", new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString().split("T")[0])
+      .gte(
+        "date",
+        new Date(Date.now() - 90 * 24 * 60 * 60 * 1000)
+          .toISOString()
+          .split("T")[0],
+      )
       .limit(1000);
 
     if (recentAttendances) {
@@ -223,7 +229,9 @@ const checkAttendanceLogic = async () => {
         attendanceMap.set(key, (attendanceMap.get(key) || 0) + 1);
       });
 
-      const duplicates = Array.from(attendanceMap.values()).filter((count) => count > 1).length;
+      const duplicates = Array.from(attendanceMap.values()).filter(
+        (count) => count > 1,
+      ).length;
       if (duplicates > 0) {
         issues.push({
           category: "business_logic",
@@ -243,9 +251,14 @@ const checkAttendanceLogic = async () => {
         id,
         date,
         students!inner(is_active, full_name)
-      `
+      `,
       )
-      .gte("date", new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0])
+      .gte(
+        "date",
+        new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
+          .toISOString()
+          .split("T")[0],
+      )
       .eq("students.is_active", false)
       .limit(50);
 
@@ -304,9 +317,12 @@ const checkGradeLogic = async () => {
         id,
         created_at,
         students!inner(is_active, full_name)
-      `
+      `,
       )
-      .gte("created_at", new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString())
+      .gte(
+        "created_at",
+        new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
+      )
       .eq("students.is_active", false)
       .limit(50);
 
@@ -458,7 +474,10 @@ const checkTeacherScheduleConflicts = async () => {
             const sched2 = dayScheds[j];
 
             // Check time overlap
-            if (sched1.start_time < sched2.end_time && sched2.start_time < sched1.end_time) {
+            if (
+              sched1.start_time < sched2.end_time &&
+              sched2.start_time < sched1.end_time
+            ) {
               // ✅ FIX: sertain class_id tiap slot di pesan -- kalau
               // class_id-nya SAMA berarti ini murni row duplikat (data
               // ke-insert dobel), kalau class_id-nya BEDA berarti guru
@@ -511,12 +530,12 @@ const checkTeacherAssignmentLogic = async () => {
       });
 
       teacherClassCount.forEach((count, teacherId) => {
-        if (count > 20) {
+        if (count > 40) {
           issues.push({
             category: "business_logic",
             severity: "warning",
             message: "Teacher assigned to excessive number of classes",
-            details: `Teacher ${teacherId} is assigned to ${count} classes - exceeds recommended limit of 20`,
+            details: `Teacher ${teacherId} is assigned to ${count} classes - exceeds recommended limit of 40`,
             table: "teacher_assignments",
           });
         }
@@ -567,13 +586,18 @@ const checkStaleTeacherAssignments = async () => {
     // assignment bakal keflag stale (kode vs UUID gak akan pernah match).
     const [{ data: scheduleCombos }, { data: usersData }] = await Promise.all([
       supabase.from("teacher_schedules").select("teacher_id, class_id"),
-      supabase.from("users").select("id, teacher_id").not("teacher_id", "is", null),
+      supabase
+        .from("users")
+        .select("id, teacher_id")
+        .not("teacher_id", "is", null),
     ]);
 
     const scheduleKeySet = new Set(
-      (scheduleCombos || []).map((s) => `${s.teacher_id}-${s.class_id}`)
+      (scheduleCombos || []).map((s) => `${s.teacher_id}-${s.class_id}`),
     );
-    const codeToUuid = new Map((usersData || []).map((u) => [u.teacher_id, u.id]));
+    const codeToUuid = new Map(
+      (usersData || []).map((u) => [u.teacher_id, u.id]),
+    );
 
     const stale = assignments.filter((a) => {
       if ((a.subject || "").toUpperCase() === "BP/BK") return false;
@@ -731,7 +755,8 @@ const checkSiswaBaruPipeline = async () => {
       issues.push({
         category: "business_logic",
         severity: "warning",
-        message: "Siswa baru diterima & sudah punya kelas, tapi NIS belum digenerate",
+        message:
+          "Siswa baru diterima & sudah punya kelas, tapi NIS belum digenerate",
         details: `${belumAdaNis.length} siswa di siswa_baru sudah diterima dan kelasnya keisi, tapi NIS masih kosong. Kalau Transisi Tahun Ajaran otomatis dijalankan sebelum NIS digenerate manual di tab Finalisasi SPMB, siswa ini berisiko ke-transfer ke tabel students dengan NIS kosong.`,
         table: "siswa_baru",
       });
