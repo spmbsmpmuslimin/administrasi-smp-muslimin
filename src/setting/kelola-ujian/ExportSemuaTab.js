@@ -231,7 +231,7 @@ const ExportSemuaTab = ({ jenisUjian, showToast, onBack }) => {
         </p>
       )}
 
-      {!loadingUjian && tahunAjaranId && !ujian && (
+      {!loadingUjian && tahunAjaranId && (!ujian || !ujian.versi_skema) && (
         <div className="p-4 mb-5 rounded-xl border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20">
           <p className="text-sm text-amber-800 dark:text-amber-300">
             Ujian untuk tahun ajaran ini belum pernah diproses -- belum ada apa pun untuk diexport.
@@ -240,7 +240,7 @@ const ExportSemuaTab = ({ jenisUjian, showToast, onBack }) => {
         </div>
       )}
 
-      {ujian && (
+      {ujian && ujian.versi_skema && (
         <>
           <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 overflow-hidden mb-5">
             <button

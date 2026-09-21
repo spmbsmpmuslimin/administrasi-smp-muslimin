@@ -170,7 +170,7 @@ const KartuUjianTab = ({ jenisUjian, showToast, onBack }) => {
 
   const handleCetakPeserta = async (nomorRuangan) => {
     const ta = ambilTahunAjaranTerpilih();
-    if (!ta || !ujian) return;
+    if (!ta || !ujian || !ujian.versi_skema) return;
 
     setMencetakRuangan(nomorRuangan);
     try {
@@ -215,7 +215,7 @@ const KartuUjianTab = ({ jenisUjian, showToast, onBack }) => {
 
   const handleCetakKelas = async (kelas) => {
     const ta = ambilTahunAjaranTerpilih();
-    if (!ta || !ujian) return;
+    if (!ta || !ujian || !ujian.versi_skema) return;
 
     setMencetakKelas(kelas);
     try {
@@ -260,7 +260,7 @@ const KartuUjianTab = ({ jenisUjian, showToast, onBack }) => {
 
   const handleCetakSemuaPengawas = async () => {
     const ta = ambilTahunAjaranTerpilih();
-    if (!ta || !ujian) return;
+    if (!ta || !ujian || !ujian.versi_skema) return;
 
     setMencetakSemuaPengawas(true);
     try {
@@ -332,14 +332,14 @@ const KartuUjianTab = ({ jenisUjian, showToast, onBack }) => {
         </p>
       )}
 
-      {!ujian && !loadingUjian && tahunAjaranId && (
+      {(!ujian || !ujian.versi_skema) && !loadingUjian && tahunAjaranId && (
         <div className="p-3 mb-5 text-xs bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl text-amber-700 dark:text-amber-300">
           Data ujian untuk tahun ajaran ini belum diproses. Proses dulu{" "}
           <strong>Pembagian Ruangan</strong> (pilih versi skema & simpan) sebelum lanjut ke sini.
         </div>
       )}
 
-      {ujian && !loadingData && (
+      {ujian && ujian.versi_skema && !loadingData && (
         <>
           <div className="flex gap-1 mb-4 border-b border-gray-200 dark:border-gray-700">
             <button

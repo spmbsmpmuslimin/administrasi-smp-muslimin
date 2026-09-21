@@ -24,11 +24,22 @@
 //
 // Pola alur (tahun ajaran, cek ujian ada/belum) disamain sama
 // ProgramKerjaTab.js / LaporanRekapAkhirTab.js biar UX-nya konsisten.
+//
+// CATATAN (restrukturisasi Sep 2026, opsi "biarin kebuka lebih awal") --
+// tab ini sekarang manggil getOrCreateUjianDraft() (BUKAN cariUjian() yang
+// read-only kayak dulu), sama kayak kartu "Jadwal Ujian" (JadwalUjianTab.js).
+// Efeknya: nentuin panitia bisa dikerjain begitu Tahun Ajaran dipilih, TANPA
+// perlu nunggu Pembagian Ruangan diproses -- soalnya nentuin panitia itu
+// independen dari urusan ruangan (biasanya udah ada dari SK sekolah). Ini
+// AMAN dari sisi akses Portal Ujian: record draft yang dibikin status-nya
+// "draft" (bukan "aktif"), jadi guru yang dicentang di sini TETAP belum bisa
+// akses Portal Ujian sampai Pembagian Ruangan beneran diproses & getOrCreateUjian()
+// di pembagianRuanganSupabase.js nge-upgrade status-nya jadi "aktif".
 // ========================================================================
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { ChevronLeft, Loader2, Search, UserCog, CheckCircle2 } from "lucide-react";
 import { supabase } from "../../supabaseClient";
-import { ambilDaftarTahunAjaran, cariUjian, KONFIGURASI_JENIS_UJIAN } from "./pembagian-ruangan/pembagianRuanganSupabase";
+import { ambilDaftarTahunAjaran, getOrCreateUjianDraft, KONFIGURASI_JENIS_UJIAN } from "./pembagian-ruangan/pembagianRuanganSupabase";
 import { ambilGuruEligiblePanitia, ambilPanitiaUjian, setPanitiaUjian } from "./panitiaUjianSupabase";
 
 const JENIS_UJIAN_LIST = ["PSAS", "PSAT", "PSAJ"];
@@ -112,7 +123,14 @@ const PanitiaUjianTab = ({ showToast, onBack }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [daftarTahunAjaran, jenisUjian]);
 
-  // ---------- Muat data ujian (buat jenis + tahun ajaran terpilih) ----------
+  // ---------- Siapkan record ujian (buat jenis + tahun ajaran terpilih) ----------
+  // Beda sama kartu "Daftar & Jadwal Pengawas" / "Kartu Ujian" yang cuma
+  // CARI (read-only), tab ini BOLEH bikin record baru (draft) lewat
+  // getOrCreateUjianDraft() -- Panitia Ujian sengaja jadi salah satu titik
+  // masuk paling awal (bareng kartu "Jadwal Ujian"), independen dari
+  // Pembagian Ruangan. Draft ini gak mengaktifkan Portal Ujian buat guru
+  // panitia (lihat catatan status di pembagianRuanganSupabase.js) -- itu
+  // baru kejadian pas Pembagian Ruangan BENERAN diproses & disimpan.
   useEffect(() => {
     if (!tahunAjaranId) {
       setUjian(null);
@@ -122,11 +140,12 @@ const PanitiaUjianTab = ({ showToast, onBack }) => {
     (async () => {
       setLoadingUjian(true);
       try {
-        const rec = await cariUjian(supabase, jenisUjian, tahunAjaranId);
+        const kapasitasDefault = KONFIGURASI_JENIS_UJIAN[jenisUjian]?.defaultKapasitas || 40;
+        const rec = await getOrCreateUjianDraft(supabase, jenisUjian, tahunAjaranId, kapasitasDefault);
         if (!cancelled) setUjian(rec);
       } catch (err) {
         console.error(err);
-        if (!cancelled) showToast?.("Gagal memuat data ujian: " + err.message, "error");
+        if (!cancelled) showToast?.("Gagal menyiapkan data ujian: " + err.message, "error");
       } finally {
         if (!cancelled) setLoadingUjian(false);
       }
@@ -295,10 +314,9 @@ const PanitiaUjianTab = ({ showToast, onBack }) => {
       )}
 
       {!ujian && !loadingUjian && tahunAjaranId && (
-        <div className="p-3 mb-5 text-xs bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl text-amber-700 dark:text-amber-300">
-          Data ujian untuk tahun ajaran ini belum diproses. Proses dulu{" "}
-          <strong>Pembagian Ruangan</strong> (pilih versi skema & simpan) sebelum menentukan
-          panitia di sini.
+        <div className="p-3 mb-5 text-xs bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl text-red-700 dark:text-red-300">
+          Gagal menyiapkan data ujian untuk kombinasi ini. Coba ganti tahun ajaran lalu pilih lagi,
+          atau muat ulang halaman.
         </div>
       )}
 

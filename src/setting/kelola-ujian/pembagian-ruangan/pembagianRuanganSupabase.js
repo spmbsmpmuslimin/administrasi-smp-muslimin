@@ -139,6 +139,39 @@ async function getOrCreateUjian(supabase, jenis, academicYearId, kapasitas = 40,
     .maybeSingle();
 
   if (errSelect) throw errSelect;
+
+  // Record udah ada TAPI masih DRAFT (versi_skema null -- dibikin dari
+  // kartu "Jadwal Ujian" atau "Panitia Ujian" lewat getOrCreateUjianDraft
+  // di bawah, SEBELUM Pembagian Ruangan pernah diproses). Ini titik
+  // PERTAMA KALI Pembagian Ruangan beneran diproses & disimpan buat
+  // kombinasi jenis+tahun ajaran ini, jadi boleh isi versi_skema &
+  // aktifkan status-nya sekarang (efeknya: Portal Ujian buat guru
+  // panitia baru kebuka MULAI DARI SINI, persis behavior lama -- lihat
+  // catatan status "aktif" di komentar atas). Setelah baris ini jalan
+  // sekali, existing.versi_skema udah keisi, jadi panggilan berikutnya
+  // otomatis masuk cabang "existing sudah diproses" di bawah.
+  if (existing && !existing.versi_skema) {
+    const { data: updated, error: errUpdate } = await supabase
+      .from("ujian")
+      .update({
+        versi_skema: versi,
+        kapasitas_ruangan: kapasitas,
+        status: "aktif",
+      })
+      .eq("id", existing.id)
+      .select()
+      .single();
+
+    if (errUpdate) throw errUpdate;
+    return updated;
+  }
+
+  // Existing sudah pernah diproses (versi_skema udah keisi dari
+  // pemrosesan sebelumnya) -- balikin APA ADANYA, JANGAN overwrite
+  // versi_skema diam-diam. Ganti versi buat ujian yang udah diproses
+  // itu mestinya keputusan eksplisit lewat "Proses Ulang", bukan efek
+  // samping dari fungsi ini kepanggil ulang (lihat catatan di komentar
+  // parameter versiSkema di atas).
   if (existing) return existing;
 
   const { data: created, error: errInsert } = await supabase
@@ -149,6 +182,59 @@ async function getOrCreateUjian(supabase, jenis, academicYearId, kapasitas = 40,
       kapasitas_ruangan: kapasitas,
       versi_skema: versi,
       status: "aktif", // eksplisit, jangan cuma ngandelin default kolom di DB
+    })
+    .select()
+    .single();
+
+  if (errInsert) throw errInsert;
+  return created;
+}
+
+/**
+ * Versi DRAFT dari getOrCreateUjian() -- dipakai dari kartu-kartu yang
+ * SENGAJA independen dari Pembagian Ruangan (sekarang: "Jadwal Ujian" &
+ * "Panitia Ujian"). Bikin record `ujian` kalau belum ada sama sekali,
+ * dengan `versi_skema = null` & `status = "draft"` -- artinya "record
+ * ujian ada, tapi Pembagian Ruangan belum pernah diproses/disimpan".
+ *
+ * PENTING beda sama getOrCreateUjian():
+ * - Gak butuh versiSkema (memang belum ada yang dipilih di titik ini).
+ * - Kalau record udah ada (baik masih draft MAUPUN udah pernah
+ *   diproses/aktif), balikin APA ADANYA -- fungsi ini gak pernah nulis
+ *   ulang record yang udah ada, cuma nyediain kalau belum ada sama
+ *   sekali. Jadi aman dipanggil berkali-kali dari kartu manapun tanpa
+ *   resiko nimpa data yang udah diproses.
+ * - `status: "draft"` sengaja BUKAN "aktif" -- guru panitia yang
+ *   dicentang di kartu Panitia Ujian TETAP gak bisa akses Portal Ujian
+ *   sampai Pembagian Ruangan beneran diproses & getOrCreateUjian() di
+ *   atas nge-upgrade status ini jadi "aktif" (lihat isPanitiaAktif() di
+ *   portal-ujian/portalUjianSupabase.js yang syaratnya butuh KEDUANYA
+ *   ujian_kepanitiaan.status DAN ujian.status = 'aktif').
+ *
+ * @param {number} kapasitas - dipakai kalau BENERAN bikin record baru;
+ *   isi dengan KONFIGURASI_JENIS_UJIAN[jenis].defaultKapasitas dari
+ *   pemanggil, BUKAN angka fix 40, biar PSAJ (kapasitas default 20)
+ *   gak ketiban default yang salah.
+ */
+async function getOrCreateUjianDraft(supabase, jenis, academicYearId, kapasitas) {
+  const { data: existing, error: errSelect } = await supabase
+    .from("ujian")
+    .select("*")
+    .eq("jenis", jenis)
+    .eq("academic_year_id", academicYearId)
+    .maybeSingle();
+
+  if (errSelect) throw errSelect;
+  if (existing) return existing;
+
+  const { data: created, error: errInsert } = await supabase
+    .from("ujian")
+    .insert({
+      jenis,
+      academic_year_id: academicYearId,
+      kapasitas_ruangan: kapasitas,
+      versi_skema: null,
+      status: "draft",
     })
     .select()
     .single();
@@ -500,14 +586,13 @@ async function ambilPembagianTersimpan(supabase, ujianId) {
  *
  * Hapus peserta_ujian + SEMUA penugasan pengawas (ujian_pengawas) buat
  * ujian ini, lalu UPDATE versi_skema di tempat -- BUKAN hapus baris
- * `ujian`-nya. ujian_jadwal dan rekap_kehadiran_ujian ON DELETE CASCADE
- * ke ujian.id, jadi kalau baris ujian ikut kehapus, jadwal/rekap yang
- * udah diisi admin buat ujian itu ikut lenyap -- padahal niatnya cuma
- * reset pembagian ruangan (+ pengawas yang nempel di nomor ruangan
- * lama) doang, bukan reset seluruh ujian. Makanya ujian_jadwal
- * (tanggal/sesi/mata pelajaran) SENGAJA tidak ikut dihapus di sini.
- * (CATATAN revisi: tabel anggaran_ujian & laporan_rekap_ujian yang dulu
- * disebut di sini SUDAH DIHAPUS dari DB -- fiturnya dicabut dari app.)
+ * `ujian`-nya. ujian_jadwal, anggaran_ujian, laporan_rekap_ujian, dan
+ * rekap_kehadiran_ujian semua ON DELETE CASCADE ke ujian.id, jadi kalau
+ * baris ujian ikut kehapus, jadwal/anggaran/laporan yang udah diisi admin
+ * buat ujian itu ikut lenyap -- padahal niatnya cuma reset pembagian
+ * ruangan (+ pengawas yang nempel di nomor ruangan lama) doang, bukan
+ * reset seluruh ujian. Makanya ujian_jadwal (tanggal/sesi/mata pelajaran)
+ * SENGAJA tidak ikut dihapus di sini.
  *
  * FIX (Sep 2026): sebelumnya ujian_pengawas TIDAK ikut dihapus di sini --
  * cuma diperingatkan lewat modal UI supaya admin "cek ulang manual".
@@ -582,6 +667,7 @@ export {
   hitungDampakSimpan,
   ambilDaftarTahunAjaran,
   getOrCreateUjian,
+  getOrCreateUjianDraft,
   cariUjian,
   prosesPembagianRuangan,
   simpanPembagianRuangan,

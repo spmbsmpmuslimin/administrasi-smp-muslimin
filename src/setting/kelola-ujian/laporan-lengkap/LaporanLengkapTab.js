@@ -255,14 +255,14 @@ const LaporanLengkapTab = ({ jenisUjian, showToast, onBack }) => {
         </p>
       )}
 
-      {!ujian && !loadingUjian && tahunAjaranId && (
+      {(!ujian || !ujian.versi_skema) && !loadingUjian && tahunAjaranId && (
         <div className="p-3 mb-5 text-xs bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl text-amber-700 dark:text-amber-300">
           Data ujian untuk tahun ajaran ini belum diproses. Proses dulu{" "}
           <strong>Pembagian Ruangan</strong> sebelum lanjut ke sini.
         </div>
       )}
 
-      {ujian && !loadingData && (
+      {ujian && ujian.versi_skema && !loadingData && (
         <>
           <div className="mb-4 p-4 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
             <div className="flex items-center gap-2 mb-3">

@@ -1,12 +1,13 @@
 // setting/kelola-ujian/JadwalRuanganTab.js
-// Kartu 1 dari Manajemen Ujian: urusan PESERTA & PEMBAGIAN RUANGAN.
+// Kartu "Peserta & Pembagian Ruangan" dari Manajemen Ujian.
 //
-// PERUBAHAN: tab "Jadwal Sesi" (Jadwal Ujian) SUDAH PINDAH ke kartu
-// "Daftar & Jadwal Pengawas" (PesertaPengawasTab.js) sebagai tab "Jadwal
-// Ujian". Datanya tetap 1 (tabel ujian_jadwal), cuma tempat ngeditnya yang
-// pindah. Karena judul kartu ini sekarang nggak bahas jadwal lagi, label
-// kartunya (di daftar kartu Manajemen Ujian) sebaiknya ikut diganti, mis.
-// jadi "Peserta & Pembagian Ruangan".
+// CATATAN (restrukturisasi Sep 2026) -- tab "Jadwal Sesi" (tanggal/jam/mapel)
+// SUDAH PINDAH jadi kartu top-level sendiri "Jadwal Ujian" (lihat
+// JadwalUjianTab.js), BUKAN ke kartu "Daftar & Jadwal Pengawas". Alasannya:
+// jadwal ujian biasanya udah given dari sekolah/dinas duluan, jadi sengaja
+// dibikin independen -- gak perlu nunggu Pembagian Ruangan (kartu ini) atau
+// Pengawas diproses dulu. Datanya tetap 1 (tabel ujian_jadwal), cuma tempat
+// ngeditnya yang pindah.
 //
 // Kartu ini cuma WADAH (container) -- isinya nggak ditulis ulang di sini,
 // tapi diambil dari komponen PembagianRuanganTab, dikunci ke bagian yang
@@ -30,9 +31,11 @@
 // Preview & Export, cuma disusun jadi grid kursi, bukan tabel) -- lihat
 // komentar di PembagianRuanganTab.js buat detail implementasinya.
 //
-// Sisa tab pengawas (Jadwal Ujian, Daftar Pengawas, Kelola Jadwal Pengawas,
-// Rekap, Jadwal Pengawas) ada di kartu "Daftar & Jadwal Pengawas"
-// (PesertaPengawasTab.js).
+// Tab pengawas (Daftar Pengawas, Kelola Jadwal Pengawas, Rekap, Jadwal
+// Pengawas) ada di kartu "Daftar & Jadwal Pengawas" (PesertaPengawasTab.js).
+// Jadwal Ujian ada di kartu tersendiri (JadwalUjianTab.js) -- lihat catatan
+// di atas.
+
 //
 // CATATAN: pindah antar 5 tab ini (Komposisi <-> Pembagian <-> Preview <->
 // Denah Duduk <-> Export) aman, karena kelimanya komponen yang sama -- cuma

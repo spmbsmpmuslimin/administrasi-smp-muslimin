@@ -1,25 +1,29 @@
 // setting/kelola-ujian/PesertaPengawasTab.js
-// Kartu 2 dari Manajemen Ujian: "Daftar & Jadwal Pengawas" (nama baru,
-// sebelumnya "Peserta & Pengawas" -- diganti karena isinya sekarang murni
-// Pengawas, gak ada urusan Peserta lagi di kartu ini).
+// Kartu "Daftar & Jadwal Pengawas" dari Manajemen Ujian.
 //
-// Kartu ini cuma WADAH (container) buat JadwalPengawasTab, dikunci ke 5
+// CATATAN (restrukturisasi Sep 2026) -- tab "Jadwal Ujian" (sesi: tanggal,
+// jam, mapel) yang tadinya ada di sini SUDAH PINDAH jadi kartu top-level
+// sendiri "Jadwal Ujian" (lihat JadwalUjianTab.js), karena di real dunia
+// jadwal ujian biasanya udah given dari sekolah/dinas duluan, gak perlu
+// nunggu urusan ruangan/pengawas. Makanya nama kartu ini balik ke "Daftar &
+// Jadwal Pengawas" (sebelumnya sempet digabung jadi "Jadwal Ujian &
+// Pengawas" waktu tab Jadwal Ujian masih nempel di sini).
+//
+// Kartu ini cuma WADAH (container) buat JadwalPengawasTab, dikunci ke 4
 // tab lewat prop tabPaksa:
-//   1. "Jadwal Ujian" (key "jadwal" -- sesi ujian: tanggal, jam, mapel.
-//      PINDAHAN dari kartu Jadwal Ruangan, jadi sesi diedit di sini)
-//   2. "Daftar Pengawas"
-//   3. "Kelola Jadwal Pengawas" (dulu "Jadwal Ngawas")
-//   4. "Rekap"
-//   5. "Jadwal Pengawas" (BARU -- lihat/cetak + export Excel & PDF landscape,
+//   1. "Daftar Pengawas"
+//   2. "Kelola Jadwal Pengawas" (dulu "Jadwal Ngawas")
+//   3. "Rekap"
+//   4. "Jadwal Pengawas" (lihat/cetak + export Excel & PDF landscape,
 //      plus Daftar Kode Pengawas di halaman 2)
 //
-// "Export Daftar Peserta" yang dulu ada di sini SUDAH PINDAH ke kartu
-// "Jadwal, Peserta & Pembagian Ruangan" (JadwalRuanganTab.js), ditaruh sebagai tab
-// terakhir setelah "Preview Per Ruangan" -- biar 1 alur sama penyusunan
-// ruangannya (susun -> preview -> export), tanpa pindah kartu.
+// "Export Daftar Peserta" ada di kartu "Peserta & Pembagian Ruangan"
+// (JadwalRuanganTab.js), ditaruh sebagai tab terakhir setelah "Preview Per
+// Ruangan" -- biar 1 alur sama penyusunan ruangannya (susun -> preview ->
+// export), tanpa pindah kartu.
 
 import React, { useState } from "react";
-import { ChevronLeft, CalendarClock, ClipboardList, Users, Table2, Printer } from "lucide-react";
+import { ChevronLeft, ClipboardList, Users, Table2, Printer } from "lucide-react";
 import JadwalPengawasTab from "./jadwal-pengawas/JadwalPengawasTab";
 
 const JENIS_UJIAN_LABEL = {
@@ -31,7 +35,6 @@ const JENIS_UJIAN_LABEL = {
 // id di sini nyambung ke tab internal JadwalPengawasTab.js -- dikirim apa
 // adanya lewat prop tabPaksa, jadi jangan diganti sepihak.
 const TAB_LIST = [
-  { id: "jadwal", label: "Jadwal Ujian", icon: CalendarClock },
   { id: "daftar", label: "Daftar Pengawas", icon: ClipboardList },
   { id: "pengawas", label: "Kelola Jadwal Pengawas", icon: Users },
   { id: "rekap", label: "Rekap", icon: Table2 },
@@ -39,7 +42,7 @@ const TAB_LIST = [
 ];
 
 const PesertaPengawasTab = ({ jenisUjian, showToast, onBack }) => {
-  const [tabAktif, setTabAktif] = useState("jadwal");
+  const [tabAktif, setTabAktif] = useState("daftar");
 
   return (
     <div className="p-4 sm:p-6">
@@ -57,7 +60,7 @@ const PesertaPengawasTab = ({ jenisUjian, showToast, onBack }) => {
         </p>
       </div>
 
-      {/* 5 tab -- flex-wrap supaya turun ke baris berikutnya di layar HP,
+      {/* 4 tab -- flex-wrap supaya turun ke baris berikutnya di layar HP,
       bukan kepotong. */}
       <div className="flex flex-wrap gap-1 mb-5 border-b border-gray-200 dark:border-gray-700">
         {TAB_LIST.map((tab) => {

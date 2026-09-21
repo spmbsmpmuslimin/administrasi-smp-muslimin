@@ -308,14 +308,14 @@ const LaporanRekapAkhirTab = ({ jenisUjian, showToast, onBack }) => {
         </p>
       )}
 
-      {!ujian && !loadingUjian && tahunAjaranId && (
+      {(!ujian || !ujian.versi_skema) && !loadingUjian && tahunAjaranId && (
         <div className="p-3 mb-5 text-xs bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl text-amber-700 dark:text-amber-300">
           Data ujian untuk tahun ajaran ini belum diproses. Proses dulu{" "}
           <strong>Pembagian Ruangan</strong> (pilih versi skema & simpan) sebelum lanjut ke sini.
         </div>
       )}
 
-      {ujian && !loadingRekap && !activeItem && (
+      {ujian && ujian.versi_skema && !loadingRekap && !activeItem && (
         <>
           {/* Dulu ada tombol "Export Laporan Lengkap (PDF)" di sini --
               dicabut karena redundant sama sub-fitur "Laporan Lengkap"
@@ -355,7 +355,7 @@ const LaporanRekapAkhirTab = ({ jenisUjian, showToast, onBack }) => {
         </>
       )}
 
-      {ujian && !loadingRekap && activeItem && (
+      {ujian && ujian.versi_skema && !loadingRekap && activeItem && (
         <>
           {/* 1. Rekap Peserta & Ruangan */}
           {activeItem === "peserta" && (

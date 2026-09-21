@@ -1,25 +1,38 @@
 // setting/kelola-ujian/jadwal-pengawas/JadwalPengawasTab.js
-// Komponen isi untuk urusan JADWAL SESI + PENGAWAS. Punya 5 tab internal:
-// 1. "Jadwal Sesi"     -- kelola daftar sesi ujian (tanggal, jam, mapel).
-// 2. "Daftar Pengawas" -- kode singkat per guru (embed dari DaftarPengawasTab.js).
-// 3. "Kelola Jadwal Pengawas" (key "pengawas") -- assign guru pengawas per
+// Komponen isi untuk kartu "Daftar & Jadwal Pengawas". Punya 4 tab internal:
+// 1. "Daftar Pengawas" (key "daftar") -- kode singkat per guru (embed dari
+//    DaftarPengawasTab.js).
+// 2. "Kelola Jadwal Pengawas" (key "pengawas") -- assign guru pengawas per
 //    ruangan untuk tiap hari (dulu berlabel "Jadwal Ngawas").
-// 4. "Rekap"           -- preview semua hari & sesi sekaligus.
-// 5. "Jadwal Pengawas" (key "lihat") -- tampilan lihat/cetak + export Excel &
+// 3. "Rekap"           -- preview semua hari & sesi sekaligus.
+// 4. "Jadwal Pengawas" (key "lihat") -- tampilan lihat/cetak + export Excel &
 //    PDF landscape, plus tabel Daftar Kode Pengawas (JadwalPengawasLihatView.js).
 //
-// PENTING: sejak kartu sub-fitur disusun ulang biar isinya nyambung sama
-// judulnya, komponen ini NGGAK lagi dipakai utuh di satu layar. Yang manggil:
-//   - JadwalRuanganTab.js   (kartu "Jadwal & Pembagian Ruangan") -> tabPaksa="jadwal"
-//   - PesertaPengawasTab.js (kartu "Peserta & Pengawas")         -> tabPaksa="daftar"|"pengawas"|"rekap"|"lihat"
-// Prop `tabPaksa` bikin tab bar internal disembunyiin & tab aktif ditentuin
-// parent. Kalau `onBack` nggak dikirim, tombol balik & header jenis ujian juga
-// disembunyiin, karena kartu pemanggilnya udah punya sendiri. Tanpa dua prop
-// itu (dipanggil langsung), komponen ini tetap jalan utuh seperti dulu.
+// CATATAN (restrukturisasi Sep 2026) -- tab "Jadwal Sesi" (kelola tanggal/
+// jam/mapel) yang DULU ada di sini SUDAH PINDAH jadi kartu top-level sendiri
+// "Jadwal Ujian" (lihat JadwalUjianTab.js). Kartu itu SEKARANG yang bikin
+// record `ujian` (draft, lewat getOrCreateUjianDraft) begitu Tahun Ajaran
+// dipilih -- duluan sebelum Pembagian Ruangan diproses -- karena di real
+// dunia jadwal ujian biasanya udah given dari sekolah/dinas, gak perlu
+// nunggu urusan ruangan kelar. Komponen INI cuma KONSUMEN data jadwal (baca
+// `daftarJadwal` buat nyusun tampilan pengawas/rekap/cetak), BUKAN yang
+// nentuin/nulis jadwal sesi lagi.
+//
+// PENTING: komponen ini NGGAK lagi dipakai utuh di satu layar -- yang
+// manggil cuma PesertaPengawasTab.js (kartu "Daftar & Jadwal Pengawas")
+// lewat tabPaksa="daftar"|"pengawas"|"rekap"|"lihat". Prop `tabPaksa` bikin
+// tab bar internal disembunyiin & tab aktif ditentuin parent. Kalau `onBack`
+// nggak dikirim, tombol balik & header jenis ujian juga disembunyiin, karena
+// kartu pemanggilnya udah punya sendiri. Tanpa dua prop itu (dipanggil
+// langsung), komponen ini tetap jalan (minus tab Jadwal Sesi yang udah pindah).
 //
 // Ruangan yang tersedia diambil dari hasil Pembagian Ruangan (tabel
 // peserta_ujian) -- kalau belum diproses, tampilkan peringatan untuk
-// proses ruangan dulu.
+// proses ruangan dulu. Beda sama kartu "Jadwal Ujian" & "Panitia Ujian" yang
+// sengaja independen, kartu INI (assign pengawas ke ruangan) TETAP butuh
+// ruangan sudah dibagi -- makanya gate `!ujian || !ujian.versi_skema` di
+// bawah SENGAJA nolak record `ujian` yang masih draft juga, bukan cuma yang
+// belum ada sama sekali.
 
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import {
@@ -27,7 +40,6 @@ import {
   Plus,
   Trash2,
   X,
-  CalendarClock,
   Users,
   Loader2,
   Shuffle,
@@ -46,10 +58,8 @@ import {
   ambilRuanganUjian,
   ambilDaftarGuru,
   ambilJadwalSesi,
-  simpanJadwalSesi,
   mataPelajaranUntukJenjang,
   mataPelajaranUntukRuangan,
-  hapusJadwalSesi,
   ambilPengawasUntukJadwal,
   tambahPengawas,
   hapusPengawas,
@@ -70,16 +80,6 @@ const JENIS_UJIAN_LABEL = {
 function labelTahunAjaran(row) {
   return row.year || row.tahun_ajaran || row.name || row.label || row.nama || `ID: ${row.id}`;
 }
-
-const emptyJadwalForm = {
-  tanggal: "",
-  sesi_ke: 1,
-  waktu_mulai: "",
-  waktu_selesai: "",
-  mata_pelajaran: "",
-  mata_pelajaran_kelas8: "",
-  mata_pelajaran_kelas9: "",
-};
 
 /**
  * Format tanggal (string "YYYY-MM-DD" dari Supabase) jadi "Nama Hari,
@@ -131,19 +131,14 @@ const JadwalPengawasTab = ({ jenisUjian, showToast, onBack, tabPaksa = null }) =
   const [penugasanTidakValid, setPenugasanTidakValid] = useState([]);
   const [sedangBersihkanPenugasan, setSedangBersihkanPenugasan] = useState(false);
 
-  // Tab internal komponen ini: "jadwal" | "daftar" | "pengawas" | "rekap" | "lihat".
+  // Tab internal komponen ini: "daftar" | "pengawas" | "rekap" | "lihat".
   // Kalau parent ngirim prop `tabPaksa`, tab bar internal disembunyiin dan
   // tab aktif ditentuin sepenuhnya sama parent -- dipakai waktu komponen ini
-  // di-embed di kartu (JadwalRuanganTab / PesertaPengawasTab) yang punya tab
-  // bar sendiri, biar nggak ada 2 baris tab numpuk.
-  const [tabInternal, setTabInternal] = useState("jadwal");
+  // di-embed di kartu (PesertaPengawasTab) yang punya tab bar sendiri, biar
+  // nggak ada 2 baris tab numpuk.
+  const [tabInternal, setTabInternal] = useState("daftar");
   const tabAktif = tabPaksa || tabInternal;
   const setTabAktif = setTabInternal;
-
-  const [showModalJadwal, setShowModalJadwal] = useState(false);
-  const [editingJadwal, setEditingJadwal] = useState(null);
-  const [formJadwal, setFormJadwal] = useState(emptyJadwalForm);
-  const [savingJadwal, setSavingJadwal] = useState(false);
 
   const [jadwalPengawasAktif, setJadwalPengawasAktif] = useState(null);
   const [pengawasPerRuangan, setPengawasPerRuangan] = useState({});
@@ -219,13 +214,13 @@ const JadwalPengawasTab = ({ jenisUjian, showToast, onBack, tabPaksa = null }) =
   }, [daftarTahunAjaran]);
 
   // Begitu tahun ajaran fix, CARI record `ujian` yang udah ada (bukan bikin
-  // baru -- tab ini cuma konsumen data pembagian ruangan, bukan yang
-  // nentuin versi_skema). Record `ujian` mestinya udah dibikin lewat tab
-  // "Pembagian Ruangan" (yang minta admin pilih versi skema secara
-  // eksplisit sebelum simpan). Kalau belum ada, `ujian` tetap null dan UI
-  // di bawah ngasih tau admin buat proses Pembagian Ruangan dulu -- BUKAN
-  // diam-diam bikin record kosong tanpa versi (itu yang dulu nyebabin
-  // error "Versi skema pembagian belum dipilih").
+  // baru -- kartu ini cuma konsumen data pembagian ruangan, bukan yang
+  // nentuin versi_skema). Record `ujian` bisa aja udah ada dalam bentuk
+  // DRAFT (dibikin dari kartu "Jadwal Ujian" / "Panitia Ujian", versi_skema
+  // masih null) -- itu SENGAJA dianggap "belum siap" di sini juga (lihat
+  // pengecekan `!ujian || !ujian.versi_skema` di bawah), karena assign
+  // pengawas ke ruangan beneran butuh Pembagian Ruangan udah diproses &
+  // disimpan, bukan cuma record-nya ada.
   useEffect(() => {
     if (!tahunAjaranId) {
       setUjian(null);
@@ -417,83 +412,6 @@ const JadwalPengawasTab = ({ jenisUjian, showToast, onBack, tabPaksa = null }) =
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hariAktif]);
 
-  const openAddJadwal = () => {
-    setEditingJadwal(null);
-    setFormJadwal(emptyJadwalForm);
-    setShowModalJadwal(true);
-  };
-
-  const openEditJadwal = (jadwal) => {
-    setEditingJadwal(jadwal);
-    setFormJadwal({
-      tanggal: jadwal.tanggal,
-      sesi_ke: jadwal.sesi_ke,
-      waktu_mulai: jadwal.waktu_mulai || "",
-      waktu_selesai: jadwal.waktu_selesai || "",
-      mata_pelajaran: jadwal.mata_pelajaran,
-      mata_pelajaran_kelas8: jadwal.mata_pelajaran_kelas8 || "",
-      mata_pelajaran_kelas9: jadwal.mata_pelajaran_kelas9 || "",
-    });
-    setShowModalJadwal(true);
-  };
-
-  const closeModalJadwal = () => {
-    setShowModalJadwal(false);
-    setEditingJadwal(null);
-    setFormJadwal(emptyJadwalForm);
-  };
-
-  const handleSubmitJadwal = async (e) => {
-    e.preventDefault();
-    if (!formJadwal.tanggal || !formJadwal.mata_pelajaran.trim()) {
-      showToast?.("Tanggal dan mata pelajaran wajib diisi", "error");
-      return;
-    }
-    setSavingJadwal(true);
-    try {
-      await simpanJadwalSesi(supabase, {
-        id: editingJadwal?.id,
-        ujian_id: ujian.id,
-        tanggal: formJadwal.tanggal,
-        sesi_ke: Number(formJadwal.sesi_ke) || 1,
-        waktu_mulai: formJadwal.waktu_mulai || null,
-        waktu_selesai: formJadwal.waktu_selesai || null,
-        mata_pelajaran: formJadwal.mata_pelajaran.trim(),
-        mata_pelajaran_kelas8: formJadwal.mata_pelajaran_kelas8.trim() || null,
-        mata_pelajaran_kelas9: formJadwal.mata_pelajaran_kelas9.trim() || null,
-      });
-      showToast?.(editingJadwal ? "Jadwal diperbarui" : "Jadwal ditambahkan", "success");
-      closeModalJadwal();
-      muatData();
-    } catch (err) {
-      console.error(err);
-      showToast?.("Gagal menyimpan jadwal: " + err.message, "error");
-    } finally {
-      setSavingJadwal(false);
-    }
-  };
-
-  const handleHapusJadwal = async (jadwal) => {
-    if (
-      !window.confirm(
-        `Hapus jadwal "${jadwal.mata_pelajaran}" (${jadwal.tanggal})? Data pengawas untuk sesi ini juga akan ikut terhapus.`
-      )
-    )
-      return;
-    try {
-      await hapusJadwalSesi(supabase, jadwal.id);
-      showToast?.("Jadwal dihapus", "success");
-      if (jadwalPengawasAktif === jadwal.id) setJadwalPengawasAktif(null);
-      // Tidak perlu set hariAktif(null) manual -- efek "default hari aktif"
-      // di atas akan otomatis reset ke hari valid pertama begitu daftarJadwal
-      // ke-refresh lewat muatData().
-      muatData();
-    } catch (err) {
-      console.error(err);
-      showToast?.("Gagal menghapus jadwal: " + err.message, "error");
-    }
-  };
-
   const handleTambahPengawas = async (nomorRuangan) => {
     const guruId = guruTerpilihBaru[nomorRuangan];
     if (!guruId) {
@@ -534,14 +452,6 @@ const JadwalPengawasTab = ({ jenisUjian, showToast, onBack, tabPaksa = null }) =
       showToast?.("Gagal menghapus pengawas: " + err.message, "error");
     }
   };
-
-  const jadwalTerurut = useMemo(
-    () =>
-      [...daftarJadwal].sort((a, b) =>
-        a.tanggal === b.tanggal ? a.sesi_ke - b.sesi_ke : a.tanggal.localeCompare(b.tanggal)
-      ),
-    [daftarJadwal]
-  );
 
   const daftarRuanganUrut = useMemo(
     () => [...daftarRuangan].sort((a, b) => a.nomor_ruangan - b.nomor_ruangan),
@@ -696,14 +606,14 @@ const JadwalPengawasTab = ({ jenisUjian, showToast, onBack, tabPaksa = null }) =
         </p>
       )}
 
-      {!ujian && !loadingUjian && tahunAjaranId && (
+      {(!ujian || !ujian.versi_skema) && !loadingUjian && tahunAjaranId && (
         <div className="p-3 mb-5 text-xs bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl text-amber-700 dark:text-amber-300">
           Data ujian untuk tahun ajaran ini belum diproses. Proses dulu{" "}
           <strong>Pembagian Ruangan</strong> (pilih versi skema & simpan) sebelum lanjut ke sini.
         </div>
       )}
 
-      {ujian && !loadingData && (
+      {ujian && ujian.versi_skema && !loadingData && (
         <>
           {daftarRuangan.length === 0 && (
             <div className="p-3 mb-5 text-xs bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl text-amber-700 dark:text-amber-300">
@@ -752,16 +662,6 @@ const JadwalPengawasTab = ({ jenisUjian, showToast, onBack, tabPaksa = null }) =
           {!tabPaksa && (
             <div className="flex flex-wrap gap-1 mb-4 border-b border-gray-200 dark:border-gray-700">
               <button
-                onClick={() => setTabAktif("jadwal")}
-                className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
-                  tabAktif === "jadwal"
-                    ? "border-indigo-600 text-indigo-600 dark:text-indigo-400"
-                    : "border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
-                }`}
-              >
-                <CalendarClock size={15} /> Jadwal Sesi
-              </button>
-              <button
                 onClick={() => setTabAktif("daftar")}
                 className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
                   tabAktif === "daftar"
@@ -804,130 +704,6 @@ const JadwalPengawasTab = ({ jenisUjian, showToast, onBack, tabPaksa = null }) =
             </div>
           )}
 
-          {tabAktif === "jadwal" && (
-            <div>
-              <button
-                onClick={openAddJadwal}
-                className="flex items-center gap-2 px-4 py-2.5 mb-4 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-xl transition-all active:scale-95"
-              >
-                <Plus size={16} /> Tambah Sesi
-              </button>
-
-              {jadwalTerurut.length === 0 ? (
-                <p className="text-xs text-gray-400 italic">Belum ada jadwal sesi.</p>
-              ) : (
-                <div className="overflow-x-auto -mx-4 sm:mx-0 px-4 sm:px-0">
-                  <table className="w-full text-xs sm:text-sm border-collapse border border-gray-300 dark:border-gray-600">
-                    <thead>
-                      <tr className="bg-gray-100 dark:bg-gray-800">
-                        <th
-                          rowSpan={2}
-                          className="border border-gray-300 dark:border-gray-600 py-3 px-3 font-bold text-sm sm:text-base text-center align-middle text-gray-800 dark:text-gray-100 whitespace-nowrap"
-                        >
-                          Hari/Tanggal
-                        </th>
-                        <th
-                          rowSpan={2}
-                          className="border border-gray-300 dark:border-gray-600 py-3 px-3 font-bold text-sm sm:text-base text-center align-middle text-gray-800 dark:text-gray-100 whitespace-nowrap"
-                        >
-                          Jam Ke
-                        </th>
-                        <th
-                          rowSpan={2}
-                          className="border border-gray-300 dark:border-gray-600 py-3 px-3 font-bold text-sm sm:text-base text-center align-middle text-gray-800 dark:text-gray-100 whitespace-nowrap"
-                        >
-                          Waktu
-                        </th>
-                        <th
-                          colSpan={gradesUjianIni.length}
-                          className="border border-gray-300 dark:border-gray-600 py-3 px-3 font-bold text-sm sm:text-base text-center align-middle text-gray-800 dark:text-gray-100 whitespace-nowrap"
-                        >
-                          Mata Pelajaran
-                        </th>
-                        <th
-                          rowSpan={2}
-                          className="border border-gray-300 dark:border-gray-600 py-3 px-3 font-bold text-sm sm:text-base text-center align-middle text-gray-800 dark:text-gray-100 whitespace-nowrap"
-                        >
-                          Aksi
-                        </th>
-                      </tr>
-                      <tr className="bg-gray-100 dark:bg-gray-800">
-                        {gradesUjianIni.map((g) => (
-                          <th
-                            key={g}
-                            className="border border-gray-300 dark:border-gray-600 py-2 px-3 font-bold text-sm sm:text-base text-center align-middle text-gray-800 dark:text-gray-100 whitespace-nowrap"
-                          >
-                            Kelas {g}
-                          </th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {jadwalTerurut.map((j, idx) => {
-                        const tanggalSama = idx > 0 && jadwalTerurut[idx - 1].tanggal === j.tanggal;
-                        // Sesi di tanggal yang sama digabung (rowSpan) jadi 1 sel
-                        // Hari/Tanggal -- ditaruh di baris pertama hari itu,
-                        // rata kiri & tengah secara vertikal. jadwalTerurut sudah
-                        // terurut per tanggal, jadi sesi 1 hari pasti berurutan.
-                        const jumlahSesiHari = jadwalTerurut.filter(
-                          (x) => x.tanggal === j.tanggal
-                        ).length;
-                        return (
-                          <tr
-                            key={j.id}
-                            className="odd:bg-white even:bg-gray-50 dark:odd:bg-gray-900 dark:even:bg-gray-800/40 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors"
-                          >
-                            {!tanggalSama && (
-                              <td
-                                rowSpan={jumlahSesiHari}
-                                className="border border-gray-200 dark:border-gray-700 py-2.5 px-3 align-middle text-left whitespace-nowrap text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-900"
-                              >
-                                {formatHariTanggal(j.tanggal)}
-                              </td>
-                            )}
-                            <td className="border border-gray-200 dark:border-gray-700 py-2.5 px-3 align-top text-center text-gray-700 dark:text-gray-300">
-                              {j.sesi_ke}
-                            </td>
-                            <td className="border border-gray-200 dark:border-gray-700 py-2.5 px-3 align-top text-center whitespace-nowrap text-gray-700 dark:text-gray-300">
-                              {j.waktu_mulai && j.waktu_selesai
-                                ? `${j.waktu_mulai}–${j.waktu_selesai}`
-                                : "-"}
-                            </td>
-                            {gradesUjianIni.map((g) => {
-                              const mapel = mataPelajaranUntukJenjang(j, g);
-                              return (
-                                <td
-                                  key={g}
-                                  className="border border-gray-200 dark:border-gray-700 py-2.5 px-3 align-top text-center font-medium text-gray-800 dark:text-gray-100"
-                                >
-                                  {mapel}
-                                </td>
-                              );
-                            })}
-                            <td className="border border-gray-200 dark:border-gray-700 py-2.5 px-3 align-top text-center whitespace-nowrap">
-                              <button
-                                onClick={() => openEditJadwal(j)}
-                                className="text-indigo-600 dark:text-indigo-400 hover:underline mr-3"
-                              >
-                                Edit
-                              </button>
-                              <button
-                                onClick={() => handleHapusJadwal(j)}
-                                className="text-red-600 dark:text-red-400 hover:underline"
-                              >
-                                Hapus
-                              </button>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </div>
-          )}
-
           {tabAktif === "daftar" && (
             <DaftarPengawasTab
               jenisUjian={jenisUjian}
@@ -941,7 +717,7 @@ const JadwalPengawasTab = ({ jenisUjian, showToast, onBack, tabPaksa = null }) =
             <div>
               {daftarJadwal.length === 0 ? (
                 <p className="text-xs text-gray-400 italic">
-                  Belum ada jadwal sesi. Tambahkan dulu di tab "Jadwal Sesi".
+                  Belum ada jadwal sesi. Isi dulu di kartu "Jadwal Ujian".
                 </p>
               ) : (
                 <>
@@ -1194,7 +970,7 @@ const JadwalPengawasTab = ({ jenisUjian, showToast, onBack, tabPaksa = null }) =
             <div>
               {daftarJadwal.length === 0 ? (
                 <p className="text-xs text-gray-400 italic">
-                  Belum ada jadwal sesi. Tambahkan dulu di tab "Jadwal Sesi".
+                  Belum ada jadwal sesi. Isi dulu di kartu "Jadwal Ujian".
                 </p>
               ) : loadingRekap ? (
                 <p className="text-xs text-gray-400 flex items-center gap-1.5">
@@ -1343,142 +1119,6 @@ const JadwalPengawasTab = ({ jenisUjian, showToast, onBack, tabPaksa = null }) =
         </>
       )}
 
-      {showModalJadwal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-md p-5">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-base font-bold text-gray-800 dark:text-gray-100">
-                {editingJadwal ? "Edit Sesi" : "Tambah Sesi"}
-              </h2>
-              <button
-                onClick={closeModalJadwal}
-                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-              >
-                <X size={18} />
-              </button>
-            </div>
-
-            <form onSubmit={handleSubmitJadwal} className="space-y-3">
-              <div>
-                <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
-                  Tanggal
-                </label>
-                <input
-                  type="date"
-                  value={formJadwal.tanggal}
-                  onChange={(e) => setFormJadwal({ ...formJadwal, tanggal: e.target.value })}
-                  className="w-full px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
-                  Jam Ke
-                </label>
-                <input
-                  type="number"
-                  min={1}
-                  value={formJadwal.sesi_ke}
-                  onChange={(e) => setFormJadwal({ ...formJadwal, sesi_ke: e.target.value })}
-                  className="w-full px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
-                    Waktu Mulai
-                  </label>
-                  <input
-                    type="time"
-                    value={formJadwal.waktu_mulai}
-                    onChange={(e) => setFormJadwal({ ...formJadwal, waktu_mulai: e.target.value })}
-                    className="w-full px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
-                    Waktu Selesai
-                  </label>
-                  <input
-                    type="time"
-                    value={formJadwal.waktu_selesai}
-                    onChange={(e) =>
-                      setFormJadwal({ ...formJadwal, waktu_selesai: e.target.value })
-                    }
-                    className="w-full px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
-                  Mata Pelajaran
-                </label>
-                <input
-                  value={formJadwal.mata_pelajaran}
-                  onChange={(e) => setFormJadwal({ ...formJadwal, mata_pelajaran: e.target.value })}
-                  placeholder="mis. Matematika"
-                  className="w-full px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100"
-                />
-                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                  Berlaku buat kelas 7{gradesUjianIni.includes("8") ? ", 8" : ""}
-                  {gradesUjianIni.includes("9") ? ", 9" : ""} -- kecuali diisi beda di bawah.
-                </p>
-              </div>
-
-              {gradesUjianIni.includes("8") && (
-                <div>
-                  <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
-                    Mata Pelajaran khusus Kelas 8 (opsional)
-                  </label>
-                  <input
-                    value={formJadwal.mata_pelajaran_kelas8}
-                    onChange={(e) =>
-                      setFormJadwal({ ...formJadwal, mata_pelajaran_kelas8: e.target.value })
-                    }
-                    placeholder="Kosongkan kalau sama kayak di atas"
-                    className="w-full px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100"
-                  />
-                </div>
-              )}
-
-              {gradesUjianIni.includes("9") && (
-                <div>
-                  <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
-                    Mata Pelajaran khusus Kelas 9 (opsional)
-                  </label>
-                  <input
-                    value={formJadwal.mata_pelajaran_kelas9}
-                    onChange={(e) =>
-                      setFormJadwal({ ...formJadwal, mata_pelajaran_kelas9: e.target.value })
-                    }
-                    placeholder="Kosongkan kalau sama kayak di atas"
-                    className="w-full px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100"
-                  />
-                </div>
-              )}
-
-              <div className="flex gap-2 pt-2">
-                <button
-                  type="button"
-                  onClick={closeModalJadwal}
-                  className="flex-1 px-4 py-2.5 rounded-xl text-sm font-medium text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600"
-                >
-                  Batal
-                </button>
-                <button
-                  type="submit"
-                  disabled={savingJadwal}
-                  className="flex-1 px-4 py-2.5 rounded-xl text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60"
-                >
-                  {savingJadwal ? "Menyimpan..." : "Simpan"}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

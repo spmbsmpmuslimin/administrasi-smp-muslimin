@@ -20,20 +20,26 @@
 // lagi sub-fitur ini di sini.
 //
 // Skema Kartu (lihat dokumentasi "dokumentasi-kelola-ujian.md"):
-// 1. Peserta & Pembagian Ruangan (aktif, sebelumnya "Jadwal, Peserta &
-//    Pembagian Ruangan" -- kata "Jadwal" dibuang karena tab Jadwal Sesi
-//    sudah PINDAH ke kartu 2) -- 5 tab: Komposisi Ruangan, Pembagian
-//    Ruangan (quota + simpan), Preview Per Ruangan, Denah Duduk, dan Export
-//    Daftar Peserta. Wadahnya JadwalRuanganTab.js, isinya di-embed dari
-//    PembagianRuanganTab.js. (id kartu tetap "jadwal-ruangan" biar
-//    referensi lain gak putus.)
-// 2. Jadwal Ujian & Pengawas (aktif, sebelumnya "Daftar & Jadwal Pengawas")
-//    -- 5 tab: Jadwal Ujian (sesi: tanggal, jam, mapel), Daftar Pengawas,
-//    Kelola Jadwal Pengawas, Rekap, dan Jadwal Pengawas (lihat/cetak +
-//    export Excel & PDF). Wadahnya PesertaPengawasTab.js. (id kartu tetap
-//    "daftar-pengawas".)
-// 3. Kartu Ujian (aktif)
-// 4. Program Kerja Pelaksanaan (aktif) -- SEBELUMNYA 2 kartu terpisah
+// 1. Jadwal Ujian (aktif, BARU Sep 2026) -- kelola tanggal/jam/mapel tiap
+//    sesi (tabel ujian_jadwal). SENGAJA independen dari Pembagian Ruangan &
+//    Pengawas -- bikin record `ujian` draft sendiri lewat
+//    getOrCreateUjianDraft() begitu Tahun Ajaran dipilih, karena di real
+//    dunia jadwal ujian biasanya udah given dari sekolah/dinas duluan.
+//    Wadahnya JadwalUjianTab.js. (id kartu "jadwal-ujian".)
+// 2. Peserta & Pembagian Ruangan (aktif) -- 5 tab: Komposisi Ruangan,
+//    Pembagian Ruangan (quota + simpan), Preview Per Ruangan, Denah Duduk,
+//    dan Export Daftar Peserta. Wadahnya JadwalRuanganTab.js, isinya
+//    di-embed dari PembagianRuanganTab.js. (id kartu tetap "jadwal-ruangan"
+//    biar referensi lain gak putus.)
+// 3. Daftar & Jadwal Pengawas (aktif, sebelumnya "Jadwal Ujian & Pengawas"
+//    -- balik ke nama ini karena tab "Jadwal Ujian" udah pindah jadi kartu
+//    1 sendiri) -- 4 tab: Daftar Pengawas, Kelola Jadwal Pengawas, Rekap,
+//    dan Jadwal Pengawas (lihat/cetak + export Excel & PDF). Wadahnya
+//    PesertaPengawasTab.js. (id kartu tetap "daftar-pengawas".) Beda sama
+//    kartu 1, kartu ini TETAP butuh Pembagian Ruangan udah diproses &
+//    disimpan (bukan cuma draft) sebelum bisa assign pengawas.
+// 4. Kartu Ujian (aktif)
+// 5. Program Kerja Pelaksanaan (aktif) -- SEBELUMNYA 2 kartu terpisah
 //    ("Presensi & Berita Acara" + "Kepanitiaan & Regulasi"/"Program Kerja
 //    Pelaksanaan"), digabung jadi 1 kartu ber-2 tab lewat wrapper
 //    ProgramKerjaPelaksanaanTab.js karena keduanya sama-sama dokumen
@@ -48,28 +54,28 @@
 //    Kedua komponen anak DIPAKAI APA ADANYA (gak diubah), wrapper cuma
 //    nambahin tab switcher. id kartu tetap "kepanitiaan" biar referensi
 //    lain (mis. ExportSemuaTab checklist) gak putus.
-// 5. Rekap & Evaluasi (aktif) -- judul kartu SENGAJA gak pakai kata
+// 6. Rekap & Evaluasi (aktif) -- judul kartu SENGAJA gak pakai kata
 //    "Laporan" (dulu "Laporan Rekap Akhir") biar panitia gak ketuker sama
-//    sub-fitur 7 "Laporan Lengkap" -- yang satu tempat ISI data, yang
+//    sub-fitur 8 "Laporan Lengkap" -- yang satu tempat ISI data, yang
 //    satu lagi tempat CETAK PDF-nya. Isinya: kumpulan rekap dari sub-fitur
 //    lain (peserta, pengawas) + input manual kehadiran & catatan
 //    evaluasi, bahan Laporan Pelaksanaan Ujian. TIDAK PUNYA export PDF
-//    sendiri lagi (lihat sub-fitur 7) -- murni tempat input/preview data.
+//    sendiri lagi (lihat sub-fitur 8) -- murni tempat input/preview data.
 //    id internal & nama file tetap "laporan-rekap-akhir" / LaporanRekapAkhirTab.js
 //    (cuma `title` yang ditampilkan ke user yang berubah, biar minim
 //    rename di banyak tempat).
 //    CATATAN (revisi): item "Rekap Anggaran & Realisasi Biaya" sudah
 //    dihapus dari sini -- sub-fitur "Anggaran & Biaya" dicabut total dari
 //    aplikasi (dikelola manual/terpisah di luar aplikasi).
-// 6. Export Semua (PDF) (aktif) -- tombol di kanan atas grid ini (bukan
+// 7. Export Semua (PDF) (aktif) -- tombol di kanan atas grid ini (bukan
 //    kartu sub-fitur, karena bukan area kerja tersendiri). Checklist semua
-//    dokumen PDF dari sub-fitur 1-4 & 5, query ulang dari DB (bukan reuse
+//    dokumen PDF dari sub-fitur 1-5 & 6, query ulang dari DB (bukan reuse
 //    state tab lain). Lihat ExportSemuaTab.js & exportSemuaKelolaUjian.js.
-// 7. Laporan Lengkap (aktif) -- kompilasi 1 PDF resmi utuh: Sampul, Kata
+// 8. Laporan Lengkap (aktif) -- kompilasi 1 PDF resmi utuh: Sampul, Kata
 //    Pengantar, Daftar Isi, Pendahuluan, lalu rekap yang REUSE data dari
-//    sub-fitur 5 (Rekap & Evaluasi), dan Penutup dengan tanda tangan
+//    sub-fitur 6 (Rekap & Evaluasi), dan Penutup dengan tanda tangan
 //    Kepsek (dari school_settings). Ini PENGGANTI export PDF yang dulu
-//    ada di sub-fitur 5 -- folder terpisah karena banyak bagian baru
+//    ada di sub-fitur 6 -- folder terpisah karena banyak bagian baru
 //    (Cover, Kata Pengantar, dst) yang gak ada urusannya sama input data.
 //    Lihat laporan-lengkap/LaporanLengkapTab.js, laporanLengkapSupabase.js,
 //    & laporanLengkapPdf.js.
@@ -81,10 +87,12 @@ import {
   FileText,
   IdCard,
   CalendarClock,
+  ClipboardList,
   ClipboardCheck,
   FileDown,
   FileStack,
 } from "lucide-react";
+import JadwalUjianTab from "./JadwalUjianTab";
 import JadwalRuanganTab from "./JadwalRuanganTab";
 import PesertaPengawasTab from "./PesertaPengawasTab";
 import KartuUjianTab from "./dokumen-cetak/KartuUjianTab";
@@ -101,6 +109,15 @@ const JENIS_UJIAN_LABEL = {
 
 const SUB_FITUR = [
   {
+    id: "jadwal-ujian",
+    title: "Jadwal Ujian",
+    description:
+      "Kelola tanggal, jam, dan mata pelajaran tiap sesi -- bisa diisi duluan, gak perlu nunggu ruangan/pengawas diproses",
+    icon: CalendarClock,
+    status: "done",
+    clickable: true,
+  },
+  {
     id: "jadwal-ruangan",
     title: "Peserta & Pembagian Ruangan",
     description:
@@ -111,10 +128,10 @@ const SUB_FITUR = [
   },
   {
     id: "daftar-pengawas",
-    title: "Jadwal Ujian & Pengawas",
+    title: "Daftar & Jadwal Pengawas",
     description:
-      "Atur jadwal sesi ujian per mapel, kelola daftar & jadwal pengawas per ruangan, lihat rekapnya, lalu cetak/export jadwal pengawas (Excel & PDF)",
-    icon: CalendarClock,
+      "Daftarkan guru pengawas, assign ke tiap ruangan per hari, lihat rekapnya, lalu cetak/export jadwal pengawas (Excel & PDF)",
+    icon: ClipboardList,
     status: "done",
     clickable: true,
   },
@@ -165,6 +182,16 @@ const STATUS_STYLE = {
 
 const JenisUjianMenuTab = ({ jenisUjian, showToast, onBack }) => {
   const [activeSubFitur, setActiveSubFitur] = useState(null);
+
+  if (activeSubFitur === "jadwal-ujian") {
+    return (
+      <JadwalUjianTab
+        jenisUjian={jenisUjian}
+        showToast={showToast}
+        onBack={() => setActiveSubFitur(null)}
+      />
+    );
+  }
 
   if (activeSubFitur === "daftar-pengawas") {
     return (
