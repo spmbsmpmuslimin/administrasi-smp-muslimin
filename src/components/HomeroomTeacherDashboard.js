@@ -1284,10 +1284,14 @@ const HomeroomTeacherDashboard = ({ user }) => {
                       <table className="w-full text-sm">
                         <thead className="text-xs text-slate-500 dark:text-gray-400 border-b border-slate-200 dark:border-gray-700">
                           <tr>
-                            <th className="py-2 px-3 text-left w-12">No</th>
-                            <th className="py-2 px-3 text-left">Nama Siswa</th>
-                            <th className="py-2 px-3 text-left w-24">Kelas</th>
-                            <th className="py-2 px-3 text-left w-32">Status</th>
+                            <th className="py-2 pl-3 pr-1 sm:px-3 text-left w-6 sm:w-12">No</th>
+                            <th className="py-2 px-1 sm:px-3 text-left">Nama Siswa</th>
+                            <th className="py-2 px-1 sm:px-3 text-left w-auto sm:w-24 whitespace-nowrap">
+                              Kelas
+                            </th>
+                            <th className="py-2 pl-1 pr-3 sm:px-3 text-left w-auto sm:w-32 whitespace-nowrap">
+                              Status
+                            </th>
                           </tr>
                         </thead>
                         <tbody>
@@ -1296,18 +1300,18 @@ const HomeroomTeacherDashboard = ({ user }) => {
                               key={student.id}
                               className="border-b border-slate-100 dark:border-gray-800 hover:bg-slate-50 dark:hover:bg-gray-700/50 transition-colors"
                             >
-                              <td className="py-2 px-3 text-slate-600 dark:text-gray-400">
+                              <td className="py-2 pl-3 pr-1 sm:px-3 text-slate-600 dark:text-gray-400">
                                 {index + 1}
                               </td>
-                              <td className="py-2 px-3 font-medium text-slate-800 dark:text-gray-200">
+                              <td className="py-2 px-1 sm:px-3 font-medium text-slate-800 dark:text-gray-200">
                                 {student.full_name}
                               </td>
-                              <td className="py-2 px-3 text-slate-600 dark:text-gray-400">
+                              <td className="py-2 px-1 sm:px-3 text-slate-600 dark:text-gray-400 whitespace-nowrap">
                                 {student.class_id}
                               </td>
-                              <td className="py-2 px-3">
+                              <td className="py-2 pl-1 pr-3 sm:px-3">
                                 <span
-                                  className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${getStatusBadgeStyle(
+                                  className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium whitespace-nowrap ${getStatusBadgeStyle(
                                     student.status
                                   )}`}
                                 >
@@ -1354,10 +1358,14 @@ const HomeroomTeacherDashboard = ({ user }) => {
                       <table className="w-full text-sm">
                         <thead className="text-xs text-slate-500 dark:text-gray-400 border-b border-slate-200 dark:border-gray-700">
                           <tr>
-                            <th className="py-2 px-3 text-left w-12">No</th>
-                            <th className="py-2 px-3 text-left">Nama Siswa</th>
-                            <th className="py-2 px-3 text-left w-24">Kelas</th>
-                            <th className="py-2 px-3 text-left w-32">Status</th>
+                            <th className="py-2 pl-3 pr-1 sm:px-3 text-left w-6 sm:w-12">No</th>
+                            <th className="py-2 px-1 sm:px-3 text-left">Nama Siswa</th>
+                            <th className="py-2 px-1 sm:px-3 text-left w-auto sm:w-24 whitespace-nowrap">
+                              Kelas
+                            </th>
+                            <th className="py-2 pl-1 pr-3 sm:px-3 text-left w-auto sm:w-32 whitespace-nowrap">
+                              Status
+                            </th>
                           </tr>
                         </thead>
                         <tbody>
@@ -1366,18 +1374,18 @@ const HomeroomTeacherDashboard = ({ user }) => {
                               key={student.id}
                               className="border-b border-slate-100 dark:border-gray-800 hover:bg-slate-50 dark:hover:bg-gray-700/50 transition-colors"
                             >
-                              <td className="py-2 px-3 text-slate-600 dark:text-gray-400">
+                              <td className="py-2 pl-3 pr-1 sm:px-3 text-slate-600 dark:text-gray-400">
                                 {index + 1}
                               </td>
-                              <td className="py-2 px-3 font-medium text-slate-800 dark:text-gray-200">
+                              <td className="py-2 px-1 sm:px-3 font-medium text-slate-800 dark:text-gray-200">
                                 {student.full_name}
                               </td>
-                              <td className="py-2 px-3 text-slate-600 dark:text-gray-400">
+                              <td className="py-2 px-1 sm:px-3 text-slate-600 dark:text-gray-400 whitespace-nowrap">
                                 {student.class_id}
                               </td>
-                              <td className="py-2 px-3">
+                              <td className="py-2 pl-1 pr-3 sm:px-3">
                                 <span
-                                  className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${getStatusBadgeStyle(
+                                  className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium whitespace-nowrap ${getStatusBadgeStyle(
                                     student.status
                                   )}`}
                                 >
@@ -1499,7 +1507,9 @@ const HomeroomTeacherDashboard = ({ user }) => {
                                       student.status
                                     )}`}
                                   >
-                                    {getStatusIcon(student.status)} {student.full_name}
+                                    {student.full_name}
+                                    <span className="mx-1 opacity-50">•</span>
+                                    {getStatusIcon(student.status)} {student.status}
                                   </span>
                                 ))}
                               </div>
