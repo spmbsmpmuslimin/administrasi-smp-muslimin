@@ -225,10 +225,18 @@ export const menuConfig = [
     // catatan akurasi di komponennya). Role "developer" gak perlu
     // ditambahin ke allowedRoles di sini -- udah bypass duluan di
     // ProtectedRoute (App.js), lihat blok "Developer bypass".
+    //
+    // ✅ FIX: "teacher" ditambahin -- Wakasek Kurikulum role-nya tetap
+    // "teacher" (ditandai lewat jabatan_struktural, sama pola kayak
+    // /admin-attendance). teacherRequiresWakasekKurikulum: true dipasang
+    // biar "teacher" di allowedRoles TIDAK generik ke semua guru mapel --
+    // admin/tu di allowedRoles yang sama TETAP bebas, gak kena syarat
+    // tambahan ini (lihat komentar di ProtectedRoute buat detail logic-nya).
     path: "/monitoring-kbm",
     title: "Monitoring KBM",
     component: MonitoringKBM,
-    allowedRoles: ["admin", "tu"],
+    allowedRoles: ["admin", "tu", "teacher"],
+    teacherRequiresWakasekKurikulum: true,
   },
   {
     path: "/jurnal-harian",

@@ -23,8 +23,16 @@
 
 import React, { useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
-import { Home, ChevronRight, ArrowRight, CalendarClock, LayoutGrid } from "lucide-react";
+import {
+  Home,
+  ChevronRight,
+  ArrowRight,
+  CalendarClock,
+  GraduationCap,
+  LayoutGrid,
+} from "lucide-react";
 import JadwalGuruTab from "../../setting/kelola-jadwal/JadwalGuruTab";
+import KelolaUjianTab from "../../setting/kelola-ujian/KelolaUjianTab";
 
 // Palet pastel per kartu menu -- sama persis dengan CARD_COLOR_STYLES di
 // Setting.js (class Tailwind ditulis lengkap, bukan digabung template
@@ -71,6 +79,16 @@ const CARD_COLOR_STYLES = {
     titleHover: "group-hover:text-slate-700 dark:group-hover:text-slate-200",
     header: "from-slate-400 to-slate-500 dark:from-slate-600 dark:to-slate-700",
   },
+  indigo: {
+    bg: "bg-indigo-50/80 dark:bg-indigo-950/20",
+    border: "border-indigo-100 dark:border-indigo-900/40",
+    hoverBorder: "hover:border-indigo-300 dark:hover:border-indigo-700",
+    iconBg:
+      "bg-indigo-100 dark:bg-indigo-900/40 group-hover:bg-indigo-200 dark:group-hover:bg-indigo-800/50",
+    iconColor: "text-indigo-600 dark:text-indigo-400",
+    titleHover: "group-hover:text-indigo-700 dark:group-hover:text-indigo-300",
+    header: "from-indigo-400 to-indigo-500 dark:from-indigo-600 dark:to-indigo-700",
+  },
 };
 
 // Menu cards configuration -- baru ada 1 sekarang, tambah di sini kalau
@@ -83,9 +101,16 @@ const menuCards = [
     icon: CalendarClock,
     color: "amber",
   },
+  {
+    id: "kelola-ujian",
+    title: "Manajemen Ujian",
+    description: "Pembagian ruangan, kartu ujian, dan laporan PSAS/PSAT/PSAJ",
+    icon: GraduationCap,
+    color: "indigo",
+  },
 ];
 
-const KurikulumAdministrasi = ({ user }) => {
+const KurikulumAdministrasi = ({ user, onShowToast }) => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
 
@@ -103,6 +128,8 @@ const KurikulumAdministrasi = ({ user }) => {
     switch (activeTab) {
       case "jadwal-guru":
         return <JadwalGuruTab />;
+      case "kelola-ujian":
+        return <KelolaUjianTab user={user} showToast={onShowToast} />;
       default:
         return null;
     }

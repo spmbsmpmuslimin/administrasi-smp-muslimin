@@ -506,7 +506,7 @@ const MonitoringKBM = () => {
                 setSelectedTeacher(null);
                 setTeacherQuery(e.target.value);
               }}
-              placeholder="Ketik Nama Guru, Misalnya............ Agus Sopandi"
+              placeholder="Ketik nama guru, mis. Dewi Puspitasari…"
               className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white text-sm"
             />
             {selectedTeacher && (
@@ -538,64 +538,107 @@ const MonitoringKBM = () => {
               </div>
             )}
           </div>
+        </div>
 
-          {selectedTeacher && (
-            <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
-              <div className="flex items-center justify-between gap-2 mb-2">
-                <div className="flex items-center gap-2 min-w-0">
-                  <UserRound size={16} className="text-gray-400 flex-shrink-0" />
-                  <span className="font-semibold text-gray-800 dark:text-white truncate">
-                    {selectedTeacher.name}
-                  </span>
+        {/* Modal hasil pencarian guru */}
+        {selectedTeacher && (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm px-4"
+            onClick={() => setSelectedTeacher(null)}
+          >
+            <style>{`
+              @keyframes kbmModalIn {
+                from { opacity: 0; transform: scale(0.95) translateY(10px); }
+                to { opacity: 1; transform: scale(1) translateY(0); }
+              }
+            `}</style>
+            <div
+              onClick={(e) => e.stopPropagation()}
+              className="w-full max-w-md bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden"
+              style={{ animation: "kbmModalIn 0.18s ease-out" }}
+            >
+              {/* Header modal */}
+              <div className="flex items-start justify-between gap-3 px-5 py-4 bg-gradient-to-r from-blue-600 to-sky-500 text-white">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0">
+                    <UserRound size={18} />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="font-bold truncate">{selectedTeacher.name}</div>
+                    <div className="text-[11px] text-blue-100">
+                      {dayName}, {selectedDate}
+                    </div>
+                  </div>
                 </div>
-                <span
-                  className={`text-[11px] font-semibold px-2 py-0.5 rounded-full flex-shrink-0 ${
-                    STATUS_STYLE[teacherStatusByUuid[selectedTeacher.uuid]] ||
-                    STATUS_STYLE["Belum Presensi"]
-                  }`}
+                <button
+                  onClick={() => setSelectedTeacher(null)}
+                  className="text-white/80 hover:text-white flex-shrink-0"
+                  aria-label="Tutup"
                 >
-                  {teacherStatusByUuid[selectedTeacher.uuid] || "Belum Presensi"}
-                </span>
+                  <X size={20} />
+                </button>
               </div>
 
-              {isWeekend ? (
-                <p className="text-sm text-gray-400 dark:text-gray-500">
-                  Tidak ada jadwal KBM di hari {dayName}.
-                </p>
-              ) : selectedTeacherSchedule.length === 0 ? (
-                <p className="text-sm text-gray-400 dark:text-gray-500">
-                  Tidak ada jadwal mengajar di hari {dayName}.
-                </p>
-              ) : (
-                <ul className="space-y-1.5">
-                  {selectedTeacherSchedule.map((g, i) => (
-                    <li
-                      key={i}
-                      className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-sm bg-gray-50 dark:bg-gray-700/40 rounded-lg px-3 py-2"
-                    >
-                      <span className="font-medium text-gray-700 dark:text-gray-200 whitespace-nowrap">
-                        Jam{" "}
-                        {g.startPeriod === g.endPeriod
-                          ? g.startPeriod
-                          : `${g.startPeriod}-${g.endPeriod}`}
-                      </span>
-                      <span className="text-gray-300 dark:text-gray-600">•</span>
-                      <span className="font-semibold text-gray-800 dark:text-white">
-                        Kelas {g.classId}
-                      </span>
-                      {g.subject && (
-                        <>
-                          <span className="text-gray-300 dark:text-gray-600">•</span>
-                          <span className="text-gray-600 dark:text-gray-300">{g.subject}</span>
-                        </>
-                      )}
-                    </li>
-                  ))}
-                </ul>
-              )}
+              {/* Isi modal */}
+              <div className="px-5 py-4">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-xs font-medium text-gray-500 dark:text-gray-400">
+                    Status presensi hari ini
+                  </span>
+                  <span
+                    className={`text-[11px] font-semibold px-2.5 py-1 rounded-full ${
+                      STATUS_STYLE[teacherStatusByUuid[selectedTeacher.uuid]] ||
+                      STATUS_STYLE["Belum Presensi"]
+                    }`}
+                  >
+                    {teacherStatusByUuid[selectedTeacher.uuid] || "Belum Presensi"}
+                  </span>
+                </div>
+
+                {isWeekend ? (
+                  <p className="text-sm text-gray-400 dark:text-gray-500 text-center py-6">
+                    Tidak ada jadwal KBM di hari {dayName}.
+                  </p>
+                ) : selectedTeacherSchedule.length === 0 ? (
+                  <p className="text-sm text-gray-400 dark:text-gray-500 text-center py-6">
+                    Tidak ada jadwal mengajar di hari {dayName}.
+                  </p>
+                ) : (
+                  <ul className="space-y-2 max-h-80 overflow-y-auto">
+                    {selectedTeacherSchedule.map((g, i) => (
+                      <li
+                        key={i}
+                        className="flex items-center gap-3 bg-gray-50 dark:bg-gray-700/40 rounded-xl px-3 py-2.5"
+                      >
+                        <div className="flex-shrink-0 w-14 text-center">
+                          <div className="text-[10px] text-gray-400 dark:text-gray-500 uppercase tracking-wide">
+                            Jam
+                          </div>
+                          <div className="font-bold text-sm text-blue-600 dark:text-blue-400">
+                            {g.startPeriod === g.endPeriod
+                              ? g.startPeriod
+                              : `${g.startPeriod}-${g.endPeriod}`}
+                          </div>
+                        </div>
+                        <div className="w-px self-stretch bg-gray-200 dark:bg-gray-600" />
+                        <div className="min-w-0">
+                          <div className="font-semibold text-gray-800 dark:text-white text-sm">
+                            Kelas {g.classId}
+                          </div>
+                          {g.subject && (
+                            <div className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                              {g.subject}
+                            </div>
+                          )}
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
             </div>
-          )}
-        </div>
+          </div>
+        )}
 
         {isWeekend ? (
           <div className="text-center py-16 text-gray-500 dark:text-gray-400">

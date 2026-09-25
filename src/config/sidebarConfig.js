@@ -438,6 +438,14 @@ export const sidebarGroups = [
           "M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z",
         ],
       },
+      {
+        page: "monitoring-kbm",
+        label: "Monitoring KBM",
+        highlightPages: ["monitoring-kbm"],
+        icon: [
+          "M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2",
+        ],
+      },
       // ===== Administrasi (Sep 2026) =====
       // ⚠️ Sebelumnya item ini langsung nunjuk ke "settings-jadwal-guru"
       // (alias ke Setting.js?tab=jadwal-guru). Sekarang diganti jadi hub
