@@ -1,9 +1,9 @@
 STRUKTUR SISTEM
-Di-download dari UI: 20 Sep 2026, 21.21
+Di-download dari UI: 25 Sep 2026, 09.00
 
 ======================================================================
 STRUKTUR PROJECT (src/)
-Terakhir di-generate: 20 Sep 2026, 21.20
+Terakhir di-generate: 25 Sep 2026, 08.59
 ======================================================================
 |-- src
 |   |-- assets
@@ -22,6 +22,7 @@ Terakhir di-generate: 20 Sep 2026, 21.20
 |   |   |-- CustomDatePicker.js
 |   |   |-- LocationValidator.js
 |   |   |-- ManualCheckIn.js
+|   |   |-- MonitoringKBM.js
 |   |   |-- MyAttendanceStatus.js
 |   |   |-- MyMonthlyHistory.js
 |   |   |-- QRCodeGenerator.js
@@ -103,8 +104,6 @@ Terakhir di-generate: 20 Sep 2026, 21.20
 |   |   |   |-- ComingSoonPanel.js
 |   |   |   |-- KeuanganTab.js
 |   |   |   |-- PersuratanTab.js
-|   |   |   |-- SppTab-Backup.js
-|   |   |   |-- SppTab-revisi.js
 |   |   |   |-- SppTab.js
 |   |   |   |-- TagihanLainTab.js
 |   |   |   |-- keuanganShared.js
@@ -246,18 +245,15 @@ Terakhir di-generate: 20 Sep 2026, 21.20
 |   |   |   `-- useJadwalMassalLogic.js
 |   |   |-- kelola-ujian
 |   |   |   |-- dokumen-cetak
-|   |   |   |   |-- AnggaranBiayaTab.js
 |   |   |   |   |-- KartuUjianTab.js
 |   |   |   |   |-- LaporanRekapAkhirTab.js
 |   |   |   |   |-- PresensiBeritaAcaraTab.js
 |   |   |   |   |-- ProgramKerjaPelaksanaanTab.js
 |   |   |   |   |-- ProgramKerjaTab.js
-|   |   |   |   |-- anggaranBiayaSupabase.js
 |   |   |   |   |-- kartuUjianPdf.js
 |   |   |   |   |-- kartuUjianSupabase.js
 |   |   |   |   |-- laporanRekapAkhirSupabase.js
 |   |   |   |   |-- presensiBeritaAcaraPdf.js
-|   |   |   |   |-- presensiBeritaAcaraSupabase.js
 |   |   |   |   `-- programKerjaPdf.js
 |   |   |   |-- jadwal-pengawas
 |   |   |   |   |-- DaftarPengawasTab.js
@@ -287,6 +283,7 @@ Terakhir di-generate: 20 Sep 2026, 21.20
 |   |   |   |   `-- petunjukPenggunaanPdf.js
 |   |   |   |-- ExportSemuaTab.js
 |   |   |   |-- JadwalRuanganTab.js
+|   |   |   |-- JadwalUjianTab.js
 |   |   |   |-- JenisUjianMenuTab.js
 |   |   |   |-- KelolaUjianTab.js
 |   |   |   |-- PanitiaUjianTab.js
@@ -376,7 +373,7 @@ Terakhir di-generate: 20 Sep 2026, 21.20
 
 ======================================================================
 STRUKTUR DATABASE
-Terakhir di-generate: 20 Sep 2026, 21.20
+Terakhir di-generate: 25 Sep 2026, 08.59
 ======================================================================
 ## Daftar Tabel Database Supabase
 academic_events : id,title,category_id,start_date,end_date,description,academic_year,semester,created_by,created_at,updated_at

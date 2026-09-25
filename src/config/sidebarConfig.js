@@ -127,6 +127,20 @@ export const sidebarGroups = [
           ctx.isAdmin || ctx.isTU || ctx.isTeacher || ctx.isGuruBK || ctx.userRole === "developer",
       },
       {
+        // Monitoring visual KBM per kelas (Kelas x Jam ke), proxy dari
+        // presensi harian guru. allowedRoles-nya sendiri (admin, tu) diatur
+        // di menuConfig.js -- show() di sini cuma ngatur nongol/gaknya menu.
+        // "developer" gak perlu allowedRoles khusus (bypass duluan di
+        // ProtectedRoute), tapi tetep ditambahin di show() di sini biar
+        // menunya kelihatan pas dia lagi QA.
+        page: "monitoring-kbm",
+        label: "Monitoring KBM",
+        icon: [
+          "M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2",
+        ],
+        show: (ctx) => ctx.isAdmin || ctx.isTU || ctx.userRole === "developer",
+      },
+      {
         page: "attendance",
         label: "Presensi Siswa",
         icon: [
@@ -272,8 +286,7 @@ export const sidebarGroups = [
     // eraportActive seperti sebelumnya. Sub-item Wali Kelas di bawah juga
     // ditambah developer biar semua halaman era-* bisa dijangkau dari sidebar.
     show: (ctx) =>
-      ctx.userRole === "developer" ||
-      (ctx.eraportActive && (ctx.isTeacher || ctx.isWaliKelas)),
+      ctx.userRole === "developer" || (ctx.eraportActive && (ctx.isTeacher || ctx.isWaliKelas)),
     items: [
       {
         // Target dinamis tergantung role yang login

@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-09-20T15:25:44.802Z",
-  "executionTimeMs": 2772,
-  "filesScanned": 314,
+  "generatedAt": "2026-09-25T01:59:24.325Z",
+  "executionTimeMs": 2126,
+  "filesScanned": 316,
   "summary": {
     "status": "warning",
     "criticalCount": 0,
@@ -36,21 +36,21 @@
       "issues": [
         {
           "severity": "info",
-          "title": "412 class warna (di 90 file) kemungkinan belum dark-mode-aware",
+          "title": "355 class warna (di 92 file) kemungkinan belum dark-mode-aware",
           "description": "Ini backlog, bukan berarti semua salah — bisa aja file itu emang belum kena giliran migrasi theme-*, atau sengaja gak butuh dark mode (misal komponen buat print/PDF; tambahin ke DARK_MODE_IGNORE_PATTERNS di scripts/audit-kode.js kalau memang disengaja). Class dianggap aman kalau ada padanan dark: di baris yang sama (warnanya boleh beda, termasuk dark:hover:), token theme-*, atau ternary darkMode. Overlay bg-black, text-white, dan bg-white transparan tipis gak dihitung. Diurutin dari file paling banyak class polos-nya. Heuristik regex, cuma baris className yang dicek, review manual tetep perlu.",
           "details": [
-            "src/pages/DenahDuduk.js — 45 class belum ada dark: variant",
-            "src/pages/Organigram.js — 34 class belum ada dark: variant",
             "src/components/AdminJurnalRekap.js — 22 class belum ada dark: variant",
             "src/components/Login.js — 18 class belum ada dark: variant",
             "src/pages/KelolaJadwalPelajaran.js — 13 class belum ada dark: variant",
             "src/components/StudentLogin.js — 12 class belum ada dark: variant",
             "src/setting/kelola-jadwal/AdminKodeGuru.js — 12 class belum ada dark: variant",
-            "src/setting/kelola-ujian/jadwal-pengawas/JadwalPengawasTab.js — 12 class belum ada dark: variant",
             "src/e-raport/PreviewRaport.js — 11 class belum ada dark: variant",
             "src/pages/KeuanganKelas.js — 11 class belum ada dark: variant",
+            "src/pages/Organigram.js — 10 class belum ada dark: variant",
+            "src/setting/kelola-ujian/jadwal-pengawas/JadwalPengawasTab.js — 10 class belum ada dark: variant",
             "src/pages/administrasi-tu/SppTab.js — 7 class belum ada dark: variant",
             "src/portal-siswa/StudentPresensi.js — 7 class belum ada dark: variant",
+            "src/attendance-teacher/MonitoringKBM.js — 6 class belum ada dark: variant",
             "src/e-raport/CetakRaport.js — 6 class belum ada dark: variant",
             "src/pages/kelola-raport/ImportRaportForm.js — 6 class belum ada dark: variant",
             "src/setting/kelola-ujian/jadwal-pengawas/DaftarPengawasTab.js — 6 class belum ada dark: variant",
@@ -66,19 +66,19 @@
             "src/setting/kelola-ujian/PanitiaUjianTab.js — 5 class belum ada dark: variant",
             "src/setting/school-management/SiswaLulusTab.js — 5 class belum ada dark: variant",
             "src/setting/UserManagementTab.js — 5 class belum ada dark: variant",
+            "src/pages/DenahDuduk.js — 4 class belum ada dark: variant",
             "src/pages/kelola-raport/InputNilaiSiswa.js — 4 class belum ada dark: variant",
             "src/portal-siswa/StudentDashboard.js — 4 class belum ada dark: variant",
             "src/portal-siswa/StudentKeuangan.js — 4 class belum ada dark: variant",
             "src/setting/academic/PreflightCheck.js — 4 class belum ada dark: variant",
             "src/setting/kelola-jadwal/KelolaJamPelajaran.js — 4 class belum ada dark: variant",
+            "src/setting/kelola-ujian/JadwalUjianTab.js — 4 class belum ada dark: variant",
             "src/setting/portal-siswa/AkunSiswaTab.js — 4 class belum ada dark: variant",
             "src/setting/school-management/RiwayatMutasiTab.js — 4 class belum ada dark: variant",
             "src/attendance-teacher/reports/ExportExcel.js — 3 class belum ada dark: variant",
             "src/e-raport/InputTP.js — 3 class belum ada dark: variant",
             "src/pages/KelolaJadwalPiket.js — 3 class belum ada dark: variant",
-            "src/portal-siswa/StudentDenahDuduk.js — 3 class belum ada dark: variant",
-            "src/portal-siswa/StudentInfo.js — 3 class belum ada dark: variant",
-            "src/setting/kelola-jadwal/JadwalMassalModals.js — 3 class belum ada dark: variant"
+            "src/portal-siswa/StudentDenahDuduk.js — 3 class belum ada dark: variant"
           ]
         }
       ]
@@ -111,7 +111,7 @@
             "src/setting/academic/YearTransition.js:392 → select(\"id, full_name, nis, nisn, class_id, student_profile_details ( jenis_kelamin, tempat_lahir,\")",
             "src/setting/kelola-ujian/dokumen-cetak/kartuUjianSupabase.js:28 → select(\"no_peserta, asal_kelas, students(full_name, nis, nisn, gender)\")",
             "src/setting/kelola-ujian/dokumen-cetak/kartuUjianSupabase.js:267 → select(\"no_peserta, asal_kelas, nomor_ruangan, students(full_name, nis, nisn, gender)\")",
-            "src/setting/kelola-ujian/pembagian-ruangan/pembagianRuanganSupabase.js:461 → select(\"nomor_ruangan, no_peserta, asal_kelas, siswa_id, students(id, full_name, nis)\")",
+            "src/setting/kelola-ujian/pembagian-ruangan/pembagianRuanganSupabase.js:547 → select(\"nomor_ruangan, no_peserta, asal_kelas, siswa_id, students(id, full_name, nis)\")",
             "src/setting/school-management/SiswaLulusTab.js:549 → select(\"id, tahun_lulus, kelas_terakhir, academic_year_id, academic_years(id, year, semester, star\")",
             "src/setting/school-management/SiswaLulusTab.js:596 → select(\"*, academic_years(id, year, semester, start_date)\")",
             "src/setting/school-management/SiswaLulusTab.js:659 → select(\"*, academic_years(id, year, semester, start_date)\")"

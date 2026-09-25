@@ -64,6 +64,7 @@ import SPMB from "../spmb/SPMB";
 import MonitorSistem from "../system/MonitorSistem";
 
 import TeacherAttendance from "../attendance-teacher/TeacherAttendance";
+import MonitoringKBM from "../attendance-teacher/MonitoringKBM";
 
 import JurnalHarian from "../pages/JurnalHarian";
 import AdminJurnalRekap from "../components/AdminJurnalRekap";
@@ -217,6 +218,17 @@ export const menuConfig = [
     // halaman ini justru DIPERUNTUKKAN buat semua guru isi presensi
     // sendiri, jadi generik itu emang sesuai maksudnya, bukan celah.
     allowedRoles: ["teacher", "guru_bk", "admin", "tu"],
+  },
+  {
+    // Monitoring visual KBM per kelas (Kelas x Jam ke), berdasarkan
+    // presensi HARIAN guru (proxy, bukan presensi per-jam -- lihat
+    // catatan akurasi di komponennya). Role "developer" gak perlu
+    // ditambahin ke allowedRoles di sini -- udah bypass duluan di
+    // ProtectedRoute (App.js), lihat blok "Developer bypass".
+    path: "/monitoring-kbm",
+    title: "Monitoring KBM",
+    component: MonitoringKBM,
+    allowedRoles: ["admin", "tu"],
   },
   {
     path: "/jurnal-harian",
